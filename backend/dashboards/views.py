@@ -4928,15 +4928,14 @@ def imputacion_ver(request, imputacion_id):
 @rol_requerido('admin', 'adminprincipal')
 def api_historial_registros(request):
     from django.db.models import Q
+    from django.urls import reverse
 
     registros = []
-
-    # ── Imputaciones ──────────────────────────────────────────────────────
-    from django.urls import reverse
 
     def _fmt(dt):
         return timezone.localtime(dt).strftime('%d/%m/%Y - %H:%M') if dt else ''
 
+    # ── Imputaciones ──────────────────────────────────────────────────────
     imputaciones = Imputacion.objects.select_related(
         'usuario', 'usuario_modificacion'
     ).order_by('-fecha_creacion')
@@ -4959,6 +4958,8 @@ def api_historial_registros(request):
             'estado':             'Revisar' if es_borrador else 'Listo',
             'referencia_id':      imp.id,
             'nro_expediente':     '' if imp.nro_expediente == 'BORRADOR' else imp.nro_expediente,
+            # Clave interna solo para ordenar (se elimina antes de responder)
+            '_orden':             imp.fecha_creacion,
         }
 
         item['url_auditoria'] = reverse('api_imputacion_auditoria', args=[imp.id])
@@ -4979,6 +4980,7 @@ def api_historial_registros(request):
     ordenes = OrdenPago.objects.select_related(
         'usuario', 'usuario_modificacion', 'imputacion'
     ).order_by('-fecha_creacion')
+
     for op in ordenes:
         es_borrador = op.estado_formulario == 'REVISAR'
 
@@ -5003,6 +5005,7 @@ def api_historial_registros(request):
             'referencia_id':         op.id,
             'nro_expediente':        op.imputacion.nro_expediente if op.imputacion else 'S/N',
             'url_auditoria':         reverse('api_op_auditoria', args=[op.id]),
+            '_orden':                op.fecha_creacion,
         }
 
         if es_borrador and puede_editar_op(request.user, op):
@@ -5017,7 +5020,7 @@ def api_historial_registros(request):
 
         registros.append(item)
 
-    # ── Órdenes de Pago Personal ──────────────────────────────────────────────
+    # ── Órdenes de Pago Personal ──────────────────────────────────────────
     ops_personal = OrdenPagoPersonal.objects.select_related(
         'usuario', 'usuario_modificacion'
     ).order_by('-fecha_creacion')
@@ -5046,6 +5049,7 @@ def api_historial_registros(request):
             'referencia_id':      op.id,
             'nro_expediente':     op.nro_expediente,
             'url_auditoria':      reverse('api_op_personal_auditoria', args=[op.id]),
+            '_orden':             op.fecha_creacion,
         }
 
         if es_borrador:
@@ -5063,6 +5067,7 @@ def api_historial_registros(request):
     modificaciones = Modificacion.objects.select_related(
         'usuario', 'usuario_modificacion'
     ).order_by('-fecha_creacion')
+
     for mod in modificaciones:
         es_borrador = mod.estado_formulario == 'REVISAR'
 
@@ -5087,6 +5092,7 @@ def api_historial_registros(request):
             'estado':             'Revisar' if es_borrador else 'Listo',
             'referencia_id':      mod.id,
             'nro_expediente':     '' if mod.nro_expediente == MODIFICACION_EXPEDIENTE_PLACEHOLDER else mod.nro_expediente,
+            '_orden':             mod.fecha_creacion,
         }
 
         item['url_auditoria'] = reverse('api_modificacion_auditoria', args=[mod.id])
@@ -5105,6 +5111,7 @@ def api_historial_registros(request):
     refuerzos = Refuerzo.objects.select_related(
         'usuario', 'usuario_modificacion'
     ).order_by('-fecha_creacion')
+
     for ref in refuerzos:
         es_borrador = ref.estado_formulario == 'REVISAR'
 
@@ -5128,6 +5135,7 @@ def api_historial_registros(request):
             'estado':             'Revisar' if es_borrador else 'Listo',
             'referencia_id':      ref.id,
             'nro_expediente':     '' if ref.nro_expediente == REFUERZO_EXPEDIENTE_PLACEHOLDER else ref.nro_expediente,
+            '_orden':             ref.fecha_creacion,
         }
 
         item['url_auditoria'] = reverse('api_refuerzo_auditoria', args=[ref.id])
@@ -5143,11 +5151,21 @@ def api_historial_registros(request):
 
         registros.append(item)
 
-    # Ordenar por fecha de creación más reciente
-    registros.sort(key=lambda x: x['fecha_creacion'], reverse=True)
+    # ── Orden final ───────────────────────────────────────────────────────
+    # Se ordena por la fecha REAL (datetime), no por el texto formateado
+    # 'dd/mm/YYYY - HH:MM', que comparado como string ordena por día primero
+    # y mezcla meses (ej: 24/10 quedaba "más nuevo" que 11/11).
+    # Los registros sin fecha (None) quedan al final.
+    registros.sort(
+        key=lambda x: x['_orden'].timestamp() if x['_orden'] else 0,
+        reverse=True,
+    )
+
+    # La clave interna no se envía al frontend
+    for r in registros:
+        r.pop('_orden', None)
 
     return JsonResponse({'registros': registros})
-
 
 def ejerciciosanteriores_prueba(request):
     return render(
