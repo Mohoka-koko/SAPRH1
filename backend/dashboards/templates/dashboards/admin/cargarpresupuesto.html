@@ -9,7 +9,15 @@
 {% block content %}
 
 <div class="contenedor">
+    
+    <!-- =========================================
+         CARTEL DE AÑO SELECCIONADO
+         ========================================= -->
+    <div id="bannerAnioCarga" class="banner-anio-carga" style="display: none;">
+        Ud. está cargando el presupuesto para el <strong>Ejercicio <span id="anioCargaTexto"></span></strong>.
+    </div>
 
+    
     <!-- =========================================
          ENCABEZADO
          ========================================= -->
@@ -784,6 +792,6 @@
 
 {% block extra_js %}
 
-<script src="{% static 'js/cargarpresupuesto.js' %}"></script>
+<script src="{% static 'js/cargarpresupuesto.js?v=3' %}"></script>
 
 {% endblock %}
