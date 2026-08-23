@@ -1,0 +1,641 @@
+/* ============================================================
+   modificacion_form.css
+   Estilos exclusivos del formulario de Modificación Presupuestaria
+   Diseño basado en el mockup S.A.P.R.H.
+   ============================================================ */
+
+/* ── Variables ─────────────────────────────────────────────── */
+:root {
+    --mf-bg:           #f4f6f9;
+    --mf-card-bg:      #ffffff;
+    --mf-border:       #dcdfe6;
+    --mf-header-bg:    #eef2f6;
+    --mf-header-text:  #1d2731;
+    --mf-label-text:   #475569;
+    --mf-input-border: #dcdfe6;
+    --mf-input-bg:     #ffffff;
+    --mf-importe-border: #e5a23e;
+    --mf-total-green:  #2e7d32;
+    --mf-btn-primary:  #185adb;
+    --mf-btn-export:   #0a2540;
+    --mf-error:        #ef4444;
+    --mf-radius:       8px;
+    --mf-radius-sm:    4px;
+    --mf-shadow:       0 2px 4px rgba(0,0,0,0.04);
+}
+
+/* ── Página ─────────────────────────────────────────────────── */
+.mf-pagina {
+    padding: 16px 48px 40px;
+    background: var(--mf-bg);
+    min-height: 100vh;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.mf-titulo {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--mf-header-text);
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--mf-border);
+    letter-spacing: 0.5px;
+}
+
+/* ── Card ───────────────────────────────────────────────────── */
+.mf-card {
+    background-color: #ffffff;
+    
+    /* 1. Borde uniforme más grueso (Opción A: Negro/Oscuro prolijo) */
+    border: 0.5px solid var(--mf-border); 
+    
+    /* Si prefieres el borde completo en azul eléctrico, usa esta línea en su lugar:
+    border: 2px solid #0033ff; 
+    */
+    
+    border-radius: 12px;
+    
+    /* 2. Sombra reforzada en dos capas para un efecto de elevación 3D marcado */
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16), 0 6px 10px rgba(0, 0, 0, 0.12);
+    
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.mf-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--mf-header-bg);
+    color: var(--mf-header-text);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--mf-border);
+}
+
+.mf-card-icon { font-size: 1rem; opacity: 0.7; }
+
+/* ── Layout principal de la sección de unidades ─────────────── */
+/* Grid de 2 columnas: unidades (izq) | importe (der) */
+.mf-transfer-grid {
+    display: grid;
+    grid-template-columns: 1fr 180px 250px;
+    grid-template-rows: auto auto auto auto;
+    border: 1px solid var(--mf-border);
+    border-radius: var(--mf-radius-sm);
+    margin: 16px 20px 0;
+    overflow: hidden;
+}
+
+.mf-transfer-grid-col {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-row: span 4;
+}
+
+.mf-transfer-grid-col:not(:last-child) {
+    border-right: 1px solid var(--mf-border);
+}
+
+/* ── Cabecera de columna dentro del grid ────────────────────── */
+.mf-col-header {
+    background: var(--mf-header-bg);
+    padding: 14px 20px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--mf-header-text);
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--mf-border);
+}
+
+/* ── Bloque de sección (transferente / receptora) ───────────── */
+.mf-section-block {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--mf-border);
+}
+
+.mf-section-block:last-child {
+    border-bottom: none;
+}
+
+/* ── Bloque de importe alineado al section-block ────────────── */
+.mf-importe-block {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--mf-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+}
+
+.mf-importe-block:last-child {
+    border-bottom: none;
+}
+
+/* ── Grid de cabeceras JUR/PRG/SPRG/PRY/A/O/PAR ────────────── */
+.mf-cabecera-cascada {
+    display: grid;
+    grid-template-columns: 42px 80px 42px 80px 80px 100px;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.mf-cabecera-cascada span {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--mf-label-text);
+    text-align: center;
+}
+
+/* ── Fila de selectores en cascada ─────────────────────────── */
+.fila-receptora-refuerzo {
+    display: grid;
+    grid-template-columns: 42px 80px 42px 80px 80px 100px;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+/* Todos los selectores e inputs dentro de la fila */
+.fila-receptora-refuerzo select,
+.fila-receptora-refuerzo input[type="text"] {
+    width: 100%;
+    min-width: 0;
+    padding: 6px 6px;
+    border: 1px solid var(--mf-input-border);
+    border-radius: var(--mf-radius-sm);
+    font-size: 0.78rem;
+    color: var(--mf-header-text);
+    height: 32px;
+    box-sizing: border-box;
+    background: var(--mf-input-bg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fila-receptora-refuerzo select:focus,
+.fila-receptora-refuerzo input[type="text"]:focus {
+    border-color: var(--mf-btn-primary);
+    outline: none;
+}
+
+/* Campos fijos JUR y SPRG */
+.fila-receptora-refuerzo input[readonly] {
+    background: var(--mf-header-bg);
+    color: #888;
+    text-align: center;
+    cursor: default;
+    border-color: var(--mf-border);
+}
+
+/* Ocultar campo hidden linea-id */
+.fila-receptora-refuerzo input[type="hidden"] {
+    display: none;
+}
+
+/* Saldo — debajo de la fila, span separado */
+.fila-saldo {
+    font-size: 0.72rem;
+    color: var(--mf-total-green);
+    font-weight: 600;
+    margin-top: 2px;
+    display: block;
+}
+
+/* Selector de fuente (aparece condicionalmente) */
+.fila-receptora-refuerzo .fila-fuente {
+    display: none;
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    height: 32px;
+}
+
+/* ── Estilo para el input de Saldo Actual (sin botones X y con borde neutral/verde) ── */
+.fila-saldo-input {
+    width: 100%;
+    border: 1.5px solid var(--mf-input-border);
+    border-radius: var(--mf-radius-sm);
+    padding: 6px 8px;
+    font-size: 0.85rem;
+    color: var(--mf-label-text);
+    background: var(--mf-input-bg);
+    height: 38px;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.fila-saldo-input:focus {
+    border-color: var(--mf-btn-primary);
+}
+
+/* Opcional: Oculta las flechas arriba/abajo por defecto que traen los inputs type="number" */
+.fila-saldo-input::-webkit-outer-spin-button,
+.fila-saldo-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.fila-saldo-input[type=number] {
+    -moz-appearance: textfield;
+}
+
+.fila-saldo-display {
+    width: 100%;
+    border: 1px solid var(--mf-border);
+    border-radius: var(--mf-radius-sm);
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--mf-total-green);
+    background: var(--mf-header-bg);
+    text-align: right;
+    height: 32px;
+    box-sizing: border-box;
+    cursor: default;
+    outline: none;
+}
+
+/* ── Ajuste para vista en pantallas medianas / móviles ── */
+@media (max-width: 1100px) {
+    .mf-transfer-grid {
+        grid-template-columns: 1fr; /* Pasa a ser una sola columna en pantallas pequeñas */
+    }
+    .mf-transfer-grid-col:not(:last-child) {
+        border-right: none;
+        border-bottom: 1px solid var(--mf-border);
+    }
+}
+
+/* ── Importe dentro del bloque derecho ──────────────────────── */
+.mf-importe-fila {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 19px;
+    margin-bottom: 8px;
+}
+
+.fila-importe {
+    flex: 1;
+    border: 1.5px solid var(--mf-importe-border) !important;
+    border-radius: var(--mf-radius-sm);
+    padding: 6px 8px;
+    font-size: 0.85rem;
+    color: var(--mf-label-text);
+    background: var(--mf-input-bg);
+    height: 32px;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.fila-importe:focus {
+    border-color: var(--mf-btn-primary) !important;
+}
+
+.fila-importe::placeholder {
+    color: #a0aec0;
+}
+
+/* Botón eliminar dentro del bloque importe */
+.btn-eliminar-fila {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border: 1px solid var(--mf-border);
+    border-radius: var(--mf-radius-sm);
+    background: #cbd5e1;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+}
+
+.btn-eliminar-fila:hover {
+    background: #fee2e2;
+    color: var(--mf-error);
+    border-color: var(--mf-error);
+}
+
+/* ── Botón + agregar fila ───────────────────────────────────── */
+.mf-btn-agregar-fila-wrap {
+    padding: 6px 15px 10px;
+}
+
+.mf-btn-agregar-fila,
+#btn-agregar-transferente,
+#btn-agregar-receptora {
+    background: var(--mf-btn-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--mf-radius-sm);
+    width: 32px;
+    height: 32px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.mf-btn-agregar-fila:hover,
+#btn-agregar-transferente:hover,
+#btn-agregar-receptora:hover {
+    background: #0d47a1;
+}
+
+/* ── Separador entre transferente y receptora ───────────────── */
+.mf-separador {
+    height: 1px;
+    background: var(--mf-border);
+    margin: 0 20px;
+}
+
+/* ── Totales ────────────────────────────────────────────────── */
+.mf-totales {
+    padding: 16px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.mf-total-fila {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.mf-total-label {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--mf-header-text);
+    letter-spacing: 0.4px;
+    text-align: right;
+    min-width: 200px;
+}
+
+span.mf-total-input {
+    display: inline-block;
+    width: 180px;
+    border: 1px solid var(--mf-border);
+    border-radius: var(--mf-radius-sm);
+    padding: 8px 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--mf-total-green);
+    background: var(--mf-header-bg);
+    text-align: right;
+}
+
+span.mf-total-input.error-total {
+    color: var(--mf-error);
+    border-color: var(--mf-error);
+}
+
+.mf-error-total {
+    font-size: 0.8rem;
+    color: var(--mf-error);
+    font-weight: 600;
+}
+
+/* ── Info adicional ─────────────────────────────────────────── */
+.mf-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px 32px;
+    padding: 20px;
+}
+
+.mf-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mf-campo label {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--mf-label-text);
+}
+
+.mf-campo input[type="text"],
+.mf-campo input[type="date"] {
+    border: 1px solid var(--mf-input-border);
+    border-radius: var(--mf-radius-sm);
+    padding: 8px 10px;
+    font-size: 0.88rem;
+    color: var(--mf-header-text);
+    background: var(--mf-input-bg);
+    outline: none;
+    transition: border-color 0.2s;
+    height: 36px;
+    box-sizing: border-box;
+}
+
+.mf-campo input:focus {
+    border-color: var(--mf-btn-primary);
+}
+
+.mf-campo input[readonly] {
+    background: var(--mf-header-bg);
+    color: #666;
+}
+
+.mf-campo input.error {
+    border-color: var(--mf-error);
+}
+
+/* ── File input (Diseño de Tarjeta Estética) ─────────────────── */
+.mf-file-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* Estira el botón y el texto para ocupar todo el ancho */
+    gap: 8px;
+    width: 100%;
+}
+
+.mf-file-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc; /* Fondo gris muy clarito */
+    border: 1px dashed #cbd5e1; /* Borde punteado moderno */
+    border-radius: var(--mf-radius-sm);
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0033ff; /* Usamos el azul eléctrico que configuramos antes */
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mf-file-btn:hover {
+    background: #eff6ff;
+    border-color: #0033ff;
+}
+
+/* Agregamos un icono de carpeta automáticamente al botón */
+.mf-file-btn::before {
+    content: '📁';
+    font-size: 1.1rem;
+}
+
+.mf-file-nombre {
+    font-size: 0.78rem;
+    color: #334155;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--mf-radius-sm);
+    padding: 8px 12px;
+    word-break: break-word; /* Mantiene la función de bajar de línea sin desbordar */
+    
+    /* Diseño de "tarjetita" para el texto */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* Agregamos un icono de PDF/Documento al lado del nombre del archivo */
+.mf-file-nombre::before {
+    content: '📄';
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+/* ── Acciones Flotantes ─────────────────────────────────────── */
+.mf-acciones {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 0;
+}
+
+.mf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    padding: 0 16px;
+    border-radius: 14px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    transition:
+        background-color 0.25s ease,
+        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.3s ease,
+        padding 0.3s ease;
+}
+
+.mf-btn-icono {
+    font-size: 1.2rem;
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.mf-btn-texto {
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    transition:
+        max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.25s ease,
+        margin 0.3s ease;
+}
+
+.mf-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 12px rgba(0, 102, 255, 0.9),
+                0 0 24px rgba(0, 102, 255, 0.7),
+                0 0 36px rgba(0, 68, 255, 0.5);
+    padding: 0 24px;
+}
+
+.mf-btn:hover .mf-btn-texto {
+    max-width: 200px;
+    opacity: 1;
+    margin-left: 10px;
+}
+
+.mf-btn:hover .mf-btn-icono { transform: scale(1.1); }
+
+.mf-btn:active {
+    transform: translateY(-2px);
+    box-shadow: 0 0 12px rgba(0, 102, 255, 0.8);
+}
+
+.mf-btn-guardar {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}
+.mf-btn-guardar:hover { background: #1d4ed8; box-shadow: 0 0 16px rgba(37, 99, 235, 0.7); }
+
+.mf-btn-exportar {
+    background: #0f172a;
+    color: #f8fafc;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+}
+.mf-btn-exportar:hover { background: #1e293b; box-shadow: 0 0 16px rgba(15, 23, 42, 0.6); }
+
+.mf-btn-limpiar {
+    background: #e2e8f0;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+.mf-btn-limpiar:hover { background: #cbd5e1; color: #0f172a; box-shadow: 0 0 14px rgba(100, 116, 139, 0.5); }
+
+.mf-btn-cancelar {
+    background: #ffffff;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+.mf-btn-cancelar:hover { background: #fecaca; box-shadow: 0 0 14px rgba(239, 68, 68, 0.5); }
+
+/* ── Responsivo ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .mf-transfer-grid {
+        grid-template-columns: 1fr;
+    }
+    .mf-transfer-grid-col:first-child {
+        border-right: none;
+        border-bottom: 1px solid var(--mf-border);
+    }
+    .mf-cabecera-cascada,
+    .fila-receptora-refuerzo {
+        grid-template-columns: 40px 1fr 40px 1fr 1fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .mf-pagina { padding: 16px; }
+    .mf-info-grid { grid-template-columns: 1fr 1fr; }
+    .mf-cabecera-cascada,
+    .fila-receptora-refuerzo {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .mf-info-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,28 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="main-wrapper">
+
+  <div class="card config-simple">
+
+    <div class="config-section-text">
+
+      <h3>Configuración de Usuario</h3>
+      <p onclick="mostrarSeccion('password')">Cambiar contraseña</p>
+      <p>Cambiar foto de perfil</p>
+
+      <h3>Configuración del Sistema</h3>
+      <p>Editar datos del área</p>
+      <p>Ajustar formato de fecha y hora</p>
+      <p>Ajustar notificaciones y preferencias</p>
+      <p>Información del sistema</p>
+
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}

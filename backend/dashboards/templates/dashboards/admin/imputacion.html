@@ -1,0 +1,264 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/imputacion.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="imputacion-page">
+    <div class="botones-accion">
+        <button type="button" class="btn-accion" id="exportar-pdf-btn">
+            <i class="fa-solid fa-file-pdf"></i>
+            Exportar a PDF
+        </button>
+        <button type="button" class="btn-accion" id="guardar-imputacion-btn">
+            <i class="fa-solid fa-floppy-disk"></i>
+            Guardar imputación
+        </button>
+        <a href="{% url 'lista_imputaciones' %}" class="btn-accion btn-link">Orden de pago</a>
+    </div>
+
+    <div class="form-wrap">
+
+        <div class="header-row">
+
+            <div class="logo-box">
+                <img src="{% static 'img/logo1.png' %}" alt="Logo1" />
+            </div>
+
+            <div class="header-text">
+
+                <div class="header-org">
+                    ADM PCIAL DE RECURSOS HIDRICOS
+                </div>
+
+                <div class="header-sub">
+                    Santiago del Estero
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="nro-expediente">
+            <div class="encabezado-campos">
+                <label for="input-expediente">N° Expediente:</label>
+                <div class="expediente-input-group">
+                    <input type="text" id="input-expediente" placeholder="EX-2026-00123">
+                    <span class="expediente-fijo">-GDESDE-APRH#MAMA</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="titulo-part">
+            <span>
+                PARTE DE IMPUTACION PRESUPUESTARIA
+            </span>
+        </div>
+
+        <div class="seccion-titulo">
+            AFECTACION Y REAJUSTE PREVENTIVO
+        </div>
+
+        <table id="main-table">
+
+            <thead>
+
+                <tr>
+
+                    <th colspan="7" class="col-header">
+                        CODIFICACION
+                    </th>
+
+                    <th rowspan="2" class="col-header proveedor-header">
+                        CONCEPTO
+                    </th>
+
+                    <th rowspan="2" class="col-header importe-header">
+                        IMPORTE
+                    </th>
+
+                </tr>
+
+                <tr>
+
+                    <th class="col-header cod-cell">JUR</th>
+                    <th class="col-header cod-cell">PRG</th>
+                    <th class="col-header cod-cell">SPRG</th>
+                    <th class="col-header cod-cell">PRY</th>
+                    <th class="col-header cod-cell">A/O</th>
+                    <th class="col-header cod-cell">PAR</th>
+                    <th class="col-header cod-cell">FF</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="filas-body">
+
+                <tr class="fila-registro">
+                    <td class="cod-cell automatic">
+                        <select class="cod automatic" disabled>
+                            <option value=""></option>
+                        </select>
+                    </td>
+                    <td class="cod-cell">
+                        <select class="cod">
+                            <option value=""></option>
+                        </select>
+                    </td>
+                    <td class="cod-cell automatic">
+                        <select class="cod automatic" disabled>
+                            <option value=""></option>
+                        </select>
+                    </td>
+                    <td class="cod-cell">
+                        <select class="cod">
+                            <option value=""></option>
+                        </select>
+                    </td>
+                    <td class="cod-cell">
+                        <select class="cod">
+                            <option value=""></option>
+                        </select>
+                    </td>
+                    <td class="cod-cell">
+                        <select class="cod">
+                            <option value=""></option>
+                        </select>
+                    </td>
+                    <td class="cod-cell">
+                        <select class="cod">
+                            <option value=""></option>
+                        </select>
+                    </td>
+                    <td class="proveedor-cell">
+                        <input type="text" class="proveedor-input">
+                    </td>
+                    <td class="importe-cell">
+                        <input class="importe-input importe" type="number" inputmode="numeric" step="0.01" min="0">
+                    </td>
+                </tr>
+
+            </tbody>
+
+            <tfoot>
+
+                <tr>
+
+                    <td colspan="6" class="foot-field">
+
+                        Contabilizado por:
+
+                        <div class="select-wrapper static-display">
+                            <span class="id-user user-display" id="contabilizado-select">{{ request.user.get_full_name|default:request.user.nombre }}</span>
+                        </div>
+
+                    </td>
+
+                    <td class="label-total">
+                        TOTAL
+                    </td>
+
+                    <td class="total-box" id="total-display"></td>
+
+                </tr>
+
+                <tr>
+                    <td colspan="8" class="asiento-foot-cell">
+                        <span class="asiento-label">Asiento N° <span id="asiento-preview">----</span></span>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="6"></td>
+                    <td class="label-total">
+                        FECHA
+                    </td>
+                    <td class="fecha-box">
+                        <input type="date" class="fecha-input" id="fecha-actual">
+                    </td>
+                </tr>
+
+            </tfoot>
+
+        </table>
+
+        <div class="tabla-acciones">
+            <button type="button" class="btn-add-row" id="agregar-fila-btn" aria-label="Agregar línea">
+                <i class="fa-solid fa-plus"></i>
+                Agregar línea
+            </button>
+            <button type="button" class="btn-remove-row" id="borrar-fila-btn" aria-label="Borrar línea">
+                <i class="fa-solid fa-trash"></i>
+                Borrar línea
+            </button>
+        </div>
+
+        <div class="seccion-titulo" style="margin-top: 10px;">
+            COMPROMISO
+        </div>
+
+        <div class="compromiso-texto">
+            <div class="compromiso-line">
+                <span>En fecha:</span>
+                <span class="compromiso-line-fill"></span>
+                <span>se han registrado los asientos Nº</span>
+                <span class="compromiso-line-fill"></span>
+            </div>
+            <div class="compromiso-line">
+                <span>Indicados en la afectación preventiva, aprobados por</span>
+                <span class="compromiso-line-fill short"></span>
+                <span>RES.</span>
+                <span class="compromiso-line-fill"></span>
+            </div>
+            <div class="compromiso-line">
+                <span class="compromiso-line-fill full"></span>
+            </div>
+            <div class="compromiso-line">
+                <span>Contabilizado por:</span>
+                <span class="compromiso-line-fill"></span>
+            </div>
+        </div>
+        <div class="compromiso-footer">
+            <span id="iniciales-usuario" data-user-name="{{ request.user.get_full_name|default:request.user.nombre|escape }}"></span>
+            <span class="pagina-fija">[ 171 ]</span>
+        </div>
+    </div>
+
+    <div class="panel-saldos-widget" id="panelSaldos">
+  
+        <div class="panel-saldos-icono" title="Ver Saldos Disponibles">
+            <img src="{% static 'img/Screenshot_43.png' %}" alt="Saldos" class="icono-imagen-local" />
+        </div>
+      
+        <!-- Vista desplegada (Tabla) -->
+        <div class="panel-saldos-contenido">
+            <div class="panel-saldos-header">
+                <span class="panel-saldos-titulo">HERRAMIENTA DE SALDOS DISPONIBLES</span>
+                <button type="button" class="panel-saldos-cerrar" id="btnMinimizar" title="Minimizar">&times;</button>
+            </div>
+            
+            <div class="panel-saldos-body">
+                <table class="tabla-saldos">
+                    <thead>
+                        <tr>
+                        <th>Línea</th>
+                        <th>Saldo Actual</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-saldos-body">
+                    </tbody>
+                </table>
+            </div>
+        </div>      
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/imputacion.js'%}"></script>
+{% endblock %}

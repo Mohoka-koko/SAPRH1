@@ -1,0 +1,198 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/ordenpago.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="ordenpago-page">
+    <div class="toolbar no-print">
+            
+        <div class="toolbar-group">
+            <button id="btnAddBeneficiario" type="button" class="btn-tool">+ Beneficiario</button>
+            <button id="btnDelBeneficiario" type="button" class="btn-tool">&minus; Beneficiario</button>
+        </div>
+        <div class="toolbar-group">
+            <button id="btnAddConcepto" type="button" class="btn-tool">+ Concepto</button>
+            <button id="btnDelConcepto" type="button" class="btn-tool">&minus; Concepto</button>
+        </div>
+        <div class="toolbar-group">
+            <button id="btnAddPartida" type="button" class="btn-tool">+ Partida</button>
+            <button id="btnDelPartida" type="button" class="btn-tool">&minus; Partida</button>
+        </div>
+        <div class="toolbar-group">
+            <button id="btnImprimir" type="button" class="btn-tool primary">&#128424; Imprimir</button>
+            <button id="btnExportarPDF" type="button" class="btn-tool primary">&#11115; Exportar a PDF</button>
+        </div>
+    </div>
+
+    <div class="hoja" id="hoja">
+        <div class="marco">
+
+            <div class="encabezado">
+                <div class="enc-izquierda">
+                    <div class="logo-box">LOGO</div>
+                    <div class="organismo">
+                        <span class="input-like organismo-nombre" readonly>ADM. PCIAL. DE RECURSOS HIDRICOS</span>
+                        <span class="input-like provincia" readonly>Santiago del Estero</span>
+                    </div>
+                </div>
+
+                <div class="enc-centro">
+                    <div class="ejercicio-linea">
+                        EJERCICIO
+                        <input type="text" id="ejercicio" class="input-linea corto" maxlength="4" placeholder="AAAA">
+                    </div>
+                    <div class="orden-titulo">ORDEN DE PAGO Nº</div>
+                </div>
+
+                <div class="enc-derecha">
+                    <div class="numero-orden-box">
+                        <input type="text" id="numeroOrden" class="input-caja" placeholder="00-00-0000">
+                        <div class="error-msg" id="err-numeroOrden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <table class="tabla-datos">
+                <tr>
+                    <td class="etiqueta">DELEGACIÓN CONTABLE:</td>
+                    <td class="valor">
+                        <input type="text" id="delegacionContable" class="input-linea full" placeholder="Delegación contable" readonly>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="etiqueta">EXPEDIENTE Nº:</td>
+                    <td class="valor">
+                        <input type="text" id="expediente" class="input-linea full" placeholder="EX-AAAA-XXXXXXX">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="etiqueta">JURISDICCIÓN:</td>
+                    <td class="valor">
+                        <input type="text" id="jurisdiccion" class="input-linea full" placeholder="Jurisdicción">
+                    </td>
+                </tr>
+            </table>
+
+            <div class="fila-codigo-pago">
+                <div class="cod-pago-izq">
+                    <span class="etiqueta-inline">CÓDIGO DE PAGO:</span>
+                    <input type="text" id="codigoPago" class="input-caja chica" placeholder="000">
+                    <input type="text" id="descripcionCodigoPago" class="input-linea larga" placeholder="Descripción del código de pago">
+                </div>
+                <div class="cod-pago-der">
+                    <span class="etiqueta-inline">F. de Vencimiento:</span>
+                    <input type="text" id="fechaVencimiento" class="input-caja fecha" placeholder="dd/mm/aaaa">
+                    <div class="error-msg" id="err-fechaVencimiento"></div>
+                </div>
+            </div>
+
+            <div class="bloque-texto-pago">
+                <div class="texto-pago-izq">
+                    <p class="linea-fija">SEÑOR TESORERO:</p>
+                    <p class="linea-fija">Cumplido los trámites legales procede el pago total de Pesos:</p>
+                    <p class="linea-importe-letras">
+                        <span class="etiqueta-inline">SON PESOS:</span>
+                        <input type="text" id="importeLetras" class="input-linea full" placeholder="(importe en letras)" readonly>
+                    </p>
+                </div>
+                <div class="texto-pago-der">
+                    <span class="signo">$</span>
+                    <input type="text" id="importeTotal" class="input-caja importe-total" placeholder="0,00" readonly>
+                    <div class="error-msg" id="err-importeTotal"></div>
+                </div>
+            </div>
+
+            <table class="tabla-principal" id="tablaBeneficiarios">
+                <thead>
+                    <tr>
+                        <th class="col-codigo">CÓDIGO</th>
+                        <th class="col-beneficiario">BENEFICIARIO</th>
+                        <th class="col-importe">IMPORTE</th>
+                    </tr>
+                </thead>
+                <tbody id="beneficiariosBody">
+                </tbody>
+            </table>
+
+            <div class="bloque-concepto">
+                <div class="concepto-fila">
+                    <span class="etiqueta-inline">CONCEPTO</span>
+                    <span class="etiqueta-factura">FACTURA</span>
+                    <input type="text" id="numeroFactura" class="input-linea larga" placeholder="0000-00000000">
+                </div>
+                <div id="conceptoDescripcionContainer" class="concepto-descripcion">
+                    <input type="text" class="input-linea full" placeholder="Descripción del concepto...">
+                </div>
+            </div>
+
+            <div class="bloque-resolucion">
+                <div class="resolucion-fila">
+                    <span class="etiqueta-inline">Resolución</span>
+                    <input type="text" id="resolucion" class="input-linea full" placeholder="Nº ____/____">
+                </div>
+                <div class="resolucion-fila">
+                    <input type="text" id="referenciaAdministrativa" class="input-linea full" placeholder="Referencia administrativa adicional (licitación, decreto, etc.)">
+                </div>
+            </div>
+
+            <table class="tabla-concepto-pago" id="tablaConceptoPago">
+                <thead>
+                    <tr>
+                        <th class="col-codigo">CÓDIGO</th>
+                        <th>CONCEPTO DEL PAGO</th>
+                        <th class="col-importe">IMPORTE</th>
+                    </tr>
+                </thead>
+                <tbody id="conceptoPagoBody">
+                </tbody>
+            </table>
+
+            <table class="tabla-partidas" id="tablaPartidas">
+                <thead>
+                    <tr>
+                        <th>JUR</th>
+                        <th>PROG</th>
+                        <th>S/PG</th>
+                        <th>PRY</th>
+                        <th>A/O</th>
+                        <th>PART</th>
+                        <th class="col-partida-desc">PARTIDA</th>
+                        <th class="col-importe">IMPORTE</th>
+                    </tr>
+                </thead>
+                <tbody id="partidasBody">
+                </tbody>
+            </table>
+
+            <div class="rentas-generales">
+                <div class="rentas-titulo">RENTAS GENERALES</div>
+                <input type="text" id="fechaRentas" class="input-linea centrado" placeholder="dd de mes de aaaa">
+                <div class="error-msg" id="err-fechaRentas"></div>
+            </div>
+
+            <div class="pie-inferior">
+                <div class="pie-izq">
+                    <input type="text" id="codigoNG" class="input-linea chico" 
+                           value="{{ request.user.get_full_name|default:request.user.nombre }}" 
+                           readonly>
+                </div>
+                
+                <div class="pie-der">
+                    <input type="text" id="codigoDocumental" class="input-linea chico" placeholder="DOCFI-AAAA-XXXXXXX">
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="{%  static 'js/ordenpago.js' %}"></script>
+{% endblock %}

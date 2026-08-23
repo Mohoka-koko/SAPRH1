@@ -1,0 +1,99 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="main-wrapper">
+
+  <!-- CARD: SELECCIONAR -->
+  <div class="card">
+    <div class="card-header">Seleccionar:</div>
+
+    <div class="filter-container">
+      <div class="filter-bar">
+        <div class="filter-label">Filtrar por: </div>
+        <input type="text" placeholder="Código…">
+        <input type="text" placeholder="Área…">
+        <input type="date">
+      </div>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Área</th>
+          <th>Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr onclick="selectRow(this)">
+          <td class="code-cell">011</td>
+          <td>Construcción</td>
+          <td class="desc">aquí va texto descriptivo</td>
+        </tr>
+        <tr class="selected" onclick="selectRow(this)">
+          <td class="code-cell">02</td>
+          <td>Tesorería</td>
+          <td class="desc">aquí va texto descriptivo</td>
+        </tr>
+        <tr onclick="selectRow(this)">
+          <td class="code-cell">532</td>
+          <td>Contabilidad</td>
+          <td class="desc">aquí va texto descriptivo</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="actions">
+      <button class="btn btn-yellow">Crear Imputación</button>
+      <button class="btn btn-outline">Crear Orden de Pago</button>
+      <a href="{% url 'refuerzomodificacion' %}"><button class="btn btn-orange">Modificación o Refuerzo</button></a>
+    </div>
+  </div>
+
+  <!-- CARD: HISTORIAL -->
+  <div class="card">
+    <div class="card-header">Historial de registros:</div>
+
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Registro de</th>
+          <th>Fecha y Hora</th>
+          <th>Creado por</th>
+          <th>Última Modificación</th>
+          <th>Estado</th>
+          <th>Editar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Registro1</td>
+          <td class="ts">22/04/2022 – 14:52</td>
+          <td>Usuario1</td>
+          <td class="ts">22/04/2022 – 14:52</td>
+          <td><span class="badge badge-listo">Listo</span></td>
+          <td><button class="edit-btn">📄</button></td>
+        </tr>
+        <tr>
+          <td>Registro2</td>
+          <td class="ts">22/04/2022 – 16:02</td>
+          <td>Usuario2</td>
+          <td class="ts">22/04/2022 – 16:02</td>
+          <td><span class="badge badge-revisar">Revisar</span></td>
+          <td><button class="edit-btn">📄</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+
+<script src="js/script.js"></script>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/registros.js' %}"></script>
+{% endblock %}

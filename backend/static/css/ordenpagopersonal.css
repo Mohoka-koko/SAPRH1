@@ -1,0 +1,952 @@
+.tabla-principal, .tabla-principal *,
+.tabla-erogaciones, .tabla-erogaciones * {
+    box-sizing: border-box;
+}
+.oppersonal-page {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 1rem;
+    padding-right: 140px;
+}
+/* =========================================================
+   TOOLBAR LATERAL - ESTILO SOBRIO
+   ========================================================= */
+
+.toolbar {
+    position: fixed;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+
+    width: 125px;
+
+    background: #ffffff;
+
+    padding: 9px;
+
+    border: 1px solid #d5d5d5;
+    border-radius: 9px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.10);
+
+    z-index: 50;
+}
+
+/* =========================================================
+   GRUPOS
+   ========================================================= */
+
+.toolbar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    padding-bottom: 8px;
+
+    border-bottom: 1px solid #e2e2e2;
+}
+
+.toolbar-group:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+/* =========================================================
+   BOTONES
+   ========================================================= */
+
+.toolbar button {
+    width: 100%;
+
+    background: #f7f7f7;
+    color: #333;
+
+    border: 1px solid #d3d3d3;
+    border-radius: 6px;
+
+    padding: 8px 5px;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    white-space: nowrap;
+
+    transition: background 0.15s ease,
+                border-color 0.15s ease;
+}
+
+.toolbar button:hover {
+    background: #eeeeee;
+    border-color: #bdbdbd;
+}
+
+.toolbar button:active {
+    background: #e2e2e2;
+}
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    .toolbar {
+        top: auto;
+        bottom: 12px;
+        right: 50%;
+
+        transform: translateX(50%);
+
+        width: auto;
+
+        flex-direction: row;
+
+        padding: 8px;
+    }
+
+    .toolbar-group {
+        flex-direction: row;
+
+        border-bottom: none;
+        border-right: 1px solid #e5e5e5;
+
+        padding: 0 6px;
+    }
+
+    .toolbar-group:last-child {
+        border-right: none;
+    }
+
+    .toolbar button {
+        width: auto;
+        min-width: 90px;
+    }
+}
+/* En pantallas chicas, que no tape contenido: la volvemos horizontal abajo */
+@media (max-width: 900px) {
+  .toolbar {
+    top: auto;
+    bottom: 12px;
+    right: 50%;
+    transform: translateX(50%);
+    flex-direction: row;
+  }
+  .toolbar-group {
+    flex-direction: row;
+    border-bottom: none;
+    border-right: 1px solid #555;
+    padding: 0 6px;
+  }
+  .toolbar-group:last-child {
+    border-right: none;
+  }
+}
+
+  /* ===================== HOJA A4 (Responsive en Pantalla) ===================== */
+/* ========================================================= */
+/*   REGLAS EXCLUSIVAS PARA IMPRESIÓN Y VISTA PREVIA (PDF)   */
+/* ========================================================= */
+@media print {
+  /* 1. Configurar tamaño de hoja A4 y quitar márgenes del navegador */
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
+  /* 2. Ocultar la barra de navegación y elementos sobrantes */
+  header, nav, .navbar, .sidebar, .topbar, .no-print, button {
+    display: none !important;
+  }
+
+  /* 3. Hacer que el contenedor contenedor de la hoja escale al alto total */
+  #hoja, .hoja-container, .orden-pago-container { 
+    width: 100% !important;
+    min-height: 100vh !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 10mm !important; /* Margen interno de seguridad para impresión */
+    box-sizing: border-box !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  /* 4. Forzar a que las tablas/secciones internas ocupen el espacio vertical disponible */
+  table {
+    width: 100% !important;
+  }
+}
+  
+  .marco {
+    border: 1.5px solid #000;
+    padding: 15px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* ===================== ENCABEZADO ===================== */
+  .encabezado {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  
+  .enc-logo {
+    flex: 0 0 70px;
+  }
+  
+  .logo-img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    filter: grayscale(100%);
+    opacity: 0.85;
+  }
+  
+  .enc-titulo {
+    flex: 1;
+    text-align: center;
+    padding-top: 6px;
+  }
+  
+  .titulo-texto {
+    font-size: 14px;
+    font-weight: normal;
+    margin-right: 8px;
+  }
+  
+  .enc-espaciador {
+    flex: 0 0 70px;
+  }
+  
+  .organismo-linea {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+    margin-top: -4px;
+  }
+  
+  .organismo-nombre {
+    font-weight: bold;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+  
+  .organismo-provincia {
+    font-size: 12px;
+    margin-left: 12px;
+  }
+  
+  .input-linea-inline {
+    outline: none;
+    border-bottom: 1px dotted transparent;
+    min-width: 260px;
+    display: inline-block;
+  }
+  
+  .input-linea-inline:empty::before {
+    content: attr(data-placeholder);
+    color: #aaa;
+  }
+  
+  /* ===================== INPUTS GENERALES ===================== */
+  input[type="text"] {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #000;
+    border: none;
+    border-bottom: 1px solid #000;
+    background: transparent;
+    outline: none;
+    padding: 1px 3px;
+    font-size: 11px;
+  }
+  
+  .input-linea {
+    width: 100%;
+  }
+  
+  .input-linea.full {
+    width: 100%;
+  }
+  
+  .input-linea.chico {
+    width: 140px;
+    font-size: 10px;
+  }
+  
+  .input-caja {
+    border: 1px solid #000 !important;
+    padding: 2px 4px;
+    font-size: 11px;
+  }
+  
+  .input-caja.numero-orden {
+    width: 130px;
+    text-align: center;
+    font-weight: bold;
+  }
+  
+  .input-caja.importe-op {
+    width: 160px;
+    text-align: right;
+    font-weight: bold;
+  }
+  
+  .input-caja.fecha {
+    width: 100px;
+    text-align: center;
+  }
+  
+  .input-caja.mini {
+    width: 28px;
+    text-align: center;
+    margin: 0 3px;
+  }
+  
+  .input-caja.mini-codigo {
+    width: 45px;
+    text-align: center;
+  }
+  
+  .input-plano {
+    border: none;
+    width: 100%;
+    font-size: 10px;
+    background: transparent;
+  }
+  
+  .etiqueta-inline {
+    font-weight: bold;
+    font-size: 11px;
+    white-space: nowrap;
+    margin-right: 4px;
+  }
+  
+  /* ===================== DATOS ADMINISTRATIVOS ===================== */
+  .datos-admin {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+  }
+  
+  .datos-admin-izq {
+    flex: 1;
+  }
+  
+  .dato-fila {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  
+  .dato-fila .etiqueta-inline {
+    width: 110px;
+    flex-shrink: 0;
+  }
+  
+  .codigo-chico-box {
+    margin-top: 4px;
+  }
+  
+  .datos-admin-der {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 30px;
+    white-space: nowrap;
+  }
+  
+  /* ===================== TEXTO CENTRAL ===================== */
+  .bloque-texto-central {
+    border-top: 1px solid #000;
+    padding-top: 6px;
+    margin-bottom: 8px;
+    font-size: 11px;
+  }
+  
+  .texto-senor {
+    font-weight: bold;
+    margin: 0 0 4px 0;
+    text-decoration: underline;
+  }
+  
+  .texto-parrafo,
+  .texto-parrafo-corto {
+    margin: 0 0 4px 0;
+    text-align: justify;
+    outline: none;
+    min-height: 14px;
+    line-height: 1.35;
+  }
+  
+  .texto-parrafo:empty::before,
+  .texto-parrafo-corto:empty::before {
+    content: attr(data-placeholder);
+    color: #aaa;
+  }
+  
+  /* ===================== TABLA PRINCIPAL ===================== */
+  .tabla-principal {
+    width: 100%;
+    border-collapse: collapse;
+    flex: 1;
+    table-layout: fixed;
+  }
+  
+  .tabla-principal th,
+  .tabla-principal td {
+    border: 1px solid #000;
+    font-size: 10px;
+    padding: 3px 3px;
+    vertical-align: top;
+  }
+  
+  .tabla-principal thead th {
+  text-align: center;
+  font-weight: bold;
+  background: transparent;
+  vertical-align: middle;
+  padding: 4px 2px;
+  overflow: visible !important;
+  white-space: normal !important;
+  min-height: 24px;
+}
+  
+  /* Lado izquierdo intacto */
+.col-codigo       { width: 6%; }
+.col-nomina       { width: 24%; }
+.col-parcial      { width: 8%; }
+.col-total        { width: 8%; }
+/* Quita los rellenos invisibles para que el primer renglón arranque arriba de todo */
+.col-codigo,
+.col-nomina,
+.col-parcial,
+.col-imputacion-body {
+  vertical-align: top !important;
+  padding: 0 !important;
+}
+/* Anchos del sector derecho ajustados */
+.col-prog, 
+.col-sp, 
+.col-pto, 
+.col-ao           { width: 3.5%; }
+.col-part         { width: 4%; }
+.col-desc         { width: 21%; }
+.col-importe-erog { width: 15%; }
+  /* Sector izquierdo - beneficiarios */
+  .beneficiarios-container,
+.parciales-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+  
+  .fila-beneficiario,
+.parciales-container input,
+.tabla-erogaciones tr,
+.tabla-erogaciones td,
+.tabla-erogaciones td input {
+  height: 26px !important;
+  line-height: 26px !important;
+  box-sizing: border-box !important;
+}
+
+.fila-beneficiario,
+.parciales-container input {
+  margin: 0 !important;
+  padding: 0 4px !important;
+  border: none !important;
+  border-bottom: 1px dotted #ccc !important;
+}
+/* Permite escribir nombres más largos sin romper el renglón */
+.fila-beneficiario input {
+  width: 100% !important;
+  font-size: 9px !important;        /* Achica levemente la letra para dar más lugar */
+  letter-spacing: -0.2px !important;/* Junta sutilmente los caracteres */
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+  
+  .observaciones-box {
+    margin-top: 4px;
+    border-top: 1px dashed #999;
+    padding-top: 4px;
+  }
+  
+  .textarea-observaciones {
+    width: 100%;
+    min-height: 210px;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px;
+    color: #000;
+    line-height: 1.5;
+  }
+  
+  .parciales-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  
+  .parciales-container input {
+    width: 100%;
+    text-align: right;
+    font-size: 10px;
+    border-bottom: 1px dotted #ccc;
+    margin-bottom: 1px;
+  }
+  
+  .total-beneficiario-valor input {
+    text-align: right;
+    font-weight: bold;
+  }
+  
+  /* Sector derecho - imputación de erogaciones */
+  .col-imputacion-body {
+    padding: 0 !important;
+    vertical-align: top;
+  }
+  
+  .tabla-erogaciones {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  
+  .tabla-erogaciones td {
+    border: none;
+    border-bottom: 1px dotted #ccc;
+    border-right: 1px solid #000;
+    font-size: 10px;
+    padding: 2px 1px;
+  }
+  
+  .tabla-erogaciones td:last-child {
+    border-right: none;
+  }
+  
+  .tabla-erogaciones tr.fila-seleccionada {
+    background: #d6e9ff;
+  }
+  
+  .tabla-erogaciones input {
+  width: 100%;
+  box-sizing: border-box; /* OBLIGATORIO para incluir paddings dentro del ancho */
+  border: none;
+  font-size: 9.5px;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  outline: none;
+}
+  
+  
+
+.tabla-erogaciones .celda-prog    { width: 6.48%; text-align: center; } /* 3.5 / 54 */
+.tabla-erogaciones .celda-sp      { width: 6.48%; text-align: center; } /* 3.5 / 54 */
+.tabla-erogaciones .celda-pto     { width: 6.48%; text-align: center; } /* 3.5 / 54 */
+.tabla-erogaciones .celda-ao      { width: 6.48%; text-align: center; } /* 3.5 / 54 */
+.tabla-erogaciones .celda-part    { width: 7.41%; text-align: center; } /* 4.0 / 54 */
+.tabla-erogaciones .celda-desc    { width: 38.89%; text-align: left; }  /* 21.0 / 54 */
+.tabla-erogaciones .celda-importe { width: 27.78%; text-align: right; } /* 15.0 / 54 */
+  
+  /* Alineaciones explícitas de los inputs */
+.tabla-erogaciones .celda-prog input,
+.tabla-erogaciones .celda-sp input,
+.tabla-erogaciones .celda-pto input,
+.tabla-erogaciones .celda-ao input,
+.tabla-erogaciones .celda-part input {
+  text-align: center;
+}
+
+.tabla-erogaciones .celda-desc input {
+  text-align: left;
+}
+
+.tabla-erogaciones .celda-importe input {
+  text-align: right;
+}
+  
+  /* ===================== TOTALES (pie de tabla) ===================== */
+  .tabla-principal tfoot td {
+    font-weight: bold;
+    font-size: 11px;
+    padding: 4px 4px;
+  }
+  
+  .total-label,
+  .total-label-derecha {
+    text-align: right;
+  }
+  
+  .total-valor input,
+  .total-valor-derecha input {
+    width: 100%;
+    text-align: right;
+    font-weight: bold;
+    border: none;
+    font-size: 11px;
+  }
+  
+  
+  .tabla-concepto {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+  }
+  
+  .tabla-concepto td {
+    border: 1px solid #000;
+    padding: 4px 5px;
+    font-size: 11px;
+  }
+  
+  .concepto-codigo-label,
+  .concepto-titulo-label {
+    font-weight: bold;
+    text-align: center;
+    background: transparent;
+    width: 8%;
+  }
+  
+  .concepto-titulo-label {
+    width: auto;
+    text-align: left;
+  }
+  
+  .concepto-codigo-valor {
+    text-align: center;
+  }
+  
+  .son-pesos-label {
+    font-weight: bold;
+    white-space: nowrap;
+    width: 8%;
+  }
+  
+  
+  .fila-fecha-pie {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+  
+  .fecha-box-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  
+  
+  .pie-inferior {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #000;
+    padding-top: 6px;
+    margin-top: 10px;
+    font-size: 10px;
+  }
+  
+  .pie-centro {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  
+  
+  
+  
+  
+  .input-valido {
+    border-color: #2e7d32 !important;
+    background-color: #f1fbf1;
+  }
+  
+  .input-invalido {
+    border-color: #c62828 !important;
+    background-color: #fdf2f2;
+  }
+  
+  .error-msg {
+    color: #c62828;
+    font-size: 9px;
+    min-height: 10px;
+    margin-top: 1px;
+  }
+  .input-invalido {
+    border: 2px solid #dc3545 !important;
+    color: #dc3545 !important;
+    background-color: #fff5f5 !important;
+}
+  
+  @media print {
+    body {
+      background: #fff;
+      padding: 0;
+      margin: 0;
+    }
+  
+    .no-print,
+    .toolbar,
+    .btn-mini {
+      display: none !important;
+    }
+  
+    .hoja {
+    width: 100%;
+    max-width: 1200px;
+    min-height: calc(100vh - 180px);
+    margin: 0 auto 40px auto;
+    margin-right: 120px; /* deja lugar para la barra flotante */
+    background: var(--white);
+    box-shadow: var(--shadow-md);
+    padding: 24px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  
+    input[type="text"] {
+      border: none !important;
+      background: transparent !important;
+      color: #000 !important;
+    }
+  
+    .input-caja {
+      border: 1px solid #000 !important;
+    }
+  
+    .input-invalido,
+    .input-valido {
+      background: transparent !important;
+    }
+  
+    .error-msg {
+      display: none !important;
+    }
+  
+    .fila-seleccionada {
+      background: transparent !important;
+    }
+  
+    .textarea-observaciones {
+      min-height: 180px;
+    }
+  
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+  }
+  /* ========================================================= */
+/*   ALINEACIÓN CÓDIGO + NÓMINA + PARCIAL                   */
+/* ========================================================= */
+
+/* Los tres contenedores tienen exactamente la misma estructura */
+.codigos-container,
+.beneficiarios-container,
+.parciales-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+}
+
+
+/* ========================================================= */
+/*   CADA RENGLÓN TIENE EXACTAMENTE 26px DE ALTO             */
+/* ========================================================= */
+
+.fila-codigo,
+.fila-beneficiario,
+.parciales-container > input {
+    height: 26px !important;
+    min-height: 26px !important;
+    max-height: 26px !important;
+
+    box-sizing: border-box !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+
+/* ========================================================= */
+/*   CÓDIGO                                                   */
+/* ========================================================= */
+
+.fila-codigo {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.fila-codigo input {
+    width: 100% !important;
+    height: 26px !important;
+
+    box-sizing: border-box !important;
+
+    margin: 0 !important;
+    padding: 0 3px !important;
+
+    border: none !important;
+    border-bottom: 1px dotted #ccc !important;
+
+    background: transparent !important;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px !important;
+
+    text-align: center;
+    line-height: normal !important;
+    outline: none;
+}
+
+
+/* ========================================================= */
+/*   NÓMINA DE BENEFICIARIOS                                 */
+/* ========================================================= */
+
+.fila-beneficiario {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    box-sizing: border-box;
+
+    border-bottom: 1px dotted #ccc !important;
+}
+
+
+/* El input ocupa el espacio disponible,
+   dejando lugar para el botón X */
+.fila-beneficiario .input-nombre-beneficiario {
+    flex: 1 1 auto;
+
+    width: auto !important;
+    min-width: 0;
+
+    height: 26px !important;
+
+    box-sizing: border-box !important;
+
+    margin: 0 !important;
+    padding: 0 3px !important;
+
+    border: none !important;
+    background: transparent !important;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9px !important;
+
+    line-height: normal !important;
+
+    outline: none;
+}
+
+
+/* ========================================================= */
+/*   BOTÓN X                                                  */
+/* ========================================================= */
+
+.fila-beneficiario .btn-mini {
+    flex: 0 0 18px;
+
+    width: 18px !important;
+    min-width: 18px !important;
+    max-width: 18px !important;
+
+    height: 22px !important;
+    min-height: 22px !important;
+    max-height: 22px !important;
+
+    margin: 0 2px 0 0 !important;
+    padding: 0 !important;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    box-sizing: border-box !important;
+}
+
+
+/* ========================================================= */
+/*   PARCIAL                                                  */
+/* ========================================================= */
+
+.parciales-container > input {
+    width: 100% !important;
+
+    height: 26px !important;
+
+    box-sizing: border-box !important;
+
+    margin: 0 !important;
+    padding: 0 4px !important;
+
+    border: none !important;
+    border-bottom: 1px dotted #ccc !important;
+
+    background: transparent !important;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px !important;
+
+    text-align: right;
+
+    line-height: normal !important;
+    outline: none;
+}
+
+
+/* ========================================================= */
+/*   QUITAR ESPACIOS DE LA CELDA                             */
+/* ========================================================= */
+
+#celdaCodigoBeneficiario,
+#celdaNominaBeneficiario,
+#celdaParcial {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    vertical-align: top !important;
+}
+
+
+/* ========================================================= */
+/*   OBSERVACIONES                                            */
+/* ========================================================= */
+
+.observaciones-box {
+    margin-top: 4px;
+}

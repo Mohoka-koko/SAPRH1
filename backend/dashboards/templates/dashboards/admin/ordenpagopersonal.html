@@ -1,0 +1,242 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ordenpagopersonal.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="oppersonal-page">
+    <!-- ===== BARRA FLOTANTE LATERAL ===== -->
+    <div class="toolbar no-print">
+        <div class="toolbar-group">
+            <button id="btnAddBeneficiario" type="button">+ Beneficiario</button>
+            <button id="btnDelBeneficiario" type="button">− Beneficiario</button>
+        </div>
+        <div class="toolbar-group">
+            <button id="btnAddErogacion" type="button">+ Erogación</button>
+            <button id="btnDelErogacion" type="button">− Erogación</button>
+        </div>
+        <div class="toolbar-group">
+            <button id="btnImprimir" type="button">💾 Guardar</button>
+            <button id="btnExportarPDF" type="button">⭳ Exportar a PDF</button>
+        </div>
+    </div>
+
+    <!-- ============ HOJA A4 ============ -->
+    <div class="hoja" id="hoja">
+        <div class="marco">
+
+            <!-- ===== ENCABEZADO FIJO ===== -->
+            <div class="encabezado">
+                <div class="enc-logo">
+                    <img src="{% static 'img/logo1.png' %}" alt="Logo" class="logo-img">
+                </div>
+
+                <div class="enc-titulo">
+                    <span class="titulo-texto">Orden de Pago Nº</span>
+                    <input type="text" id="numeroOrden" class="input-caja numero-orden" placeholder="00-00-0000">
+                    <div class="error-msg" id="err-numeroOrden"></div>
+                </div>
+
+                <div class="enc-espaciador"></div>
+            </div>
+
+            <div class="organismo-linea">
+                <span class="organismo-nombre" id="organismoNombre">CONTADURÍA DE LA ADM. PCIAL. DE RECURSOS HÍDRICOS</span>
+                <span class="organismo-provincia" id="organismoProvincia">Santiago del Estero</span>
+            </div>
+
+            <!-- ===== DATOS ADMINISTRATIVOS ===== -->
+            <div class="datos-admin">
+                <div class="datos-admin-izq">
+                    <div class="dato-fila">
+                        <span class="etiqueta-inline">EXPEDIENTE Nº</span>
+                        <input type="text" id="expediente" class="input-linea full" placeholder="EX-AAAA-XXXXXXX">
+                    </div>
+                   <div class="dato-fila">
+    <span class="etiqueta-inline">JURISDICCIÓN:</span>
+    <input
+        type="text"
+        id="jurisdiccion"
+        class="input-linea full"
+        value="51"
+        readonly
+    >
+</div>
+                    <div class="dato-fila">
+                        <span class="etiqueta-inline">U.PRESUP.Nº</span>
+                        <input type="text" id="uPresupuestaria" class="input-linea full" placeholder="00-00-00-00">
+                    </div>
+                    <div class="codigo-chico-box">
+    <input
+        type="text"
+        id="codigoChico"
+        class="input-caja mini-codigo"
+        value="100"
+        readonly
+    >
+</div>
+                </div>
+
+                <div class="datos-admin-der">
+                    <span class="etiqueta-inline">Importe O.P $</span>
+<input type="text" id="importeOP" class="input-caja importe-op" placeholder="0,00">
+                    <div class="error-msg" id="err-importeOP"></div>
+                </div>
+            </div>
+
+            <!-- ===== TEXTO CENTRAL FIJO (OFICIAL) ===== -->
+            <div class="bloque-texto-central">
+                <p class="texto-oficial">
+                    <strong class="label-tesorero">SEÑOR TESORERO GRAL.:</strong>
+                    Cumplido los requisitos legales y reglamentarios sobre "Ejecución del Presupuesto", Páguese a los acreedores y/o funcionarios que ha continuación se detallan, los importes que en cada caso se indican. Los funcionarios nominados a continuación que reciban fondos de Tesorería Gral. para la gestión de Pago Deberán Rendir cuenta de la utilización de los mismos en tiempo y forma que dispongan las normas vigentes sobre el particular.
+                </p>
+            </div>
+
+            <!-- ===== TABLA PRINCIPAL ===== -->
+            <table class="tabla-principal">
+                <colgroup>
+                    <!-- Sector Izquierdo -->
+                    <col style="width: 6%">   <!-- CÓDIGO -->
+                    <col style="width: 24%">  <!-- NÓMINA -->
+                    <col style="width: 8%">   <!-- PARCIAL -->
+                    <col style="width: 8%">   <!-- TOTAL -->
+                    
+                    <!-- Sector Derecho -->
+                    <col style="width: 3.5%"> <!-- PROG -->
+                    <col style="width: 3.5%"> <!-- SP -->
+                    <col style="width: 3.5%"> <!-- PTO -->
+                    <col style="width: 3.5%"> <!-- A/O -->
+                    <col style="width: 4%">   <!-- PART -->
+                    <col style="width: 21%">  <!-- DESCRIPCIÓN -->
+                    <col style="width: 15%">  <!-- IMPORTE -->
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th rowspan="2" class="col-codigo">CÓDIGO</th>
+                        <th rowspan="2" class="col-nomina">NÓMINA DE BENEFICIARIOS</th>
+                        <th colspan="2" class="col-importe-header">IMPORTE</th>
+                        <th colspan="7" class="col-imputacion-header">IMPUTACIÓN DE LAS EROGACIONES</th>
+                    </tr>
+                    <tr>
+                        <th class="col-parcial">PARCIAL</th>
+                        <th class="col-total">TOTAL</th>
+                        <th class="col-prog">PROG</th>
+                        <th class="col-sp">SP</th>
+                        <th class="col-pto">PTO</th>
+                        <th class="col-ao">A/O</th>
+                        <th class="col-part">PART</th>
+                        <th class="col-desc">DESCRIPCIÓN</th>
+                        <th class="col-importe-erog">IMPORTE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <!-- Sector izquierdo: beneficiarios -->
+                       <td class="col-codigo" id="celdaCodigoBeneficiario">
+    <div id="codigosContainer" class="codigos-container">
+        <!-- Códigos de beneficiarios dinámicos -->
+    </div>
+</td>
+                        <td class="col-nomina" id="celdaNominaBeneficiario">
+                            <div id="beneficiariosContainer" class="beneficiarios-container">
+                                <!-- Filas de beneficiarios dinámicas -->
+                            </div>
+
+                            <div class="observaciones-box">
+                                <textarea id="observaciones" class="textarea-observaciones" placeholder="Observaciones / descripción complementaria del pago (texto libre)"></textarea>
+                            </div>
+                        </td>
+                        <td class="col-parcial" id="celdaParcial">
+                            <div id="parcialesContainer" class="parciales-container"></div>
+                        </td>
+                        <td class="col-total" id="celdaTotalBeneficiario">
+                            <div class="total-beneficiario-valor">
+                                <input type="text" id="totalBeneficiarioParcial" class="input-plano" placeholder="0,00" readonly>
+                            </div>
+                        </td>
+
+                        <!-- Sector derecho: imputación de erogaciones -->
+                        <td colspan="7" class="col-imputacion-body">
+                            <table class="tabla-erogaciones" id="tablaErogaciones">
+                                <tbody id="erogacionesBody">
+                                    <!-- Filas de erogaciones dinámicas -->
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2" class="total-label">TOTAL $</td>
+                        <td colspan="2" class="total-valor">
+                            <input type="text" id="totalBeneficiarios" class="input-plano total-input" placeholder="0,00" readonly>
+                        </td>
+                        <td colspan="6" class="total-label-derecha">TOTAL $</td>
+                        <td class="total-valor-derecha">
+                            <input type="text" id="totalErogaciones" class="input-plano total-input" placeholder="0,00" readonly>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <!-- ===== CONCEPTO ===== -->
+            <table class="tabla-concepto">
+                <tr>
+                    <td class="concepto-codigo-label">CÓDIGO</td>
+                    <td class="concepto-titulo-label">CONCEPTO</td>
+                </tr>
+                <tr>
+                    <td class="concepto-codigo-valor">
+                        <input type="text" id="codigoConcepto" class="input-plano" placeholder="0">
+                    </td>
+                    <td class="concepto-valor">
+                        <input type="text" id="conceptoTexto" class="input-linea full" placeholder="VIÁTICOS / SUELDOS / OTROS CONCEPTOS">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="son-pesos-label">SON PESOS:</td>
+                    <td class="son-pesos-valor">
+                        <input type="text" id="importeLetras" class="input-linea full" placeholder="(importe total expresado en letras)">
+                    </td>
+                </tr>
+            </table>
+
+            <!-- ===== FECHA Y PIE ===== -->
+            <div class="fila-fecha-pie">
+                <div class="pie-cr">
+                    <input type="text" id="codigoCR" class="input-linea chico" placeholder="CR">
+                </div>
+                <div class="fecha-box-container">
+<input
+    type="text"
+    id="fechaOrden"
+    class="input-caja fecha"
+    placeholder="dd/mm/aaaa"
+    maxlength="10"
+    inputmode="numeric"
+    autocomplete="off"
+>                    <div class="error-msg" id="err-fechaOrden"></div>
+                </div>
+            </div>
+
+            <!-- ===== PIE INFERIOR ===== -->
+            <div class="pie-inferior">
+                <div class="pie-izq">
+                    <input type="text" id="codigoNG" class="input-linea chico" placeholder="Código">
+                </div>
+                <div class="pie-der">
+                    <input type="text" id="codigoDocumental" class="input-linea chico" placeholder="DOCFI-AAAA-XXXXXXX">
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="{% static 'js/ordenpagopersonal.js' %}"></script>
+{% endblock %}

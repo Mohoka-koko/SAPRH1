@@ -1,0 +1,114 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/refuerzomodificacion.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="pagina">
+  <div>
+    <!-- TÍTULO PRINCIPAL -->
+    <div class="titulo-principal">MODIFICACION O REFUERZO</div>
+
+    <!-- BARRA DE FILTRADO -->
+    <div class="barra-filtrado">
+      <span class="filtrado-label">Filtrado:</span>
+      <span class="campo-label">Campo:</span>
+
+      <div class="select-wrapper">
+        <select id="campo-filtro" class="select-campo">
+          <option value="fecha">Fecha</option>
+          <option value="unidad">N° Unidad Presupuestaria</option>
+          <option value="expediente">N° Expediente</option>
+          <option value="usuario">Usuario</option>
+          <option value="asiento">N° Asiento</option>
+          <option value="decreto">Decreto/Resolución</option>
+          <option value="importe">Importe</option>
+        </select>
+      </div>
+
+      <button class="btn-buscar" id="btn-buscar" title="Buscar">&#128269;</button>
+      <input type="text" id="input-busqueda" class="input-busqueda" placeholder="Buscar..." />
+    </div>
+
+    <!-- TABLA -->
+    <div class="tabla-wrapper">
+      <table class="tabla-registros" id="tabla-registros">
+        <thead id="thead-tabla">
+          <!-- Las cabeceras se generan dinámicamente -->
+        </thead>
+        <tbody id="tbody-tabla">
+          <!-- Las filas se generan dinámicamente -->
+        </tbody>
+      </table>
+
+      <!-- Mensaje sin resultados -->
+      <div class="sin-resultados" id="sin-resultados" style="display:none;">
+        No se encontraron registros que coincidan con la búsqueda.
+      </div>
+    </div>
+
+    <!-- BOTÓN AGREGAR -->
+    <button class="btn-agregar" id="btn-agregar" title="Agregar registro">+</button>
+
+  </div>
+
+  <!-- MODAL AGREGAR / EDITAR -->
+  <form class="modal-overlay" id="modal-overlay" style="display:none;">
+    <div class="modal">
+      <div class="modal-titulo" id="modal-titulo">Nuevo Registro</div>
+      <div class="modal-body">
+        <div class="modal-campo">
+          <label>Seleciona una opcion Modificación o Refuerzo</label>
+          <select name="modoref" id="modoref">
+              <option value="modificacion">Modificación</option>
+              <option value="refuerzo">Refuerzo</option>
+          </select>
+        </div>
+        <div class="modal-campo">
+          <label>Fecha</label>
+          <input type="date" id="m-fecha" />
+        </div>
+        <div class="modal-campo">
+          <label>N° Unidad Presupuestaria Transferente</label>
+          <input type="text" id="m-unidad-transferente" placeholder="Ej: 120" />
+        </div>
+        <div class="modal-campo">
+          <label>N° Unidad Presupuestaria Receptora</label>
+          <div id="contenedor-receptoras">
+            <input type="text" class="m-unidad-receptora" placeholder="Ej: 122" />
+          </div>
+          <button type="button" id="btn-agregar-receptora" class="btn-agregar-campo">+</button>
+        </div>
+        <div class="modal-campo">
+          <label>N° Expediente</label>
+          <input type="text" id="m-expediente" placeholder="Ej: 1214" />
+        </div>
+        <div class="modal-campo">
+          <label>Usuario</label>
+          <input type="text" id="m-usuario" placeholder="Ej: contadora 1" />
+        </div>
+        <div class="modal-campo">
+          <label>Decreto / Resolución</label>
+          <input type="text" id="m-decreto" placeholder="Ej: xxxxxx" />
+        </div>
+        <div class="modal-campo">
+          <label>Importe</label>
+          <input type="text" id="m-importe" placeholder="Ej: 1.000.000,00" />
+        </div>
+      </div>
+      <div class="modal-acciones">
+        <button class="btn-cancelar" id="btn-cancelar">Cancelar</button>
+        <button class="btn-guardar" id="btn-guardar">Guardar</button>
+      </div>
+    </div>
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/refuerzomodificacion.js' %}"></script>
+{% endblock %}

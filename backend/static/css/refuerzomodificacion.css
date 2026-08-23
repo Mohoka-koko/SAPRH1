@@ -1,0 +1,508 @@
+/* ===== CONTENEDOR PRINCIPAL ===== */
+.pagina {
+  width: 100%;
+  max-width: 1200px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+  padding: 2rem;
+  margin: 0 auto;
+}
+
+.header-pagina {
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #000000;
+  padding-bottom: 0.75rem;
+}
+
+.titulo-principal {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* ===== BARRA DE FILTRADO ===== */
+.barra-filtrado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 1.5rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: 8px;
+  flex-wrap: wrap;
+  background: #f8fafc; /* Gris muy claro, no naranja */
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.filtro-grupo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filtrado-label {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.campo-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.select-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.select-wrapper::after {
+  content: "▼";
+  font-size: 0.65rem;
+  color: #3a4a5c;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.select-wrapper select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 28px;
+}
+
+.select-campo {
+  height: 40px;
+  min-width: 190px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 0.85rem;
+  font-size: 0.875rem;
+  background: #ffffff;
+  color: #374151;
+  outline: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* Grupo del Input Búsqueda */
+.busqueda-grupo {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 400px;
+  position: relative;
+}
+
+.input-busqueda {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 2.75rem 0 0.85rem;
+  font-size: 0.875rem;
+  color: #1f2937;
+  outline: none;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.btn-buscar {
+  position: absolute;
+  right: 4px;
+  height: 32px;
+  width: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.btn-buscar:hover {
+  background: #f3f4f6;
+  color: #4338ca;
+}
+
+.select-campo:focus,
+.input-busqueda:focus {
+  border-color: #4338ca;
+  box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
+}
+
+/* ===== TABLA DE REGISTROS ===== */
+.tabla-wrapper {
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.tabla-registros {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+}
+
+/* Cabecera principal única con tu color naranja */
+.tabla-registros th {
+  background: #cde4ff; /* Tu color naranja claro */
+  color: #062f81; /* Texto en contraste */
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.85rem 1rem;
+  border-bottom: 2px solid #cbd5e1; /* Línea para separar fuertemente la cabecera de los datos */
+}
+
+/* Filas de datos */
+.tabla-registros td {
+  padding: 1rem;
+  border-bottom: 1px solid #0049a3; /* Línea separadora estándar entre registros */
+  font-size: 0.875rem;
+  color: #374151;
+  vertical-align: middle;
+}
+
+.tabla-registros tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla-registros tbody tr:hover {
+  background-color: #c2c2c2;
+}
+
+/* ===== ESTADO SIN RESULTADOS ===== */
+.sin-resultados {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.pag-btn {
+  padding: 6px 16px;
+  border: 1px solid #c8cdd6;
+  border-radius: 4px;
+  background: #fff;
+  color: #3a4a5c;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.pag-btn:hover:not(:disabled) {
+  background: #185adb;
+  color: #fff;
+  border-color: #185adb;
+}
+
+.pag-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pag-info {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3a4a5c;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* ===== BOTÓN AGREGAR (FAB) ===== */
+.btn-agregar-wrapper {
+  text-decoration: none;
+}
+
+.btn-agregar {
+  position: fixed;
+  bottom: 2.5rem;
+  right: 2.5rem;
+  width: 56px;
+  height: 56px;
+  background-color: #4338ca;
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(67, 56, 202, 0.4), 0 4px 6px -2px rgba(67, 56, 202, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.btn-agregar:hover {
+  background-color: #3730a3;
+  transform: translateY(-2px) scale(1.03);
+}
+
+/* ===== MODAL & OVERLAY ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(17, 24, 39, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1.5rem;
+}
+
+.modal {
+  background: #ffffff;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.modal-titulo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.modal-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.modal-campo label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Campos de entrada en modal */
+.linea-input {
+  height: 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 0.85rem;
+  font-size: 0.9rem;
+  color: #111827;
+  outline: none;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.linea-input:focus {
+  border-color: #4338ca;
+  box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
+}
+
+.input-readonly {
+  background: #f3f4f6;
+  color: #6b7280;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+}
+
+/* Contenedores Dinámicos (Filas generadas) */
+.contenedor-dinamico {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.btn-agregar-campo {
+  align-self: flex-start;
+  padding: 0.4rem 0.85rem;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  color: #4338ca;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.25rem;
+}
+
+.btn-agregar-campo:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+}
+
+.total-asignado-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background: #f9fafb;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.total-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.total-monto {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #059669;
+}
+
+.error-mensaje {
+  font-size: 0.8rem;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+/* Carga de Archivo Personalizada */
+.file-upload-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.btn-file-upload {
+  padding: 0.5rem 0.85rem;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-file-upload:hover {
+  background: #f9fafb;
+  border-color: #4338ca;
+  color: #4338ca;
+}
+
+.archivo-nombre {
+  font-size: 0.85rem;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Acciones del Modal (Footer) */
+.modal-acciones {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background: #f9fafb;
+}
+
+.btn-cancelar,
+.btn-guardar {
+  padding: 0.55rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancelar {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+
+.btn-cancelar:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.btn-guardar {
+  background: #4338ca;
+  border: 1px solid #4338ca;
+  color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-guardar:hover {
+  background: #3730a3;
+  border-color: #3730a3;
+}
+
+/* ===== BOTÓN ELIMINAR FILA (X) ===== */
+.btn-eliminar-fila {
+  background-color: transparent; /* Fondo transparente por defecto */
+  border: none; /* Quitamos el borde por defecto del navegador */
+  color: #9ca3af; /* Un gris sutil para que no llame demasiado la atención de entrada */
+  font-size: 1.1rem; /* Un poco más grande para que sea fácil de hacer clic */
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px; /* Bordes redondeados para el hover */
+  transition: all 0.2s ease-in-out; /* Animación suave */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Efecto al pasar el mouse por encima (Hover) */
+.btn-eliminar-fila:hover {
+  color: #ef4444; /* La 'x' se vuelve roja */
+  background-color: #fee2e2; /* Fondo rojo muy clarito para destacar */
+}
+
+/* Quitar el recuadro azul molesto al hacer clic */
+.btn-eliminar-fila:focus {
+  outline: none;
+}

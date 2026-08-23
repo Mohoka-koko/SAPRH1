@@ -1,0 +1,103 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+  <main class="dashboard">
+
+    <div class="dashboard-header">
+      <h1 class="dashboard-title">DASHBOARD PRESUPUESTARIO GENERAL</h1>
+      <div class="current-date">Fecha actual: {% now "d/m/Y" %}</div>
+    </div>
+
+    <!-- ===== TARJETAS SUPERIORES ===== -->
+    <section class="top-cards">
+
+      <div class="card card-budget">
+        <h2 class="card-label">PRESUPUESTO OFICIAL INICIAL 2026</h2>
+        <p class="card-value" id="presupuestoInicialValue">$0,00</p>
+        <p class="card-sub">Aprobado: 01/01/2024</p>
+        <div class="mini-chart" id="chartInicial" aria-label="Gráfico de barras del presupuesto inicial"></div>
+      </div>
+
+      <div class="card card-budget">
+        <h2 class="card-label">PRESUPUESTO OFICIAL MODIFICADO ACTUAL</h2>
+        <p class="card-value" id="presupuestoModificadoValue">$0,00</p>
+        <p class="card-sub">
+          Actualizado: <span id="fechaUltimaModificacionValue">--/--/----</span> | Aumento:
+          <span class="increase" id="aumentoPctValue">0%</span>
+        </p>
+        <div class="mini-chart" id="chartModificado" aria-label="Gráfico de línea del presupuesto modificado"></div>
+      </div>
+
+    </section>
+
+    <!-- ===== PROGRAMAS DE GESTIÓN ===== -->
+    <div class="section-title-wrapper">
+      <h2 class="section-title">DETALLE POR PROGRAMAS DE GESTIÓN</h2>
+      <button id="toggleProgramsBtn" class="toggle-programs-btn" aria-label="Mostrar/Ocultar programas">
+        <i class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+
+    <section class="programs-grid" id="programsGrid">
+      <!-- generado por JS a partir de programsData -->
+    </section>
+
+    <!-- ===== DETALLE DE MOVIMIENTOS ===== -->
+    <h2 class="section-title">DETALLE DE MOVIMIENTOS</h2>
+
+    <section class="units-panel">
+
+      <div class="units-toolbar">
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="Buscar por denominación o partida...">
+
+        <div class="filter-group">
+          <label for="filterPrograma">Filtrar por Programa:</label>
+          <select id="filterPrograma" class="filter-select">
+            <option value="todos">Todos</option>
+          </select>
+
+          <button id="applyFilters" class="btn-apply">Aplicar</button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="units-table" id="unitsTable">
+          <thead>
+            <tr>
+              <th data-key="jurisdiccion">Jurisdicción</th>
+              <th data-key="programa">Programa</th>
+              <th data-key="subprograma">Subprograma</th>
+              <th data-key="proyecto">Proyecto</th>
+              <th data-key="ao">A/O</th>
+              <th data-key="partida">Partida</th>
+              <th data-key="ff">F.F.</th>
+              <th data-key="denominacion">Denominación</th>
+              <th data-key="saldoInicial">Saldo Inicial</th>
+              <th data-key="saldoModificado">Saldo Modificado</th>
+              <th class="th-expand" aria-hidden="true"></th>
+            </tr>
+          </thead>
+          <tbody id="unitsTableBody">
+            <!-- generado por JS -->
+          </tbody>
+        </table>
+        <p class="no-results" id="noResults" hidden>No se encontraron movimientos para los filtros aplicados.</p>
+      </div>
+
+    </section>
+
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/home.js' %}"></script>
+{% endblock %}

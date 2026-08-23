@@ -1,0 +1,873 @@
+/*imputación*/
+
+.imputacion-page{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 1rem;
+  font-size: 1.1rem;
+  font-family: inherit;
+}
+
+.botones-accion {
+  /* Fixed action bar at bottom, horizontal */
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 95;
+  display: flex;
+  justify-content: center; /* center the buttons horizontally */
+  gap: 12px;
+  padding: 0.9rem 1rem;
+  background: transparent; /* keep page look; change if you want a bar */
+}
+
+.btn-accion {
+  padding: 0.6rem 1.1rem;
+  background: transparent;
+  color: #ffffff;
+  border: none;
+  border-radius: 5%; /* ligeramente redondeado, casi cuadrado */
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease;
+  box-shadow: 0 6px 14px rgba(16,24,40,0.06);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.btn-accion i { display: inline-block; }
+
+.btn-accion:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(16,24,40,0.12);
+  opacity: 0.98;
+}
+
+/* Botones individuales */
+#exportar-pdf-btn {
+  background: #3b82f6; /* azul claro */
+  color: #ffffff;
+  border: 1px solid rgba(59,130,246,0.12);
+}
+
+#exportar-pdf-btn i { color: #ffffff; }
+
+#exportar-pdf-btn:hover { background: #2563eb; box-shadow: 0 10px 22px rgba(37,99,235,0.18); }
+
+#guardar-imputacion-btn {
+  background: #1e3a8a; /* azul oscuro */
+  color: #ffffff;
+  border: 1px solid rgba(30,58,138,0.12);
+}
+
+#guardar-imputacion-btn i { color: #ffffff; }
+
+#guardar-imputacion-btn:hover { background: #172a66; box-shadow: 0 10px 22px rgba(23,42,102,0.18); }
+
+/* Orden de pago: botón blanco con texto oscuro */
+.btn-accion.btn-link {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #e5e7eb;
+}
+
+.btn-accion.btn-link i { color: #1e293b; }
+
+.btn-accion.btn-link:hover { background: #f8fafc; box-shadow: 0 8px 18px rgba(16,24,40,0.06); }
+
+@media (max-width: 760px) {
+  .botones-accion {
+    gap: 8px;
+    padding: 0.6rem 0.6rem;
+  }
+
+  .botones-accion .btn-accion {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Avoid content being hidden behind fixed action bar */
+.imputacion-page {
+  padding-bottom: 5rem; /* space for the fixed buttons */
+}
+
+@media print {
+  .botones-accion { display: none !important; }
+}
+
+.btn-link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media print {
+  .header,
+  .botones-accion {
+      display: none !important;
+  }
+
+  body {
+      background: #ffffff;
+  }
+
+  .main-content {
+      padding: 0;
+  }
+
+  .form-wrap {
+      box-shadow: none;
+      margin: 0;
+  }
+}
+
+.form-wrap {
+  background: #f7f476;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 2rem 2rem 1.25rem;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  border: none;
+}
+
+/* --- Encabezado --- */
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 1.25rem;
+}
+
+.logo-box {
+  width: 60px;
+  height: 60px;
+  background: #f7f476;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logo-box img {
+  max-width: 150%;
+  max-height: 150%;
+  object-fit: contain;
+}
+
+.header-text {
+  flex: 1;
+  text-align: left;
+  padding-left: 20px;
+}
+
+.header-org {
+  font-size: 1.50rem;
+  font-weight: 800;
+  color: #374151;
+}
+
+.header-sub {
+  font-size: 1.30rem;
+  color: #61656d;
+  padding-left: 30px;
+}
+
+.nro-expediente {
+  text-align: right;
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+  color: #374151;
+}
+
+.expediente-input-group {
+  display: inline-flex;
+  align-items: center;
+  border: 1.5px solid #000000;
+  border-radius: 6px;
+  overflow: hidden;
+  height: 42px;
+  background-color: #f7f476 !important;
+}
+
+.expediente-input-group input {
+  border: none;
+  outline: none;
+  padding: 0 0.8rem;
+  height: 100%;
+  text-align: right;
+  background-color: #f7f476 !important;
+  font-size: 1.1rem;
+}
+
+.expediente-fijo {
+  background-color: #f7f476 !important;
+  padding: 0 0.8rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  white-space: nowrap;
+  border-left: 1px solid #000000;
+  font-size: 1.05rem;
+}
+
+.expediente-input-group input {
+  border: none;
+  outline: none;
+  padding: 0 0.6rem;
+  height: 100%;
+  text-align: right;
+  background-color: #f7f476 !important;
+}
+
+.expediente-fijo {
+  background-color: #f7f476 !important;
+  padding: 0 0.6rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  white-space: nowrap;
+  border-left: 1px solid #000000;
+}
+
+
+.titulo-part {
+  font-size: 1.5rem;
+  text-align: left;
+  margin: 1.25rem 0;
+  color: #374151;
+  font-weight: 700;
+}
+
+.seccion-titulo {
+  background: #f7f476;
+  border: 1.5px solid #374151;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.3rem;
+  padding: 0.95rem 1rem;
+  color: #374151;
+}
+
+.compromiso-texto {
+  width: calc(100% + 4rem);
+  margin: 0 -2rem 0;
+  padding: 1rem 2rem 0;
+  border-top: 2rem solid transparent;
+  box-sizing: border-box;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.compromiso-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  color: #374151;
+  font-size: 1.1rem;
+}
+
+.compromiso-line-fill {
+  flex: 1 1 100%;
+  min-height: 1.3rem;
+  border-bottom: 1px dashed #374151;
+}
+
+.compromiso-line-fill.short {
+  flex: 0 1 8rem;
+}
+
+.compromiso-line-fill.full {
+  flex: 1 1 100%;
+}
+
+.compromiso-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  font-weight: 700;
+  color: #374151;
+}
+
+.compromiso-footer #iniciales-usuario {
+  min-width: 2rem;
+}
+
+.compromiso-footer .pagina-fija {
+  white-space: nowrap;
+}
+
+/* --- Tabla principal --- */
+table#main-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1.1rem;
+  background: #f7f476;
+  table-layout: fixed;
+  margin-bottom: 1.5rem;
+}
+
+table#main-table td,
+table#main-table th {
+  padding: 0.85rem 1rem;
+  vertical-align: middle;
+}
+
+table#main-table thead tr {
+  background: #f7f476;
+  border: 1.5px solid #374151;
+}
+
+table#main-table tbody tr {
+  border: 1px solid #374151;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+table#main-table tbody tr:hover,
+table#main-table tbody tr:hover td,
+table#main-table tbody tr:hover td input,
+table#main-table tbody tr:hover td select {
+  background: #ffffff;
+}
+
+.col-header {
+  background: #f7f476;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #374151;
+  white-space: nowrap;
+}
+
+input,
+select {
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:hover:not(.fecha-input),
+select:hover {
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.fecha-input {
+  background-color: #ffffff;
+}
+
+.fecha-input:hover,
+.fecha-input:focus {
+  background-color: #ffffff;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #4338ca;
+  box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
+  background-color: #ffffff;
+}
+
+.cod-cell:hover,
+.proveedor-cell:hover,
+.importe-cell:hover,
+.select-wrapper:hover {
+  background: transparent;
+}
+
+.fecha-box:hover,
+.fecha-box:focus-within {
+  background: #ffffff;
+}
+
+.cod-cell:focus-within,
+.proveedor-cell:focus-within,
+.importe-cell:focus-within,
+.select-wrapper:focus-within {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 2px #4338ca;
+}
+
+/* --- Celdas e Inputs de codificación --- */
+.cod-cell {
+  position: relative;
+  text-align: center;
+  width: 34px;
+  min-width: 34px;
+  border: 1px solid #374151;
+}
+
+select.cod,
+input.cod {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: 1rem !important;
+  outline: none;
+  color: #374151;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 1rem;
+}
+
+select.cod.automatic,
+input.cod.automatic {
+  cursor: default;
+  color: #374151;
+}
+
+select.cod.automatic:disabled {
+  background: transparent;
+}
+
+select.cod::-ms-expand,
+select.id-user::-ms-expand {
+  display: none;
+}
+
+.cod-cell:not(.col-header):not(.automatic)::after {
+  content: "\f078";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #374151;
+  font-size: 0.85rem;
+}
+
+.select-wrapper {
+  position: relative;
+  background: #ffffff;
+  padding: 0.5rem 1rem;
+  font-size: 1.05rem;
+
+}
+
+.select-wrapper.static-display {
+  background: transparent;
+  padding: 0.5rem 0;
+}
+
+.select-wrapper.static-display::after {
+  display: none;
+}
+
+select.id-user {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 1rem;
+  outline: none;
+  color: #374151;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 1.75rem;
+}
+
+.user-display {
+  display: block;
+  width: 100%;
+  font-size: 1rem;
+  color: #374151;
+  font-family: inherit;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* --- Columna proveedor --- */
+.proveedor-header {
+  width: 400px;
+  min-width: 400px;
+  border: 1px solid #374151 !important;
+}
+
+.proveedor-cell {
+  padding: 0.85rem 1rem;
+}
+
+.proveedor-cell {
+  padding: 0.85rem 1rem;
+  border-right: 1px solid #374151;
+}
+
+.importe-header {
+  width: 360px;
+  min-width: 360px;
+  border-left: 1px solid #374151;
+}
+
+.importe-cell {
+  padding: 0.85rem 1rem;
+  border-left: 1px solid #374151;
+}
+
+input.proveedor-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 1.2rem !important;
+  outline: none;
+  color: #000000;
+  font-family: inherit;
+}
+
+
+
+.importe-cell {
+  padding: 1.5rem 2rem;
+}
+
+input.importe-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: right;
+  font-size: 1.2rem !important;
+  outline: none;
+  color: #000000;
+  font-family: inherit;
+}
+
+/* Quitar flechas del input number */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  appearance: textfield;
+}
+
+/* --- Pie de tabla (Asiento, Total, Fecha) --- */
+.foot-field {
+  border: none !important;
+  background: transparent;
+  padding: 0.85rem 1rem;
+  font-size: 1.05rem;
+  color: #374151;
+}
+
+.asiento-foot-cell {
+  text-align: left;
+  padding: 0.2rem 1rem 0.8rem;
+  border: none !important;
+  background: transparent;
+}
+
+.asiento-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  color: #374151;
+  font-size: 1.05rem;
+}
+
+.tabla-acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0.3rem 0 1rem;
+}
+
+.btn-add-row,
+.btn-remove-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1.5px solid #4338ca;
+  background: #ffffff;
+  color: #4338ca;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-add-row:hover,
+.btn-remove-row:hover {
+  background: #ede9fe;
+  transform: translateY(-1px);
+}
+
+.btn-remove-row {
+  border-color: #b91c1c;
+  color: #b91c1c;
+}
+
+.btn-remove-row:hover {
+  background: #fee2e2;
+}
+
+input.text-field {
+  height: 40px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 0 0.9rem;
+  font-size: 0.875rem;
+  color: #374151;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+  width: 160px;
+  margin-left: 0.5rem;
+}
+
+input.text-field:focus {
+  border-color: #4338ca;
+  box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
+}
+
+.label-total {
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none !important;
+  white-space: nowrap;
+  color: #6b7280;
+  text-align: right;
+}
+
+.total-box {
+  border: 1px solid #374151;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  color: #374151;
+}
+
+.fecha-box {
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb !important;
+  text-align: center;
+  padding: 0;
+}
+
+input.fecha-input {
+  border: none;
+  background: #ffffff;
+  font-size: 0.875rem;
+  outline: none;
+  color: #374151;
+  width: 100%;
+  height: 40px;
+  padding: 0 0.9rem;
+  font-family: inherit;
+}
+
+input.fecha-input:hover,
+input.fecha-input:focus {
+  background: #ffffff;
+}
+
+/* --- Sección Compromiso --- */
+.comp-line {
+  font-size: 0.95rem;
+  padding: 0.5rem 0;
+  line-height: 2;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+input.comp-input,
+input.comp-input-lg,
+input.comp-input-full {
+  height: 40px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 0 0.9rem;
+  font-size: 0.875rem;
+  color: #374151;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+  text-align: center;
+}
+
+input.comp-input:focus,
+input.comp-input-lg:focus,
+input.comp-input-full:focus {
+  border-color: #4338ca;
+  box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
+}
+
+input.comp-input {
+  width: 180px;
+}
+
+input.comp-input-lg {
+  width: 200px;
+}
+
+input.comp-input-full {
+  width: 100%;
+  text-align: left;
+}
+
+/* --- Pie del formulario --- */
+.footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.footer-xxx {
+  background: #fafafa;
+  border: 1.5px solid #e5e7eb;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+}
+
+/* Contenedor principal del Panel */
+.panel-saldos-widget {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 290px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  font-family: Arial, sans-serif;
+  z-index: 9999;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- ESTADO MINIMIZADO (Botón Cuadrado Redondeado) --- */
+.panel-saldos-widget.minimizado {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  border: 1.5px solid #0056b3; /* Borde azul fino */
+  overflow: hidden; /* Mantiene la imagen dentro de las esquinas redondeadas */
+  padding: 0;
+  background-color: transparent;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.panel-saldos-widget.minimizado:hover {
+  transform: scale(1.08);
+  border-color: #2563eb; /* Azul un poco más brillante al pasar el mouse */
+}
+
+/* Control de visibilidad entre estados */
+.panel-saldos-icono {
+  display: none;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.panel-saldos-widget.minimizado .panel-saldos-icono {
+  display: flex;
+}
+
+.panel-saldos-widget.minimizado .panel-saldos-contenido {
+  display: none;
+}
+
+/* --- ESTADO DESPLEGADO (Tabla de Saldos) --- */
+.panel-saldos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #e2e8f0;
+  padding: 6px 10px;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.panel-saldos-titulo {
+  font-size: 11px;
+  font-weight: bold;
+  color: #1e293b;
+  letter-spacing: 0.3px;
+}
+
+.panel-saldos-cerrar {
+  background: none;
+  border: none;
+  font-size: 18px;
+  font-weight: bold;
+  color: #475569;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.panel-saldos-cerrar:hover {
+  color: #ef4444;
+}
+
+.panel-saldos-body {
+  padding: 6px;
+}
+
+.tabla-saldos {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tabla-saldos th,
+.tabla-saldos td {
+  padding: 5px 8px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.tabla-saldos th {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  font-weight: bold;
+}
+
+.saldo-verde {
+  color: #16a34a;
+  font-weight: bold;
+}
+
+.icono-imagen-local {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Cubre todo el cuadro sin deformar la imagen */
+  display: block;
+}

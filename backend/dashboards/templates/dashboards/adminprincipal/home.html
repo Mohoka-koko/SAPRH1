@@ -1,0 +1,51 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="main-wrapper">
+  <h1>Presupuesto Oficial Modificado</h1>
+
+<!-- FILTRO -->
+<div class="filter-bar">
+  <span>Filtrado:</span>
+
+  <select id="filter-select">
+    <option value="up">UP</option>
+    <option value="jurisdiccion">Jurisdicción</option>
+    <option value="programa">Programa</option>
+  </select>
+
+  <input type="text" id="filter-input" placeholder="Buscar...">
+
+  <div class="filter-actions">
+    <button id="search-btn">Buscar</button>
+    <button id="back-btn">Volver</button>
+  </div>
+</div>
+
+<!-- TABLA -->
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>UP</th>
+        <th>Jurisdicción</th>
+        <th>Programa</th>
+        <th>Sub</th>
+        <th>Proyecto</th>
+        <th>A/O</th>
+        <th>Partida</th>
+        <th>Denominación</th>
+        <th>Saldo Inicial</th>
+        <th>Saldo Mod</th>
+        <th></th>
+      </tr>
+    </thead>
+
+    <tbody id="table-body"></tbody>
+  </table>
+</div>
+
+<script src="js/script.js"></script>
+{% endblock %}

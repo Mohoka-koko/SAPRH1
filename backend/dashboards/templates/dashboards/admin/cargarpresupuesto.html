@@ -1,0 +1,156 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cargarpresupuesto.css' %}">
+{% endblock %}
+
+
+{% block content %}
+
+<div class="contenedor">
+
+    <div class="encabezado">
+
+        <div>
+            <strong>Jurisdicción:</strong> 51
+            <br>
+            Administración Provincial de Recursos Hídricos
+        </div>
+
+        <div>
+
+            <input
+                type="text"
+                id="buscador"
+                placeholder="Buscar partida..."
+                onkeyup="buscarPartida()">
+
+            <button id="btnCrearPresupuesto" onclick="abrirModal()" disabled>
+                + Crear Presupuesto
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="control-presupuesto">
+
+        <label for="presupuestoGeneralInicial">
+            Ingresar Presupuesto General Inicial
+        </label>
+
+        <input
+            type="number"
+            id="presupuestoGeneralInicial"
+            min="1"
+            placeholder="Ej: 50000000"
+            oninput="validarPresupuestoGeneral()">
+
+        <span id="alertaDescuadre" class="alerta-descuadre" style="display:none;">
+            ⚠ El total cargado supera el presupuesto general disponible
+        </span>
+
+    </div>
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>PROG</th>
+                <th>SUBP</th>
+                <th>PY</th>
+                <th>A/O</th>
+                <th>PART.</th>
+                <th>DENOMINACIÓN</th>
+                <th>FUNC.</th>
+                <th>FUENTE</th>
+                <th>PRESUPUESTO INICIAL</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody id="tablaPartidas">
+
+        </tbody>
+
+        <tfoot>
+
+            <tr>
+
+                <td colspan="8">
+                    <strong>TOTAL GENERAL</strong>
+                </td>
+
+                <td id="totalGeneral"></td>
+
+            </tr>
+
+        </tfoot>
+
+    </table>
+
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+
+        <div class="modal-header">
+            <h2>Crear presupuesto</h2>
+            <span class="cerrar" onclick="cerrarModal()">&times;</span>
+        </div>
+
+        <div class="modal-body">
+
+            <label>Programa</label>
+            <select id="prog">
+                <option value="">Seleccionar programa...</option>
+            </select>
+        
+            <label>Subprograma</label>
+            <input type="text" id="subp" value="00" readonly>
+        
+            <label>Proyecto</label>
+            <select id="py" disabled>
+                <option value="">Seleccionar proyecto...</option>
+            </select>
+        
+            <label>Actividad / Obra</label>
+            <select id="ao" disabled>
+                <option value="">Seleccionar actividad...</option>
+            </select>
+        
+            <label>Partida</label>
+            <select id="partida">
+                <option value="">Seleccionar partida...</option>
+            </select>
+        
+            <label>Denominación</label>
+            <input type="text" id="nombre" readonly>
+        
+            <label>Fuente de Financiamiento</label>
+            <select id="fuente">
+                <option value="">Seleccionar fuente...</option>
+            </select>
+        
+            <label>Presupuesto Inicial</label>
+            <input type="number" id="presupuesto" min="1" placeholder="Ej: 1000000">
+        
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" onclick="cerrarModal()">Cancelar</button>
+            <button type="button" onclick="guardarPresupuesto()">Guardar presupuesto</button>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js%}
+<script src="{% static 'js/cargarpresupuesto.js'%}"></script>
+{% endblock %}

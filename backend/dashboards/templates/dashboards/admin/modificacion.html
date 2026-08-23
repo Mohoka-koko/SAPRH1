@@ -1,0 +1,71 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/refuerzomodificacion.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="pagina">
+    <div class="header-pagina">
+        <!-- TÍTULO PRINCIPAL -->
+        <h1 class="titulo-principal">Modificación</h1>
+    </div>
+
+    <!-- BARRA DE FILTRADO -->
+    <div class="barra-filtrado">
+        <div class="filtro-grupo">
+            <span class="filtrado-label">Filtrado:</span>
+            <span class="campo-label">Campo</span>
+            <div class="select-wrapper">
+                <select id="campo-filtro" class="select-campo">
+                    <option value="fecha">Fecha</option>
+                    <option value="transferente">N° Unidad Transferente</option>
+                    <option value="receptora">N° Unidad Receptora</option>
+                    <option value="expediente">N° Expediente</option>
+                    <option value="usuario">Usuario</option>
+                    <option value="decreto">Decreto/Resolución</option>
+                    <option value="importe">Importe</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="busqueda-grupo">
+            <span style="position:absolute; left:9px; top:50%; transform:translateY(-50%); font-size:0.9rem; color:#888; pointer-events:none;">&#128269;</span>
+            <input type="text" id="input-busqueda" class="input-busqueda" placeholder="Buscar..." style="padding-left:30px;" />
+           
+            <button class="btn-buscar" id="btn-buscar" title="Buscar">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="tabla-wrapper">
+        <table class="tabla-registros" id="tabla-registros">
+            <thead id="thead-tabla"></thead>
+            <tbody id="tbody-tabla"></tbody>
+        </table>
+
+        <div class="sin-resultados" id="sin-resultados" style="display:none;">
+            <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#9ca3af" style="margin-bottom: 8px;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p>No se encontraron registros que coincidan con la búsqueda.</p>
+        </div>
+    </div>
+    <div id="paginacion-modificaciones" style="display:flex; align-items:center; justify-content:center; gap:16px; padding:12px 0;"></div>
+
+    <!-- BOTÓN AGREGAR (FAB) -->
+    <a href="{% url 'modificacion_crear' %}" class="btn-agregar-wrapper">
+        <button class="btn-agregar" id="btn-agregar" title="Agregar registro">+</button>
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/modificacion.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/lista_imputaciones.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="lista-imp-page">
+
+    <div class="lista-imp-header">
+        <h2>Imputaciones Presupuestarias</h2>
+        <a href="{% url 'imputacion' %}" class="btn-volver">← Volver</a>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filtros-wrap">
+        <input type="text" id="filtro-ejercicio"    placeholder="Ejercicio"      class="filtro-input">
+        <input type="text" id="filtro-asiento"      placeholder="N° Asiento"     class="filtro-input">
+        <input type="text" id="filtro-expediente"   placeholder="N° Expediente"  class="filtro-input">
+        <input type="text" id="filtro-fecha"        placeholder="Fecha"          class="filtro-input">
+        <input type="text" id="filtro-usuario"      placeholder="Usuario"        class="filtro-input">
+        <select id="filtro-estado" class="filtro-input">
+            <option value="">Todos los estados</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Pagada parcial">Pagada parcial</option>
+            <option value="Pagada total">Pagada total</option>
+        </select>
+        <button id="btn-limpiar-filtros" class="btn-limpiar">Limpiar filtros</button>
+    </div>
+
+    <!-- TABLA -->
+    <div class="tabla-wrap">
+        <table id="tabla-imputaciones">
+            <thead>
+                <tr>
+                    <th>Ejercicio</th>
+                    <th>N° Asiento</th>
+                    <th>N° Expediente</th>
+                    <th>Fecha</th>
+                    <th>Usuario</th>
+                    <th>Importe Total</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="tbody-imputaciones">
+                {% for imp in imputaciones %}
+                <tr class="fila-imp"
+                    data-ejercicio="{{ imp.ejercicio }}"
+                    data-asiento="{{ imp.asiento_nro }}"
+                    data-expediente="{{ imp.nro_expediente }}"
+                    data-fecha="{{ imp.fecha }}"
+                    data-usuario="{{ imp.usuario }}"
+                    data-estado="{{ imp.estado }}"
+                    data-id="{{ imp.id }}">
+                    <td>{{ imp.ejercicio }}</td>
+                    <td>{{ imp.asiento_nro }}</td>
+                    <td>{{ imp.nro_expediente }}</td>
+                    <td>{{ imp.fecha }}</td>
+                    <td>{{ imp.usuario }}</td>
+                    <td class="col-importe">
+                        $ {{ imp.importe_total|floatformat:2 }}
+                    </td>
+                    <td>
+                        <span class="badge estado-{{ imp.estado|slugify }}">
+                            {{ imp.estado }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if imp.estado != 'Pagada total' %}
+                        <a href="{% url 'ordenpago' %}?imputacion_id={{ imp.id }}"
+                           class="btn-generar-op">
+                            Generar OP
+                        </a>
+                        {% else %}
+                        <span class="op-completa">✓ Completa</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="sin-datos">
+                        No hay imputaciones registradas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="sin-resultados" style="display:none;" class="sin-datos">
+        No se encontraron imputaciones con ese criterio.
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/lista_imputaciones.js' %}"></script>
+{% endblock %}

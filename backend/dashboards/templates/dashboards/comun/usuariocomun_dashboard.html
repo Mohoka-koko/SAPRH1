@@ -1,0 +1,13 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Usuario</title>
+</head>
+<body>
+    <h1>Bienvenido, {{ usuario.nombre }}</h1>
+    <p>Rol: {{ usuario.get_rol_display }}</p>
+    <a href="{% url 'logout' %}">Cerrar sesión</a>
+</body>
+</html>

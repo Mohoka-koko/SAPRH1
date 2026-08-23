@@ -1,0 +1,277 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="main-wrapper">
+
+  <!-- ===== CREAR USUARIO ===== -->
+  <div class="card">
+    <h2>Crear Usuario</h2>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="POST" action="{% url 'crear_usuario' %}">
+      {% csrf_token %}
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre de Usuario:</label>
+          <input type="text" id="nuevo-nombre" name="nombre" required>
+        </div>
+
+        <div class="form-group">
+          <label>Correo Electrónico:</label>
+          <input type="email" id="nuevo-email" name="email" required>
+        </div>
+
+        <div class="form-group">
+          <label>Contraseña:</label>
+          <input type="password" id="nuevo-password" name="password" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Rol:</label>
+          <select id="nuevo-rol" name="rol" required>
+            <option value="">Seleccionar</option>
+            <option value="adminprincipal">Administrador Principal</option>
+            <option value="admin">Administrador</option>
+            <option value="usuariovip">Usuario VIP</option>
+            <option value="usuariocomun">Usuario Común</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Área:</label>
+          <select name="area" required>
+            <option value="">Seleccionar</option>
+            <option value="construccion">Construcción</option>
+            <option value="planificacion">Planificación</option>
+            <option value="mantenimiento">Mantenimiento</option>
+            <option value="todas">Todas</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn">Crear usuario</button>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- ===== USUARIOS REGISTRADOS ===== -->
+  <div class="card">
+    <h2>Usuarios registrados</h2>
+
+    <table class="tabla" id="tabla-usuarios">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Correo</th>
+          <th>Rol</th>
+          <th>Fecha de Alta</th>
+          <th>Fecha de Baja</th>
+          <th>Acción</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for u in usuarios %}
+        <tr id="fila-usuario-{{ u.id }}" class="{% if not u.is_active %}usuario-inactivo{% endif %}">
+          <td>{{ u.nombre }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.get_rol_display }}</td>
+          <td>{{ u.fecha_creacion|date:"d/m/Y" }}</td>
+
+          <td id="fecha-baja-{{ u.id }}">
+            {% if u.fecha_baja %}
+              {{ u.fecha_baja|date:"d/m/Y" }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+
+          <td>
+            {% if u.is_active %}
+              <!-- Botón dar de baja -->
+              <button
+                class="btn-icon btn-baja"
+                title="Dar de baja"
+                onclick="confirmarBaja({{ u.id }}, '{{ u.nombre|escapejs }}')"
+              >✖</button>
+            {% else %}
+              <!-- Botón reactivar -->
+              <button
+                class="btn-icon btn-reactivar"
+                title="Reactivar usuario"
+                onclick="confirmarReactivar({{ u.id }}, '{{ u.nombre|escapejs }}')"
+              >↺</button>
+            {% endif %}
+          </td>
+
+          <td>
+            <span
+              id="estado-{{ u.id }}"
+              class="estado {% if u.is_active %}verde{% else %}rojo{% endif %}"
+              title="{% if u.is_active %}Activo{% else %}Dado de baja{% endif %}"
+            ></span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">No hay usuarios registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ===== MODAL DE CONFIRMACIÓN ===== -->
+<div id="modal-baja" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <h3 id="modal-titulo">Confirmar baja</h3>
+    <p id="modal-mensaje"></p>
+    <div class="modal-acciones">
+      <button class="btn btn-confirmar" id="btn-confirmar-accion">Confirmar</button>
+      <button class="btn btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST DE NOTIFICACIÓN ===== -->
+<div id="toast" class="toast" style="display:none;"></div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+const CSRF_TOKEN = '{{ csrf_token }}';
+
+// ── Dar de baja ────────────────────────────────────────────────────────────
+function confirmarBaja(id, nombre) {
+  document.getElementById('modal-titulo').textContent = 'Confirmar baja';
+  document.getElementById('modal-mensaje').textContent =
+    `¿Estás seguro de que querés dar de baja a "${nombre}"? No podrá iniciar sesión.`;
+
+  const btn = document.getElementById('btn-confirmar-accion');
+  btn.className = 'btn btn-confirmar';
+  btn.onclick = () => ejecutarBaja(id, nombre);
+
+  document.getElementById('modal-baja').style.display = 'flex';
+}
+
+function ejecutarBaja(id, nombre) {
+  cerrarModal();
+
+  fetch(`admin-dashboard/usuarios/${id}/baja/`, { 
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': CSRF_TOKEN,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      // Actualizar fila en la tabla sin recargar la página
+      const fila = document.getElementById(`fila-usuario-${id}`);
+      fila.classList.add('usuario-inactivo');
+
+      // Cambiar botón a "reactivar"
+      const btnCelda = fila.querySelector('.btn-baja').parentElement;
+      btnCelda.innerHTML = `
+        <button class="btn-icon btn-reactivar" title="Reactivar usuario"
+          onclick="confirmarReactivar(${id}, '${nombre}')">↺</button>`;
+
+      // Mostrar fecha de baja
+      document.getElementById(`fecha-baja-${id}`).textContent = data.fecha_baja;
+
+      // Cambiar indicador de estado
+      const estado = document.getElementById(`estado-${id}`);
+      estado.className = 'estado rojo';
+      estado.title = 'Dado de baja';
+
+      mostrarToast(`✔ ${data.mensaje}`, 'exito');
+    } else {
+      mostrarToast(`✘ ${data.error}`, 'error');
+    }
+  })
+  .catch(() => mostrarToast('Error de conexión. Intentá de nuevo.', 'error'));
+}
+
+// ── Reactivar ──────────────────────────────────────────────────────────────
+function confirmarReactivar(id, nombre) {
+  document.getElementById('modal-titulo').textContent = 'Reactivar usuario';
+  document.getElementById('modal-mensaje').textContent =
+    `¿Querés reactivar a "${nombre}"? Podrá iniciar sesión nuevamente.`;
+
+  const btn = document.getElementById('btn-confirmar-accion');
+  btn.className = 'btn btn-reactivar-confirm';
+  btn.onclick = () => ejecutarReactivar(id, nombre);
+
+  document.getElementById('modal-baja').style.display = 'flex';
+}
+
+function ejecutarReactivar(id, nombre) {
+  cerrarModal();
+
+  fetch(`admin-dashboard/usuarios/${id}/reactivar/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': CSRF_TOKEN,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      const fila = document.getElementById(`fila-usuario-${id}`);
+      fila.classList.remove('usuario-inactivo');
+
+      const btnCelda = fila.querySelector('.btn-reactivar').parentElement;
+      btnCelda.innerHTML = `
+        <button class="btn-icon btn-baja" title="Dar de baja"
+          onclick="confirmarBaja(${id}, '${nombre}')">✖</button>`;
+
+      document.getElementById(`fecha-baja-${id}`).textContent = '—';
+
+      const estado = document.getElementById(`estado-${id}`);
+      estado.className = 'estado verde';
+      estado.title = 'Activo';
+
+      mostrarToast(`✔ ${data.mensaje}`, 'exito');
+    } else {
+      mostrarToast(`✘ ${data.error}`, 'error');
+    }
+  })
+  .catch(() => mostrarToast('Error de conexión.', 'error'));
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function cerrarModal() {
+  document.getElementById('modal-baja').style.display = 'none';
+}
+
+function mostrarToast(mensaje, tipo) {
+  const toast = document.getElementById('toast');
+  toast.textContent = mensaje;
+  toast.className = `toast toast-${tipo}`;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 4000);
+}
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('modal-baja').addEventListener('click', function(e) {
+  if (e.target === this) cerrarModal();
+});
+</script>
+{% endblock %}

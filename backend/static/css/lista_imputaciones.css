@@ -1,0 +1,21 @@
+.badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.estado-pendiente {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.estado-pagada-parcial {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.estado-pagada-total {
+    background-color: #d4edda;
+    color: #155724;
+}

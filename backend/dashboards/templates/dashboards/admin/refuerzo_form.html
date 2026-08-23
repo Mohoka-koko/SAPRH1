@@ -1,0 +1,130 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/refuerzomodificacion_form.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="mf-pagina">
+
+    <!-- TÍTULO -->
+    <div class="mf-titulo">
+        {% if modo == 'crear' %}NUEVO REFUERZO{% else %}EDITAR REFUERZO{% endif %}
+    </div>
+
+    <!-- SECCIÓN 1: DATOS DEL REFUERZO -->
+    <div class="mf-card">
+        <div class="mf-card-header">
+        <span class="mf-card-icon">&#x1F4CB;</span>
+        DATOS DEL REFUERZO
+        </div>
+
+        <!-- Importe total del refuerzo -->
+        <div style="padding: 16px 20px 0;">
+        <div class="mf-campo" style="max-width: 300px;">
+            <label>Importe Total del Refuerzo ($)</label>
+            <input type="text" id="m-importe-total-refuerzo" placeholder="Ej: 1.000.000,00" />
+        </div>
+        </div>
+
+        <!-- Grid: Receptoras (izq) | Saldo (centro) | Importes (der) -->
+        <div class="mf-transfer-grid" style="margin-top: 16px;">
+
+        <!-- Columna izquierda: Receptoras -->
+        <div class="mf-transfer-grid-col">
+            <div class="mf-col-header">UNIDAD PRESUPUESTARIA RECEPTORA</div>
+            <div class="mf-section-block">
+            <div id="contenedor-receptoras"></div>
+            <div class="mf-btn-agregar-fila-wrap">
+                <button type="button" id="btn-agregar-receptora" class="mf-btn-agregar-fila">+</button>
+            </div>
+            </div>
+        </div>
+
+        <!-- Columna central: Saldo -->
+        <div class="mf-transfer-grid-col">
+            <div class="mf-col-header">SALDO ACTUAL ($)</div>
+            <div class="mf-importe-block" id="bloque-saldos-receptoras"></div>
+        </div>
+
+        <!-- Columna derecha: Importes -->
+        <div class="mf-transfer-grid-col">
+            <div class="mf-col-header">IMPORTE RECEPTORA ($)</div>
+            <div class="mf-importe-block" id="bloque-importes-receptoras"></div>
+        </div>
+
+        </div>
+
+        <!-- Total asignado + error -->
+        <div class="mf-totales">
+        <div class="mf-total-fila">
+            <span class="mf-total-label">TOTAL ASIGNADO ($)</span>
+            <span id="total-asignado-refuerzo" class="mf-total-input">0,00</span>
+            <span id="error-importe-refuerzo" class="mf-error-total" style="display:none;">
+            ⚠ El total asignado supera el importe del refuerzo.
+            </span>
+        </div>
+        </div>
+
+    </div>
+
+    <!-- SECCIÓN 2: INFORMACIÓN ADICIONAL -->
+    <div class="mf-card">
+        <div class="mf-card-header">
+            <span class="mf-card-icon">&#x1F4CB;</span>
+            INFORMACIÓN ADICIONAL
+        </div>
+
+        <div class="mf-info-grid">
+            <div class="mf-campo">
+                <label>Decreto / Resolución</label>
+                <div class="mf-file-wrap">
+                    <label for="m-decreto" class="mf-file-btn">Seleccionar archivo</label>
+                    <input type="file" id="m-decreto" accept=".pdf" style="display:none;" />
+                    <span id="m-decreto-nombre" class="mf-file-nombre">Sin archivos seleccionados</span>
+                </div>
+            </div>
+            <div class="mf-campo">
+                <label>N° Expediente</label>
+                <input type="text" id="m-expediente" placeholder="Ej: EXP-2023-001234" />
+            </div>            
+            <div class="mf-campo">
+                <label>Fecha</label>
+                <input type="date" id="m-fecha" />
+            </div>
+            <div class="mf-campo">
+                <label>Responsable</label>
+                <input type="text" id="m-usuario" readonly />
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ACCIONES FLOTANTES -->
+    <div class="mf-acciones">
+        <a href="{% url 'refuerzo' %}" class="mf-btn mf-btn-cancelar">
+        <span class="mf-btn-icono">&#x2715;</span>
+        <span class="mf-btn-texto">Cancelar</span>
+        </a>
+        <button type="button" id="btn-guardar" class="mf-btn mf-btn-guardar">
+        <span class="mf-btn-icono">&#x1F4BE;</span>
+        <span class="mf-btn-texto">Guardar</span>
+        </button>
+        <button type="button" id="btn-exportar" class="mf-btn mf-btn-exportar">
+        <span class="mf-btn-icono">&#x1F4C4;</span>
+        <span class="mf-btn-texto">Exportar PDF</span>
+        </button>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const USUARIO_ACTUAL = "{{ usuario.nombre }}";
+    const MODO           = "{{ modo }}";
+    const REFUERZO       = {{ refuerzo|safe }};
+</script>
+<script src="{% static 'js/refuerzo_form.js' %}"></script>
+{% endblock %}

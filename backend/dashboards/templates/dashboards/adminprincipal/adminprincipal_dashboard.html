@@ -1,0 +1,87 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Administrador</title>
+  <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body class="home-page">
+    <div class="container">
+
+        <!-- ===== SIDEBAR ===== -->
+        <div class="sidebar" id="sidebar">
+
+        <div class="sidebar-top">
+            <button class="toggle-btn" onclick="toggleMenu()">
+            <img src="{% static 'img/icono1.png' %}" class="icono-menu" alt="Menú">
+            </button>
+        </div>
+
+        <div class="sidebar-logo">
+            <img src="{% static 'img/logo2.png' %}" alt="Logo">
+            <span class="text">S.A.P.R.H.</span>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+            <a href="{% url 'admin_dashboard' %}" class="menu-link">
+                <img src="{% static 'img/hogar.png' %}" class="icono-sidebar">
+                <span class="text">Inicio</span>
+            </a>
+            </li>
+        
+            <li class="{% if request.resolver_match.url_name == 'registros' %}active{% endif %}">
+            <a href="{% url 'registros' %}" class="menu-link">
+                <img src="{% static 'img/panel.png' %}" class="icono-sidebar">
+                <span class="text">Panel Registros</span>
+            </a>
+            </li>
+        
+            <li class="{% if request.resolver_match.url_name == 'usuarios' %}active{% endif %}">
+            <a href="{% url 'usuarios' %}" class="menu-link">
+                <img src="{% static 'img/usuario.png' %}" class="icono-sidebar">
+                <span class="text">Usuarios</span>
+            </a>
+            </li>
+        
+            <li class="{% if request.resolver_match.url_name == 'configuracion' %}active{% endif %}">
+            <a href="{% url 'configuracion' %}" class="menu-link">
+                <img src="{% static 'img/configuracion.png' %}" class="icono-sidebar">
+                <span class="text">Configuración</span>
+            </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+            <img src="{% static 'img/usuario.png' %}" class="icono-sidebar">
+            <div class="user-text">
+                <span class="user-name">{{ usuario.nombre }}</span>
+                <span class="rol">{{ usuario.get_rol_display }}</span>
+            </div>
+            </div>
+
+            <div class="logout">
+            <a href="{% url 'logout' %}" class="menu-link">
+                <img src="{% static 'img/cerrarsesion.png' %}" class="icono-sidebar">
+                <span class="text">Cerrar sesión</span>
+            </a>
+            </div>
+        </div>
+
+        </div>
+
+        <!-- ===== CONTENIDO ===== -->
+        <div class="main-content">
+        {% block content %}{% endblock %}
+        </div>
+
+    </div>
+
+    <script src="{% static 'js/script.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
