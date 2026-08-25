@@ -71,7 +71,7 @@
   background: #fff;
   outline: none;
   font-family: inherit;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.1s ease;
   box-sizing: border-box;
 }
 
@@ -81,8 +81,18 @@
 
 .filtro-input:focus {
   border-color: var(--blue-accent);
-  box-shadow: 0 0 0 4px rgba(47, 90, 168, 0.13);
   background: #fbfdff;
+  animation: input-focus-ring 0.35s ease-out forwards;
+}
+
+@keyframes input-focus-ring {
+  0% { box-shadow: 0 0 0 0 rgba(47, 90, 168, 0.4); }
+  60% { box-shadow: 0 0 0 6px rgba(47, 90, 168, 0.1); }
+  100% { box-shadow: 0 0 0 4px rgba(47, 90, 168, 0.13); }
+}
+
+.filtro-input:active {
+  transform: scale(0.985);
 }
 
 select.filtro-input {
@@ -120,35 +130,57 @@ select.filtro-input {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-md);
-  overflow-x: auto;
+  width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 #tabla-imputaciones {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
+#tabla-imputaciones th:nth-child(1), #tabla-imputaciones td:nth-child(1) { width: 7%; }   /* Ejercicio */
+#tabla-imputaciones th:nth-child(2), #tabla-imputaciones td:nth-child(2) { width: 9%; }   /* N° Asiento */
+#tabla-imputaciones th:nth-child(3), #tabla-imputaciones td:nth-child(3) { width: 17%; }  /* N° Expediente */
+#tabla-imputaciones th:nth-child(4), #tabla-imputaciones td:nth-child(4) { width: 10%; }  /* Fecha */
+#tabla-imputaciones th:nth-child(5), #tabla-imputaciones td:nth-child(5) { width: 12%; }  /* Usuario */
+#tabla-imputaciones th:nth-child(6), #tabla-imputaciones td:nth-child(6) { width: 13%; }  /* Importe Total */
+#tabla-imputaciones th:nth-child(7), #tabla-imputaciones td:nth-child(7) { width: 15%; }  /* Estado */
+#tabla-imputaciones th:nth-child(8), #tabla-imputaciones td:nth-child(8) { width: 17%; }  /* Acciones */
+
 #tabla-imputaciones thead th {
   text-align: left;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: var(--text-secondary);
   background: #fafbfc;
-  padding: 12px 18px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 #tabla-imputaciones tbody td {
-  padding: 13px 18px;
+  padding: 13px 16px;
   font-size: 0.85rem;
   border-bottom: 1px solid var(--border);
   color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* La columna de Acciones contiene un botón, no texto: no debe truncarse */
+#tabla-imputaciones td:nth-child(8) {
+  overflow: visible;
+  text-overflow: clip;
+  text-align: center;
 }
 
 #tabla-imputaciones tbody tr:last-child td { border-bottom: none; }
@@ -189,9 +221,9 @@ select.filtro-input {
   display: inline-block;
   background: var(--blue-accent);
   color: #fff;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 7px 14px;
+  padding: 7px 12px;
   border-radius: 8px;
   text-decoration: none;
   white-space: nowrap;
@@ -233,4 +265,11 @@ select.filtro-input {
 @media (max-width: 600px) {
   .lista-imp-header { flex-direction: column; align-items: flex-start; gap: 8px; }
   .filtros-wrap { flex-direction: column; align-items: stretch; }
+  #tabla-imputaciones thead th,
+  #tabla-imputaciones tbody td {
+    white-space: normal;
+    word-break: break-word;
+    padding: 10px 10px;
+    font-size: 0.78rem;
+  }
 }
