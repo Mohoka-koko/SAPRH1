@@ -46,6 +46,7 @@
                         <span>Usuarios</span>
                     </a>
                 </li>
+               
             </ul>
         </nav>
     
@@ -57,6 +58,74 @@
                     <span class="user-role">{{ usuario.get_rol_display }}</span>
                 </div>
             </div>
+            <!-- CAMPANA DE NOTIFICACIONES -->
+
+        <div class="notification-container">
+
+            <button
+                type="button"
+             class="notification-btn"
+             id="notificationBtn"
+             title="Notificaciones">
+
+             <i class="fa-solid fa-bell"></i>
+
+            </button>
+
+
+        <!-- PANEL DE NOTIFICACIONES -->
+
+        <div class="notification-panel" id="notificationPanel">
+
+            <div class="notification-header">
+
+                <span>Notificaciones</span>
+
+                <div class="notification-actions">
+
+                    <button
+                        type="button"
+                        class="notification-settings"
+                        title="Configuración de notificaciones">
+
+                        <i class="fa-solid fa-gear"></i>
+
+                    </button>
+
+                    <button
+                        type="button"
+                        class="notification-close"
+                        id="notificationClose"
+                        title="Cerrar">
+
+                        <i class="fa-solid fa-xmark"></i>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div class="notification-body">
+
+                <p>Usted no tiene notificaciones</p>
+
+            </div>
+
+
+            <div class="notification-footer">
+
+                <a href="#">Verlo todo</a>
+
+            </div>
+
+        </div>
+
+    </div>
+            <a href="{% url 'configuracion' %}" class="config-btn" title="Configuración">
+                <i class="fa-solid fa-gear" style="color: #ffffff !important;"></i>
+            </a>
             <a href="{% url 'logout' %}">
                 <button class="logout-btn" title="Cerrar Sesión">
                     <i class="fa-solid fa-right-from-bracket"></i>
@@ -64,17 +133,14 @@
             </a>            
         </div>
     </header>
-    <!---<li class="{% if request.resolver_match.url_name == 'configuracion' %}active{% endif %}">
-                    <a href="{% url 'configuracion' %}">
-                        <i class="fa-solid fa-gear nav-icon"></i>
-                        Configuración
-                    </a>
-                </li>--->
+    
 
     <main class="main-content">
         {% block content %}
         {% endblock %}
     </main>
+
+    <script src="{% static 'js/notificaciones.js' %}"></script>
 
     {% block extra_js %}
     {% endblock %}

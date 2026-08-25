@@ -1032,3 +1032,204 @@ tbody td {
 }
 /* AQUÍ TERMINA EL CONTENIDO DE REGISTROS*/
 
+/* ========================================
+   NOTIFICACIONES
+======================================== */
+
+.notification-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+
+/* Botón de la campana */
+
+.notification-btn {
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: transparent;
+    border: none;
+
+    color: #ffffff;
+
+    font-size: 1.1rem;
+
+    cursor: pointer;
+
+    border-radius: 8px;
+
+    transition: background 0.2s ease;
+}
+
+.notification-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.notification-btn i {
+    color: #ffffff;
+}
+
+
+/* ========================================
+   PANEL DE NOTIFICACIONES
+======================================== */
+
+.notification-panel {
+    display: none;
+
+    position: absolute;
+
+    top: 48px;
+    right: 0;
+
+    width: 375px;
+    height: 550px;
+
+    background: #ffffff;
+
+    border: 1px solid #d9dee5;
+
+    border-radius: 0 0 4px 4px;
+
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+
+    z-index: 2000;
+
+    overflow: hidden;
+}
+
+
+/* Cuando está abierto */
+
+.notification-panel.active {
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+/* ========================================
+   ENCABEZADO
+======================================== */
+
+.notification-header {
+    height: 50px;
+
+    padding: 0 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    background: #f5f6f8;
+
+    border-bottom: 1px solid #d9dee5;
+
+    color: #263238;
+
+    font-size: 14px;
+    font-weight: 700;
+}
+
+
+.notification-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+
+.notification-settings,
+.notification-close {
+    width: 28px;
+    height: 28px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    background: transparent;
+
+    cursor: pointer;
+
+    font-size: 14px;
+
+    color: #1f5594;
+}
+
+
+.notification-close {
+    color: #1f5594;
+}
+
+.notification-settings:hover,
+.notification-close:hover {
+    color: #163f6d;
+}
+
+
+/* ========================================
+   CUERPO
+======================================== */
+
+.notification-body {
+    flex: 1;
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+
+    padding-top: 15px;
+
+    background: #ffffff;
+}
+
+
+.notification-body p {
+    margin: 0;
+
+    color: #333333;
+
+    font-size: 15px;
+
+    text-align: center;
+}
+
+
+/* ========================================
+   PIE
+======================================== */
+
+.notification-footer {
+    height: 48px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #f5f6f8;
+
+    border-top: 1px solid #d9dee5;
+}
+
+
+.notification-footer a {
+    color: #1f5594;
+
+    font-size: 15px;
+
+    text-decoration: underline;
+}
+
+
+.notification-footer a:hover {
+    color: #163f6d;
+}
+
