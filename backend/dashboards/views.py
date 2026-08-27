@@ -153,6 +153,10 @@ def cargar_presupuesto(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/cargarpresupuesto.html', context)
 
+@rol_requerido('admin', 'adminprincipal')
+def carga_catalogos(request):
+    context = {'usuario': request.user}
+    return render(request, 'dashboards/admin/carga_catalogos.html', context)
 # ==========================================
 #  ACCIONES COMUNES DE GESTIÓN DE USUARIOS
 # ==========================================

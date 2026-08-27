@@ -1,384 +1,145 @@
-.ordenpago-page{
+/* ==========================================================
+   TOOLBAR FLOTANTE LATERAL — igual estilo que Orden de Pago Personal
+   Reemplaza el bloque .toolbar / .toolbar-group / .btn-tool
+   que tenías antes (la barra horizontal de arriba).
+   ========================================================== */
+
+/* El contenedor de toda la página necesita dejar espacio
+   a la derecha para que la barra flotante no tape la hoja */
+.ordenpago-page {
     display: flex;
     flex-direction: column;
     width: 100%;
     gap: 1rem;
+    padding-right: 140px;
 }
 
 .toolbar {
-    width: 96%;
-    max-width: 1400px;
-    background: var(--white);
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-md);
-    margin-bottom: 1.5rem;
+    position: fixed;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+
+    width: 125px;
+
+    background: #ffffff;
+    padding: 9px;
+
+    border: 1px solid #d5d5d5;
+    border-radius: 9px;
+
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
-    align-items: center;
-    border: 1px solid var(--border);
+    flex-direction: column;
+    gap: 8px;
+
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.10);
+
+    z-index: 50;
 }
 
 .toolbar-group {
     display: flex;
-    gap: 8px;
-    padding: 0 12px;
-    border-right: 1px solid var(--border);
+    flex-direction: column;
+    gap: 5px;
+
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e2e2;
 }
 
 .toolbar-group:last-child {
-    border-right: none;
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
 .btn-tool {
-    background: var(--white);
-    color: var(--text);
-    border: 1.5px solid var(--border);
-    border-radius: 4px;
-    padding: 0.5rem 0.8rem;
-    font-size: 0.85rem;
+    width: 100%;
+
+    background: #f7f7f7;
+    color: #333;
+
+    border: 1px solid #d3d3d3;
+    border-radius: 6px;
+
+    padding: 8px 5px;
+
+    font-family: inherit;
+    font-size: 10.5px;
     font-weight: 600;
+
     cursor: pointer;
-    transition: all 0.2s ease;
+    white-space: nowrap;
+    text-align: center;
+
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 4px;
+
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-tool:hover {
-    background: #f9f9ff;
-    border-color: var(--primary);
-    color: var(--primary);
+    background: #eeeeee;
+    border-color: #bdbdbd;
 }
 
+.btn-tool:active {
+    background: #e2e2e2;
+}
+
+/* Botones destacados (Imprimir / Exportar a PDF) mantienen su color primario,
+   pero conservan el tamaño chico y sobrio del resto de la barra */
 .btn-tool.primary {
     background: var(--primary);
-    color: var(--white);
+    color: #ffffff;
     border-color: var(--primary);
 }
 
 .btn-tool.primary:hover {
     background: var(--primary-hover);
     border-color: var(--primary-hover);
-    color: var(--white);
+    color: #ffffff;
 }
 
+/* ==========================================================
+   RESPONSIVE — en pantallas chicas, la barra baja
+   y se acuesta horizontal para no tapar contenido
+   ========================================================== */
+@media (max-width: 900px) {
 
-/* =========================================
-   HOJA DE PAGO (PAGE SIZING)
-========================================= */
-.hoja {
-    width: 96%;
-    max-width: 1400px;
-    min-height: 80vh;
-    background: var(--white);
-    box-shadow: var(--shadow-md);
-    border-radius: var(--radius-sm);
-    padding: 2rem;
-}
+    .ordenpago-page {
+        padding-right: 0;
+    }
 
-.marco {
-    border: 1.5px solid var(--border);
-    border-radius: 6px;
-    padding: 2rem;
-    height: 100%;
-}
+    .toolbar {
+        top: auto;
+        bottom: 12px;
+        right: 50%;
+        transform: translateX(50%);
 
-/* =========================================
-   ENCABEZADO DE LA HOJA
-========================================= */
-.encabezado {
-    display: flex;
-    border-bottom: 2px solid var(--border);
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
-}
+        width: auto;
+        max-width: 95vw;
+        overflow-x: auto;
 
-.enc-izquierda {
-    flex: 1.3;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-}
+        flex-direction: row;
+        padding: 8px;
+    }
 
-.logo-box {
-    width: 60px;
-    height: 60px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    flex-shrink: 0;
-    background: #f9fafb;
-}
+    .toolbar-group {
+        flex-direction: row;
 
-.organismo {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    margin-top: 6px;
-}
+        border-bottom: none;
+        border-right: 1px solid #e5e5e5;
 
-.organismo-nombre {
-    font-weight: 700;
-    font-size: 1rem;
-    text-transform: uppercase;
-    color: var(--text);
-}
+        padding: 0 6px;
+    }
 
-.provincia {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    font-style: italic;
-    margin-top: 4px;
-}
+    .toolbar-group:last-child {
+        border-right: none;
+    }
 
-.input-like {
-    display: inline-block;
-    min-width: 200px;
-    border-bottom: 1.5px dashed var(--border);
-    outline: none;
-    padding: 2px 4px;
-    transition: border-color 0.2s;
-}
-
-.input-like:focus {
-    border-bottom-color: var(--primary);
-    background: #f9f9ff;
-}
-
-.input-like:empty::before {
-    content: attr(data-placeholder);
-    color: #9ca3af;
-}
-
-.enc-centro {
-    flex: 1.2;
-    text-align: center;
-    padding-top: 10px;
-}
-
-.ejercicio-linea {
-    font-weight: 700;
-    font-size: 1rem;
-    margin-bottom: 8px;
-    color: var(--text);
-}
-
-.orden-titulo {
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: var(--text);
-    letter-spacing: 0.05em;
-}
-
-.enc-derecha {
-    flex: 0.8;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-}
-
-.numero-orden-box {
-    border: 1.5px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 12px;
-    width: 180px;
-    text-align: center;
-    background: #f9fafb;
-}
-
-.numero-orden-box .input-caja {
-    width: 100%;
-    text-align: center;
-    font-weight: 700;
-    font-size: 1rem;
-    border: none;
-    background: transparent;
-    color: var(--text);
-}
-
-/* =========================================
-   INPUTS & FORM ELEMENTS
-========================================= */
-input[type="text"],
-input[type="number"] {
-    font-family: inherit;
-    color: var(--text);
-    border: none;
-    border-bottom: 1.5px solid var(--border);
-    background: transparent;
-    outline: none;
-    padding: 4px 6px;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-}
-
-input[type="text"]:focus,
-input[type="number"]:focus {
-    border-bottom-color: var(--primary);
-    background: #f9f9ff;
-}
-
-.input-linea { width: 100%; }
-.input-linea.full { width: 100%; }
-.input-linea.larga { width: 60%; }
-.input-linea.corto { width: 80px; border: 1.5px solid var(--border); border-radius: 4px; text-align: center; margin-left: 8px; padding: 4px; }
-.input-linea.corto:focus { border-color: var(--primary); }
-.input-linea.centrado { display: block; margin: 8px auto 0; text-align: center; width: 300px; }
-.input-linea.chico { width: 180px; font-size: 0.85rem; }
-
-.input-caja { 
-    border: 1.5px solid var(--border) !important; 
-    border-radius: 4px;
-    padding: 6px 8px; 
-    font-size: 0.9rem; 
-}
-.input-caja:focus {
-    border-color: var(--primary) !important;
-    box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.1);
-}
-.input-caja.chica { width: 60px; text-align: center; margin: 0 8px; }
-.input-caja.fecha { width: 130px; text-align: center; margin-left: 8px; }
-.input-caja.importe-total { width: 160px; text-align: right; font-weight: 700; font-size: 1.05rem; background: #f9fafb; }
-.input-caja.mini { width: 45px; text-align: center; margin: 0 6px; }
-
-.etiqueta-inline { font-weight: 600; font-size: 0.85rem; color: #4b5563; }
-.error-msg { font-size: 0.75rem; color: #ef4444; margin-top: 4px; display: empty ? none : block; }
-
-
-.tabla-datos { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-.tabla-datos td { border-bottom: 1.5px dashed var(--border); padding: 8px; font-size: 0.9rem; vertical-align: middle; }
-.tabla-datos .etiqueta { font-weight: 600; width: 220px; white-space: nowrap; color: #4b5563; }
-.tabla-datos .valor { width: 100%; }
-
-.fila-codigo-pago { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    border: 1.5px solid var(--border); 
-    border-radius: 6px;
-    padding: 10px 14px; 
-    margin-bottom: 1rem; 
-    background: #f9fafb;
-}
-.cod-pago-izq { display: flex; align-items: center; gap: 8px; flex: 1; }
-.cod-pago-der { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-
-.bloque-texto-pago { 
-    display: flex; 
-    border: 1.5px solid var(--border); 
-    border-radius: 6px;
-    padding: 12px 16px; 
-    margin-bottom: 1.5rem; 
-    align-items: center; 
-    gap: 16px; 
-}
-.texto-pago-izq { flex: 1; }
-.linea-fija { margin: 4px 0; font-size: 0.9rem; font-weight: 600; color: #4b5563; }
-.linea-importe-letras { margin: 12px 0 4px 0; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
-.texto-pago-der { display: flex; align-items: center; gap: 8px; border-left: 2px solid var(--border); padding-left: 20px; }
-.signo { font-weight: 700; font-size: 1.2rem; color: var(--text); }
-
-/* TABLAS PRINCIPALES */
-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
-th, td { border: 1.5px solid var(--border); padding: 10px 12px; font-size: 0.85rem; vertical-align: middle; }
-th { 
-    text-align: center; 
-    font-weight: 600; 
-    background: #f9fafb; 
-    color: #4b5563;
-    text-transform: uppercase; 
-    letter-spacing: 0.05em;
-}
-td { background: var(--white); }
-
-.tabla-principal .col-codigo { width: 15%; text-align: center; }
-.tabla-principal .col-beneficiario { width: 60%; }
-.tabla-principal .col-importe { width: 25%; text-align: right; }
-.tabla-principal td.col-importe { text-align: right; }
-.tabla-principal input,
-.tabla-concepto-pago input,
-.tabla-partidas input { 
-    width: 100%; 
-    border: none; 
-    font-size: 0.85rem; 
-    padding: 4px;
-}
-.tabla-principal input:focus,
-.tabla-concepto-pago input:focus,
-.tabla-partidas input:focus {
-    background: #f9f9ff;
-    outline: 1.5px solid var(--primary);
-    border-radius: 2px;
-}
-
-.bloque-concepto { 
-    border: 1.5px solid var(--border); 
-    border-radius: 6px;
-    padding: 12px 16px; 
-    margin-bottom: 1rem; 
-}
-.concepto-fila { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-.etiqueta-factura { font-weight: 600; font-size: 0.85rem; margin-left: auto; color: #4b5563; }
-.concepto-descripcion { display: flex; flex-direction: column; gap: 6px; }
-
-.bloque-resolucion { 
-    border: 1.5px solid var(--border); 
-    border-radius: 6px;
-    padding: 12px 16px; 
-    margin-bottom: 1.5rem; 
-}
-.resolucion-fila { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-.resolucion-fila:first-child .input-linea { width: auto; flex: 1; }
-.resolucion-fila:last-child { margin-bottom: 0; }
-
-.tabla-concepto-pago .col-codigo { width: 15%; text-align: center; }
-.tabla-concepto-pago .col-importe { width: 25%; text-align: right; }
-
-.tabla-partidas th { font-size: 0.8rem; }
-.tabla-partidas .col-partida-desc { width: 35%; }
-.tabla-partidas .col-importe { width: 20%; text-align: right; }
-
-.rentas-generales {
-    text-align: center;
-    margin: 2rem 0;
-    padding: 1rem;
-    border: 1.5px solid var(--border);
-    border-radius: 6px;
-    background: #f9fafb;
-}
-.rentas-titulo {
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: #4b5563;
-    margin-bottom: 8px;
-    letter-spacing: 0.05em;
-}
-
-.pie-inferior {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 2px solid var(--border);
-}
-.pie-izq, .pie-der { flex: 1; }
-.pie-der { text-align: right; }
-.pie-centro {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
-    color: #4b5563;
-    font-weight: 500;
+    .btn-tool {
+        width: auto;
+        min-width: 90px;
+    }
 }

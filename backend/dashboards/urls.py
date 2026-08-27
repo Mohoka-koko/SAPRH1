@@ -24,6 +24,11 @@ urlpatterns = [
     path('admin-dashboard/registros/ordenpago/', views.ordenpago,                        name='ordenpago'),
     path('admin-dashboard/registros/ordenpagopersonal/',  views.ordenpagopersonal,       name= 'ordenpagopersonal'),
     path('admin-dashboard/home/cargarpresupuesto/', views.cargar_presupuesto,  name='cargarpresupuesto'),
+    path(
+    'admin-dashboard/home/carga-catalogos/',
+    views.carga_catalogos,
+    name='carga_catalogos'
+),
 
     path('admin-dashboard/crear-usuario/', views.crear_usuario, name='crear_usuario'),
     path('admin-dashboard/usuarios-baja/<int:usuario_id>/', views.dar_baja_usuario, name='dar_baja_usuario'),
