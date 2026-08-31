@@ -1,12 +1,22 @@
 /* ==========================================================================
    CARGA DE CATÁLOGOS — lógica de la pantalla
-   Maneja: apertura del modal por tipo de catálogo, filtro/selector de
-   la tabla de abajo, y guardado (por ahora simulado; hay que conectar
-   con el backend, ver comentario al final).
+   Conectado a la BD real vía las APIs de dashboards:
+     GET  /api/catalogos/listar/?tipo=...
+     GET  /api/catalogos/padres/?tipo=...
+     POST /api/catalogos/crear/
+     POST /api/catalogos/editar/<id>/
+     POST /api/catalogos/eliminar/<id>/?tipo=...
    ========================================================================== */
 
-// Datos de ejemplo. Reemplazar por el fetch real a tu API de Django.
-const datosCatalogos = {
+// Catálogos que necesitan seleccionar un padre (FK obligatoria en el modelo)
+const PADRE_LABEL = {
+  'Programa': 'Jurisdicción',
+  'Subprograma': 'Programa',
+  'Proyecto': 'Programa',
+  'Actividad / Obra': 'Proyecto',
+};
+
+let datosCatalogos = {
   'Programa': [],
   'Subprograma': [],
   'Proyecto': [],
@@ -16,13 +26,38 @@ const datosCatalogos = {
 };
 
 let catalogoActual = 'Programa';
+let editandoId = null; // null = creando, id = editando ese registro
+
+function getCSRFToken() {
+  const input = document.querySelector('[name=csrfmiddlewaretoken]');
+  if (input) return input.value;
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : '';
+}
+
+// ------------------------- Carga desde la BD -------------------------
+async function cargarCatalogo(tipo) {
+  const tbody = document.getElementById('tbodyCatalogo');
+  tbody.innerHTML = `<tr><td colspan="3" class="sin-datos">Cargando...</td></tr>`;
+  try {
+    const resp = await fetch(`/api/catalogos/listar/?tipo=${encodeURIComponent(tipo)}`);
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Error al cargar');
+    datosCatalogos[tipo] = data.items;
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="3" class="sin-datos">Error al cargar: ${err.message}</td></tr>`;
+    return;
+  }
+  renderTabla();
+}
 
 function cambiarCatalogo() {
   catalogoActual = document.getElementById('selectCatalogo').value;
   document.getElementById('buscadorTabla').value = '';
-  renderTabla();
+  cargarCatalogo(catalogoActual);
 }
 
+// ------------------------- Filtro en tiempo real (client-side) -------------------------
 function renderTabla() {
   const tbody = document.getElementById('tbodyCatalogo');
   const filtro = document.getElementById('buscadorTabla').value.trim().toLowerCase();
@@ -36,93 +71,131 @@ function renderTabla() {
     return;
   }
 
-  tbody.innerHTML = items.map((item, index) => `
+  tbody.innerHTML = items.map(item => `
     <tr>
       <td>${item.codigo}</td>
-      <td>${item.denominacion}</td>
+      <td>${item.denominacion}${item.padre_nombre ? ` <span style="color:#9ca3af;font-size:.78rem;">(${item.padre_nombre})</span>` : ''}</td>
       <td class="col-acciones">
-        <button class="btn-icon-tabla" title="Editar" onclick="editarItem(${index})">✎</button>
-        <button class="btn-icon-tabla eliminar" title="Eliminar" onclick="eliminarItem(${index})">✕</button>
+        <button class="btn-icon-tabla" title="Editar" onclick="editarItem(${item.id})">✎</button>
+        <button class="btn-icon-tabla eliminar" title="Eliminar" onclick="eliminarItem(${item.id})">✕</button>
       </td>
     </tr>
   `).join('');
 }
 
-function abrirModal(nombre) {
-  document.getElementById('modalTitulo').textContent = 'Cargar ' + nombre;
-  document.getElementById('inputCodigo').value = '';
-  document.getElementById('inputDenominacion').value = '';
+// ------------------------- Modal -------------------------
+async function abrirModal(nombre, itemParaEditar = null) {
+  editandoId = itemParaEditar ? itemParaEditar.id : null;
+
+  document.getElementById('modalTitulo').textContent = (editandoId ? 'Editar ' : 'Cargar ') + nombre;
+  document.getElementById('inputCodigo').value = itemParaEditar ? itemParaEditar.codigo : '';
+  document.getElementById('inputDenominacion').value = itemParaEditar ? itemParaEditar.denominacion : '';
   document.getElementById('modalOverlay').classList.add('open');
 
-  // Sincroniza el selector de la tabla con lo que se está cargando
   document.getElementById('selectCatalogo').value = nombre;
   catalogoActual = nombre;
+
+  const grupoPadre = document.getElementById('grupoPadre');
+  const selectPadre = document.getElementById('selectPadre');
+
+  if (PADRE_LABEL[nombre]) {
+    document.getElementById('labelPadre').textContent = PADRE_LABEL[nombre];
+    grupoPadre.style.display = '';
+    selectPadre.innerHTML = '<option value="">Cargando...</option>';
+    try {
+      const resp = await fetch(`/api/catalogos/padres/?tipo=${encodeURIComponent(nombre)}`);
+      const data = await resp.json();
+      if (data.padres.length === 0) {
+        selectPadre.innerHTML = `<option value="">No hay ${PADRE_LABEL[nombre].toLowerCase()}s cargados</option>`;
+      } else {
+        selectPadre.innerHTML = data.padres.map(p => `<option value="${p.id}">${p.label}</option>`).join('');
+        if (itemParaEditar && itemParaEditar.padre_id) {
+          selectPadre.value = itemParaEditar.padre_id;
+        }
+      }
+    } catch (err) {
+      selectPadre.innerHTML = '<option value="">Error al cargar</option>';
+    }
+  } else {
+    grupoPadre.style.display = 'none';
+    selectPadre.innerHTML = '';
+  }
 
   setTimeout(() => document.getElementById('inputCodigo').focus(), 50);
 }
 
 function cerrarModal() {
   document.getElementById('modalOverlay').classList.remove('open');
+  editandoId = null;
 }
 
-function guardarCatalogo() {
+async function guardarCatalogo() {
   const codigo = document.getElementById('inputCodigo').value.trim();
   const denom = document.getElementById('inputDenominacion').value.trim();
+  const requierePadre = !!PADRE_LABEL[catalogoActual];
+  const padreId = requierePadre ? document.getElementById('selectPadre').value : null;
 
   if (!codigo || !denom) {
     alert('Completá código y denominación.');
     return;
   }
+  if (requierePadre && !padreId) {
+    alert(`Seleccioná ${PADRE_LABEL[catalogoActual]}.`);
+    return;
+  }
 
-  // ------------------------------------------------------------------
-  // TODO: reemplazar este bloque por un fetch/POST real a Django, ej:
-  //
-  // fetch('/api/catalogos/guardar/', {
-  //   method: 'POST',
-  //   headers: {
-  //     'Content-Type': 'application/json',
-  //     'X-CSRFToken': obtenerCSRFToken(),
-  //   },
-  //   body: JSON.stringify({ tipo: catalogoActual, codigo, denominacion: denom }),
-  // })
-  //   .then(resp => resp.json())
-  //   .then(data => { ... actualizar tabla con la respuesta real ... });
-  //
-  // Por ahora se guarda solo en memoria (se pierde al recargar la página).
-  // ------------------------------------------------------------------
-  if (!datosCatalogos[catalogoActual]) datosCatalogos[catalogoActual] = [];
-  datosCatalogos[catalogoActual].push({ codigo, denominacion: denom });
+  const payload = { tipo: catalogoActual, codigo, denominacion: denom };
+  if (requierePadre) payload.padre_id = padreId;
 
-  cerrarModal();
-  renderTabla();
-  mostrarToast(`✓ ${catalogoActual} "${denom}" guardado correctamente`);
+  const url = editandoId
+    ? `/api/catalogos/editar/${editandoId}/`
+    : `/api/catalogos/crear/`;
+
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken(),
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Error al guardar');
+
+    cerrarModal();
+    await cargarCatalogo(catalogoActual);
+    mostrarToast(`✓ ${catalogoActual} "${denom}" guardado correctamente`);
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
-function editarItem(index) {
-  const item = datosCatalogos[catalogoActual][index];
-  const nuevoCodigo = prompt('Código:', item.codigo);
-  if (nuevoCodigo === null) return;
-  const nuevaDenom = prompt('Denominación:', item.denominacion);
-  if (nuevaDenom === null) return;
-
-  item.codigo = nuevoCodigo.trim();
-  item.denominacion = nuevaDenom.trim();
-  renderTabla();
-  mostrarToast('✓ Cambios guardados');
-
-  // TODO: reemplazar por PUT/PATCH real a Django
+function editarItem(id) {
+  const item = (datosCatalogos[catalogoActual] || []).find(i => i.id === id);
+  if (!item) return;
+  abrirModal(catalogoActual, item);
 }
 
-function eliminarItem(index) {
-  const item = datosCatalogos[catalogoActual][index];
+async function eliminarItem(id) {
+  const item = (datosCatalogos[catalogoActual] || []).find(i => i.id === id);
+  if (!item) return;
   const confirmar = confirm(`¿Eliminar "${item.denominacion}"?`);
   if (!confirmar) return;
 
-  datosCatalogos[catalogoActual].splice(index, 1);
-  renderTabla();
-  mostrarToast('✓ Eliminado correctamente');
+  try {
+    const resp = await fetch(`/api/catalogos/eliminar/${id}/?tipo=${encodeURIComponent(catalogoActual)}`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCSRFToken() },
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Error al eliminar');
 
-  // TODO: reemplazar por DELETE real a Django
+    await cargarCatalogo(catalogoActual);
+    mostrarToast('✓ Eliminado correctamente');
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 function mostrarToast(mensaje) {
@@ -136,5 +209,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('modalOverlay').addEventListener('click', (e) => {
     if (e.target.id === 'modalOverlay') cerrarModal();
   });
-  renderTabla();
+  cargarCatalogo(catalogoActual);
 });

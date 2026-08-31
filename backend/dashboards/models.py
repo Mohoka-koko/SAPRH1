@@ -33,6 +33,20 @@ class Programa(models.Model):
         return self.nombre
 
 
+class Subprograma(models.Model):
+    programa            = models.ForeignKey(Programa, on_delete=models.CASCADE, related_name='subprogramas')
+    codigo_subprograma  = models.IntegerField(default=0)
+    nombre              = models.CharField(max_length=200)
+    activo              = models.BooleanField(default=True)
+
+    class Meta:
+        db_table     = 'subprograma'
+        verbose_name = 'Subprograma'
+
+    def __str__(self):
+        return self.nombre
+
+
 class Proyecto(models.Model):
     programa        = models.ForeignKey(Programa, on_delete=models.CASCADE, related_name='proyectos')
     codigo_proyecto = models.IntegerField()
@@ -160,6 +174,7 @@ class ImputacionDetalle(models.Model):
 # y agregar la clase OrdenPagoDetalle a continuación.
 # ─────────────────────────────────────────────
 class OrdenPago(models.Model):
+    imputacion                = models.ForeignKey('Imputacion', on_delete=models.PROTECT, related_name='ordenes_pago', null=True, blank=True) 
     nro_orden_pago            = models.CharField(max_length=50)
     fecha                     = models.DateField()
     fecha_vencimiento         = models.DateField(null=True, blank=True)
@@ -185,20 +200,30 @@ class OrdenPago(models.Model):
     def __str__(self):
         return f'OP {self.nro_orden_pago} - {self.importe_total}'
 
-
-class OrdenPagoDetalle(models.Model):
-    orden_pago          = models.ForeignKey(OrdenPago, on_delete=models.CASCADE, related_name='detalles')
-    imputacion_detalle   = models.ForeignKey(ImputacionDetalle, on_delete=models.PROTECT, related_name='ordenes_pago_detalle')
-    codigo_beneficiario  = models.CharField(max_length=20)
-    beneficiario         = models.CharField(max_length=200)
-    importe              = models.DecimalField(max_digits=18, decimal_places=2)
+class OrdenPagoBeneficiario(models.Model):
+    orden_pago          = models.ForeignKey(OrdenPago, on_delete=models.CASCADE, related_name='beneficiarios')
+    codigo_beneficiario = models.CharField(max_length=20, blank=True)
+    beneficiario        = models.CharField(max_length=200)
+    importe             = models.DecimalField(max_digits=18, decimal_places=2)
 
     class Meta:
-        db_table     = 'orden_pago_detalle'
-        verbose_name = 'Detalle de Orden de Pago'
+        db_table     = 'orden_pago_beneficiario'
+        verbose_name = 'Beneficiarios de Orden de Pago'
 
     def __str__(self):
         return f'{self.orden_pago} - {self.beneficiario} - {self.importe}'
+    
+class OrdenPagoUnidadPresupuestaria(models.Model):
+    orden_pago         = models.ForeignKey(OrdenPago, on_delete=models.CASCADE, related_name='unidades_presupuestarias')
+    imputacion_detalle = models.ForeignKey(ImputacionDetalle, on_delete=models.PROTECT, related_name='ordenes_pago_up')
+    importe            = models.DecimalField(max_digits=18, decimal_places=2)
+
+    class Meta:
+        db_table     = 'orden_pago_up'
+        verbose_name = 'Unidad Presupuestaria de Orden de Pago'
+
+    def __str__(self):
+        return f'{self.orden_pago} - {self.imputacion_detalle} - {self.importe}'
 
 # ─────────────────────────────────────────────
 # REFUERZO
@@ -286,6 +311,7 @@ class MovimientoHistorial(models.Model):
         ('IMPUTACION_EDICION',  'Imputación - Edición'),
         ('IMPUTACION_ANULACION','Imputación - Anulación'),
         ('ORDEN_PAGO',          'Orden de Pago'),
+        ('ORDEN_PAGO_UP', 'Orden Pago - Unidad Presupuestaria'),
         ('REFUERZO',            'Refuerzo'),
         ('REFUERZO_EDICION',    'Refuerzo - Edición'),
         ('REFUERZO_ANULACION',  'Refuerzo - Anulación'),

@@ -12,9 +12,14 @@ from django.db import transaction
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from dashboards.models import (
-    LineaPresupuestaria, Refuerzo, RefuerzoDetalle, Modificacion, ModificacionReceptora, ModificacionTransferente, MovimientoHistorial, Imputacion, ImputacionDetalle,
-    Programa, Proyecto, Partida, FuenteFinanciamiento, ActividadObra, OrdenPago
+    LineaPresupuestaria, Refuerzo, RefuerzoDetalle,
+    Modificacion, ModificacionTransferente, ModificacionReceptora,
+    Imputacion, ImputacionDetalle,
+    OrdenPago, OrdenPagoBeneficiario, OrdenPagoUnidadPresupuestaria,
+    MovimientoHistorial, Jurisdiccion, Programa, Subprograma, Proyecto,
+    ActividadObra, Partida, FuenteFinanciamiento
 )
+from django.db.models.deletion import ProtectedError
 from decimal import Decimal
 from datetime import date
 
@@ -1316,6 +1321,202 @@ def api_fuentes(request):
     return JsonResponse({'fuentes': list(fuentes)})
 
 
+# ==========================================
+#  CARGA DE CATÁLOGOS — CRUD genérico
+# ==========================================
+# Configuración por tipo: qué modelo, cómo se llaman sus campos de
+# código/denominación, y (si aplica) su padre obligatorio.
+CATALOGO_CONFIG = {
+    'Programa': {
+        'model': Programa, 'campo_codigo': 'codigo_programa', 'campo_denom': 'nombre',
+        'padre_field': 'jurisdiccion', 'padre_model': Jurisdiccion,
+        'padre_codigo': 'codigo_jurisd', 'padre_denom': 'nombre',
+    },
+    'Subprograma': {
+        'model': Subprograma, 'campo_codigo': 'codigo_subprograma', 'campo_denom': 'nombre',
+        'padre_field': 'programa', 'padre_model': Programa,
+        'padre_codigo': 'codigo_programa', 'padre_denom': 'nombre',
+    },
+    'Proyecto': {
+        'model': Proyecto, 'campo_codigo': 'codigo_proyecto', 'campo_denom': 'nombre',
+        'padre_field': 'programa', 'padre_model': Programa,
+        'padre_codigo': 'codigo_programa', 'padre_denom': 'nombre',
+    },
+    'Actividad / Obra': {
+        'model': ActividadObra, 'campo_codigo': 'codigo_act_obra', 'campo_denom': 'nombre',
+        'padre_field': 'proyecto', 'padre_model': Proyecto,
+        'padre_codigo': 'codigo_proyecto', 'padre_denom': 'nombre',
+    },
+    'Partida': {
+        'model': Partida, 'campo_codigo': 'codigo', 'campo_denom': 'denominacion',
+        'padre_field': None,
+    },
+    'Fuente de Financiamiento': {
+        'model': FuenteFinanciamiento, 'campo_codigo': 'codigo', 'campo_denom': 'nombre',
+        'padre_field': None,
+    },
+}
+
+
+def _padre_label(padre, config):
+    return f"{str(getattr(padre, config['padre_codigo'])).zfill(2)} - {getattr(padre, config['padre_denom'])}"
+
+
+@rol_requerido('admin', 'adminprincipal')
+def api_catalogos_listar(request):
+    tipo = request.GET.get('tipo')
+    config = CATALOGO_CONFIG.get(tipo)
+    if not config:
+        return JsonResponse({'error': 'Tipo de catálogo inválido'}, status=400)
+
+    qs = config['model'].objects.all().order_by(config['campo_codigo'])
+    if config['padre_field']:
+        qs = qs.select_related(config['padre_field'])
+
+    data = []
+    for obj in qs:
+        item = {
+            'id':           obj.id,
+            'codigo':       str(getattr(obj, config['campo_codigo'])).zfill(2),
+            'denominacion': getattr(obj, config['campo_denom']),
+        }
+        if config['padre_field']:
+            padre = getattr(obj, config['padre_field'])
+            item['padre_id']     = padre.id
+            item['padre_nombre'] = _padre_label(padre, config)
+        data.append(item)
+
+    return JsonResponse({'items': data, 'requiere_padre': bool(config['padre_field'])})
+
+
+@rol_requerido('admin', 'adminprincipal')
+def api_catalogos_padres(request):
+    tipo = request.GET.get('tipo')
+    config = CATALOGO_CONFIG.get(tipo)
+    if not config or not config['padre_field']:
+        return JsonResponse({'padres': []})
+
+    qs = config['padre_model'].objects.all().order_by(config['padre_codigo'])
+    padres = [{'id': p.id, 'label': _padre_label(p, config)} for p in qs]
+    return JsonResponse({'padres': padres})
+
+
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_catalogos_crear(request):
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    tipo = body.get('tipo')
+    config = CATALOGO_CONFIG.get(tipo)
+    if not config:
+        return JsonResponse({'error': 'Tipo de catálogo inválido'}, status=400)
+
+    codigo_raw   = body.get('codigo')
+    denominacion = (body.get('denominacion') or '').strip()
+    if not codigo_raw or not denominacion:
+        return JsonResponse({'error': 'Faltan código o denominación'}, status=400)
+
+    try:
+        codigo = int(codigo_raw)
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'El código debe ser numérico'}, status=400)
+
+    kwargs = {config['campo_codigo']: codigo, config['campo_denom']: denominacion}
+
+    if config['padre_field']:
+        padre_id = body.get('padre_id')
+        if not padre_id:
+            return JsonResponse({'error': f'Falta seleccionar el padre para {tipo}'}, status=400)
+        try:
+            padre = config['padre_model'].objects.get(id=padre_id)
+        except config['padre_model'].DoesNotExist:
+            return JsonResponse({'error': 'Padre no encontrado'}, status=404)
+        kwargs[config['padre_field']] = padre
+
+    obj = config['model'].objects.create(**kwargs)
+
+    return JsonResponse({
+        'ok': True,
+        'item': {
+            'id':           obj.id,
+            'codigo':       str(getattr(obj, config['campo_codigo'])).zfill(2),
+            'denominacion': getattr(obj, config['campo_denom']),
+        },
+    })
+
+
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_catalogos_editar(request, item_id):
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    tipo = body.get('tipo')
+    config = CATALOGO_CONFIG.get(tipo)
+    if not config:
+        return JsonResponse({'error': 'Tipo de catálogo inválido'}, status=400)
+
+    try:
+        obj = config['model'].objects.get(id=item_id)
+    except config['model'].DoesNotExist:
+        return JsonResponse({'error': 'No encontrado'}, status=404)
+
+    codigo_raw   = body.get('codigo')
+    denominacion = (body.get('denominacion') or '').strip()
+    if not codigo_raw or not denominacion:
+        return JsonResponse({'error': 'Faltan código o denominación'}, status=400)
+
+    try:
+        codigo = int(codigo_raw)
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'El código debe ser numérico'}, status=400)
+
+    setattr(obj, config['campo_codigo'], codigo)
+    setattr(obj, config['campo_denom'], denominacion)
+
+    if config['padre_field']:
+        padre_id = body.get('padre_id')
+        if not padre_id:
+            return JsonResponse({'error': f'Falta seleccionar el padre para {tipo}'}, status=400)
+        try:
+            padre = config['padre_model'].objects.get(id=padre_id)
+        except config['padre_model'].DoesNotExist:
+            return JsonResponse({'error': 'Padre no encontrado'}, status=404)
+        setattr(obj, config['padre_field'], padre)
+
+    obj.save()
+    return JsonResponse({'ok': True})
+
+
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_catalogos_eliminar(request, item_id):
+    tipo = request.GET.get('tipo')
+    config = CATALOGO_CONFIG.get(tipo)
+    if not config:
+        return JsonResponse({'error': 'Tipo de catálogo inválido'}, status=400)
+
+    try:
+        obj = config['model'].objects.get(id=item_id)
+    except config['model'].DoesNotExist:
+        return JsonResponse({'error': 'No encontrado'}, status=404)
+
+    try:
+        obj.delete()
+    except ProtectedError:
+        return JsonResponse(
+            {'error': 'No se puede eliminar: está siendo usado en una línea presupuestaria.'},
+            status=400,
+        )
+
+    return JsonResponse({'ok': True})
+
+
 @rol_requerido('admin', 'adminprincipal')
 def api_buscar_linea(request):
     """Dado programa+proyecto+actividad+partida+fuente+ejercicio devuelve el linea_id."""
@@ -1376,7 +1577,7 @@ def lista_imputaciones(request):
     from django.db.models import Sum
 
     imputaciones = Imputacion.objects.select_related('usuario').prefetch_related(
-        'detalles__ordenes_pago_detalle',
+        'detalles__ordenes_pago_up',
         'detalles__linea_presupuestaria',
     ).order_by('-fecha')
 
@@ -1389,7 +1590,7 @@ def lista_imputaciones(request):
 
         total_pagado = Decimal('0')
         for detalle in imp.detalles.all():
-            pagado = detalle.ordenes_pago_detalle.aggregate(
+            pagado = detalle.ordenes_pago_up.aggregate(
                 total=Sum('importe')
             )['total'] or Decimal('0')
             total_pagado += pagado
@@ -1458,4 +1659,221 @@ def api_detalle_imputacion(request, imputacion_id):
         'fecha':        imp.fecha.strftime('%d/%m/%Y'),
         'jurisdiccion': f"{imp.detalles.first().linea_presupuestaria.jurisdiccion.codigo_jurisd} - {imp.detalles.first().linea_presupuestaria.jurisdiccion.nombre}" if imp.detalles.exists() else '',
         'detalles':     detalles,
+    })
+
+
+# ==========================================
+#  API — UNIDADES PRESUPUESTARIAS DE UNA IMPUTACIÓN
+#  Devuelve las UPs de la imputación con saldo disponible
+#  (importe original menos lo ya pagado en OPs anteriores)
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+def api_ups_imputacion(request, imputacion_id):
+    try:
+        imputacion = Imputacion.objects.get(id=imputacion_id)
+    except Imputacion.DoesNotExist:
+        return JsonResponse({'error': 'Imputacion no encontrada'}, status= 400)
+    
+    from django.db.models import Sum
+
+    detalles = ImputacionDetalle.objects.filter(
+        imputacion=imputacion
+    ).select_related(
+        'linea_presupuestaria__programa',
+        'linea_presupuestaria__proyecto',
+        'linea_presupuestaria__actividad_obra',
+        'linea_presupuestaria__partida',
+        'linea_presupuestaria__fuente_financiamiento',
+    )
+
+    resultado = []
+    for d in detalles:
+        ya_pagado = OrdenPagoUnidadPresupuestaria.objects.filter(
+            imputacion_detalle=d
+        ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
+
+        saldo_disponible = d.importe - ya_pagado
+        if saldo_disponible <= 0:
+            continue
+
+        linea = d.linea_presupuestaria
+        resultado.append({
+            'imputacion_detalle_id': d.id,
+            'prog':                  linea.programa.codigo_programa,
+            'pry':                   linea.proyecto.codigo_proyecto,
+            'ao':                    linea.actividad_obra.codigo_act_obra,
+            'part':                  linea.partida.codigo,
+            'denominacion':          linea.partida.denominacion,
+            'fuente':                linea.fuente_financiamiento.nombre,
+        'importe_imputado':          str(d.importe),
+            'ya_pagado':             str(ya_pagado),
+            'saldo_disponible':      str(saldo_disponible),
+        })
+
+    return JsonResponse({
+        'imputacion_id': imputacion_id,
+        'expediente':    imputacion.nro_expediente,
+        'ups':           resultado,
+    })
+
+
+# =============================
+#   API - CREAR ORDEN DE PAGO
+# =============================
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_crear_orden_pago(request):
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    
+    imputacion_id               = body.get('imputacion_id')
+    nro_orden_pago              = body.get('nro_orden_pago', '').strip()
+    fecha_vencimiento           = body.get('fecha_vencimiento') or None
+    codigo_pago                 = body.get('codigo_pago','').strip()
+    descripcion_codigo_pago     = body.get('descripcion_codigo_pago', '').strip()
+    concepto                    = body.get('concepto', '').strip()
+    nro_factura                 = body.get('nro_factura', '').strip()
+    nro_resolucion              = body.get('nro_resolucion', '').strip()
+    referencia_administrativa   = body.get('referencia_administrativa', '').strip()
+    codigo_concepto_pago        = body.get('codigo_concepto_pago', 0)
+    concepto_del_pago           = body.get('concepto_del_pago', '').strip()
+    beneficiarios               = body.get('beneficiarios', [])
+    ups                         = body.get('ups', [])
+
+    #---Validaciones Bassicas---------------
+    if not all ([imputacion_id, nro_orden_pago, codigo_pago, concepto]):
+        return JsonResponse({'error': 'Faltan campos obligatorios'}, status= 400)
+    
+    if not beneficiarios:
+        return JsonResponse({'error': 'Debe incluir al menos un benificiario'}, status= 400)
+    
+    if not ups:
+        return JsonResponse({'error': 'Debe incluir al menos una unidad presupuestaria'}, status= 400)
+    
+    try:
+        imputacion = Imputacion.objects.get(id=imputacion_id)
+
+    except Imputacion.DoesNotExist:
+        return JsonResponse({'error': 'Imputacion no encontrada'}, status= 400)
+    
+    #---Parsear Importes----------------------------
+    try:
+        total_beneficiarios = sum(Decimal(str(b['importe'])) for b in beneficiarios)
+        total_ups           = sum(Decimal(str(u['importe'])) for u in ups)
+    except Exception:
+        return JsonResponse({'error': 'Importe inválido en beneficiarios o UPs'}, status=400)
+
+    #--- V1 y V2: ambas sumas deben coincidir--------------
+
+    if total_beneficiarios != total_ups:
+        return JsonResponse({
+            'error': (
+                f'La suma de beneficiarios(${total_beneficiarios})'
+                f'no coinciden con la suma de UPs (${total_ups}). '
+                f'Ambas deben ser iguales.'
+            )
+        }, status=400)
+    
+    importe_total = total_beneficiarios
+
+    try: 
+        with transaction.atomic():
+            from django.db.models import Sum
+
+            #--- V3 y V4: validar cada UP --------------
+            detalles_validos = []
+            for u in ups:
+                det_id = u.get('imputacion_detalle_id')
+                importe = Decimal(str(u['importe']))
+
+                if importe <= 0:
+                    raise ValueError('El importe de cada UP debe ser mayor a cero')
+                
+                try:
+                    detalle = ImputacionDetalle.objects.select_for_update().get(
+                        id=det_id,
+                        imputacion=imputacion # V4: debe pertenecer a la imputacion
+                    )
+                except ImputacionDetalle.DoesNotExist:
+                    raise ValueError(f'La UP {det_id} no pertenece a esta imputació')
+                
+                #V3: saldo disponible = importe imputado - ya pagado en OPs anteriores
+                ya_pagado = OrdenPagoUnidadPresupuestaria.objects.filter(
+                    imputacion_detalle=detalle
+                ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
+
+                saldo_disponible = detalle.importe - ya_pagado
+
+                if importe > saldo_disponible:
+                    raise ValueError(
+                        f'Saldo insuficiente en UP {detalle.linea_presupuestaria}. '
+                        f'Disponible: ${saldo_disponible}, solicitado: ${importe}'
+                    )
+                
+                detalles_validos.append((detalle, importe))
+
+
+            # ── Crear cabecera de la OP ───────────────────────────────────
+            orden_pago = OrdenPago.objects.create(
+                imputacion                = imputacion,
+                nro_orden_pago            = nro_orden_pago,
+                fecha                     = timezone.now().date(),
+                fecha_vencimiento         = fecha_vencimiento,
+                codigo_pago               = codigo_pago or 0,
+                descripcion_codigo_pago   = descripcion_codigo_pago,
+                concepto                  = concepto,
+                nro_factura               = nro_factura,
+                nro_resolucion            = nro_resolucion,
+                referencia_administrativa = referencia_administrativa,
+                codigo_concepto_pago      = codigo_concepto_pago or 0,
+                concepto_del_pago         = concepto_del_pago,
+                importe_total             = importe_total,
+                usuario                   = request.user,
+            )
+
+            # --- Crear beneficiarios -----------------------------------------
+            for b in beneficiarios:
+                OrdenPagoBeneficiario.objects.create(
+                    orden_pago          = orden_pago,
+                    codigo_beneficiario = b.get('codigo_beneficiario', ''),
+                    beneficiario        = b.get('beneficiario', ''),
+                    importe             = Decimal(str(b['importe'])),
+                )
+
+            # --- Crear UPs, deconectar saldo de línea y registrar historial
+            for detalle, importe in detalles_validos:
+                OrdenPagoUnidadPresupuestaria.objects.create(
+                    orden_pago          = orden_pago,
+                    imputacion_detalle  = detalle,
+                    importe             = importe,
+                )
+
+                linea = detalle.linea_presupuestaria
+                linea.saldo_actual -=importe
+                linea.save()
+
+                MovimientoHistorial.objects.create(
+                    linea_presupuestaria = linea,
+                    tipo                 = 'ORDEN_PAGO',
+                    referencia_id        = orden_pago.id,
+                    usuario              = request.user,
+                    monto                = -importe,
+                    descripcion          = (
+                        f'OP {nro_orden_pago} — exp. {imputacion.nro_expediente} '
+                        f'— {concepto[:80]}'
+                    ),
+                )
+
+    except ValueError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({
+        'ok':               True,
+        'orden_pago_id':    orden_pago.id,
+        'importe_total':    str(importe_total),
     })

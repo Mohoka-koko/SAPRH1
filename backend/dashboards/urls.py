@@ -52,6 +52,13 @@ urlpatterns = [
     path('api/actividades/',    views.api_actividades,    name='api_actividades'),
     path('api/partidas/',       views.api_partidas,       name='api_partidas'),
     path('api/fuentes/',        views.api_fuentes,        name='api_fuentes'),
+
+    # ── Carga de catálogos (CRUD genérico) ─────────────────────────────────
+    path('api/catalogos/listar/', views.api_catalogos_listar, name='api_catalogos_listar'),
+    path('api/catalogos/padres/', views.api_catalogos_padres, name='api_catalogos_padres'),
+    path('api/catalogos/crear/', views.api_catalogos_crear, name='api_catalogos_crear'),
+    path('api/catalogos/editar/<int:item_id>/', views.api_catalogos_editar, name='api_catalogos_editar'),
+    path('api/catalogos/eliminar/<int:item_id>/', views.api_catalogos_eliminar, name='api_catalogos_eliminar'),
     path('api/buscar-linea/',   views.api_buscar_linea,   name='api_buscar_linea'),
     path('api/imputacion/crear/', views.api_crear_imputacion, name='api_crear_imputacion'),
     path('api/resolver-lineas/', views.api_resolver_lineas, name='api_resolver_lineas'),
@@ -61,6 +68,8 @@ urlpatterns = [
     path('api/saldo-linea/', views.api_saldo_linea, name='api_saldo_linea'),
     path('refuerzo/crear/',                        views.refuerzo_crear,  name='refuerzo_crear'),
     path('refuerzo/editar/<int:refuerzo_id>/',     views.refuerzo_editar, name='refuerzo_editar'),
+    path('api/imputacion/<int:imputacion_id>/ups/', views.api_ups_imputacion, name='api_ups_imputacion'),
+    path('api/orden-pago/crear/',                   views.api_crear_orden_pago, name='api_crear_orden_pago'),
 
     # ── Otros dashboards ───────────────────────────────────────────────────
     path('usuariovip-dashboard/', views.usuariovip_dashboard, name='usuariovip_dashboard'),

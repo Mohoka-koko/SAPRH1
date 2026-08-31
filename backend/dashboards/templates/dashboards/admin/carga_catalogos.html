@@ -7,6 +7,8 @@
 
 {% block content %}
 
+{% csrf_token %}
+
 <div class="card">
   <h2>Carga de Catálogos</h2>
   <p class="subtitle">Elegí qué querés cargar. Se abre un formulario simple con código y denominación.</p>
@@ -76,6 +78,10 @@
   <div class="modal-box">
     <h3 id="modalTitulo">Cargar Programa</h3>
     <p class="modal-desc">Completá el código y la denominación. Se guardará en el catálogo correspondiente.</p>
+    <div class="form-group" id="grupoPadre" style="display:none;">
+      <label for="selectPadre" id="labelPadre">Padre</label>
+      <select id="selectPadre"></select>
+    </div>
     <div class="form-group">
       <label for="inputCodigo">Código</label>
       <input type="text" id="inputCodigo" placeholder="Ej: 05">

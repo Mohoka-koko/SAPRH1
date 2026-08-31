@@ -468,7 +468,7 @@
       document.getElementById("btnAddPartida").addEventListener("click", agregarFilaPartida);
       document.getElementById("btnDelPartida").addEventListener("click", eliminarFilaPartida);
   
-      document.getElementById("btnImprimir").addEventListener("click", imprimirDocumento);
+      document.getElementById("btnImprimir").addEventListener("click", guardarOrdenPago);
       document.getElementById("btnExportarPDF").addEventListener("click", exportarAPDF);
   }
   
@@ -481,66 +481,98 @@
    Lee el parámetro imputacion_id de la URL y completa los campos.
    ------------------------------------------------------------------------ */
   async function autocompletarDesdeImputacion() {
-    const params      = new URLSearchParams(window.location.search);
+    const params       = new URLSearchParams(window.location.search);
     const imputacionId = params.get('imputacion_id');
     if (!imputacionId) return;
 
+    // Guardamos el id globalmente para usarlo al guardar
+    window._imputacionId = imputacionId;
+
     try {
-        const resp = await fetch(`/api/imputacion/${imputacionId}/detalle/`);
-        if (!resp.ok) {
-            console.error('No se pudo cargar la imputación');
-            return;
-        }
-        const data = await resp.json();
+      // ── Datos del encabezado (expediente, jurisdicción, ejercicio) ────
+      const respDetalle = await fetch(`/api/imputacion/${imputacionId}/detalle/`);
+      if (!respDetalle.ok) {
+          console.error('No se pudo cargar el detalle de la imputación');
+          return;
+      }
+      const detalle = await respDetalle.json();
 
-        // ── Campos de encabezado ──────────────────────────────────────────
-        const campExpediente = document.getElementById('expediente');
-        const campEjercicio  = document.getElementById('ejercicio');
-        const campJurisdiccion = document.getElementById('jurisdiccion');
+      const campExpediente   = document.getElementById('expediente');
+      const campEjercicio    = document.getElementById('ejercicio');
+      const campJurisdiccion = document.getElementById('jurisdiccion');
 
-        if (campExpediente)   campExpediente.value   = data.expediente   || '';
-        if (campJurisdiccion) campJurisdiccion.value = data.jurisdiccion  || '';
+      if (campExpediente)   campExpediente.value   = detalle.expediente   || '';
+      if (campJurisdiccion) campJurisdiccion.value = detalle.jurisdiccion  || '';
+      if (campEjercicio && detalle.detalles.length > 0) {
+          campEjercicio.value = detalle.detalles[0].ejercicio || '';
+      }
 
-        // Ejercicio — tomar del primer detalle
-        if (campEjercicio && data.detalles.length > 0) {
-            campEjercicio.value = data.detalles[0].ejercicio || '';
-        }
+      // ── UPs disponibles con saldo ─────────────────────────────────────
+      const respUPs = await fetch(`/api/imputacion/${imputacionId}/ups/`);
+      if (!respUPs.ok) {
+          console.error('No se pudo cargar las UPs de la imputación');
+          return;
+      }
+      const dataUPs = await respUPs.json();
 
-        // ── Tabla de partidas ─────────────────────────────────────────────
-        // Limpiar la fila base que se crea al inicializar
-        const partidasBody = document.getElementById('partidasBody');
-        partidasBody.innerHTML = '';
+      const partidasBody = document.getElementById('partidasBody');
+      partidasBody.innerHTML = '';
 
-        data.detalles.forEach((d) => {
-            contadorPartidas++;
-            const fila = document.createElement('tr');
-            fila.dataset.filaId = contadorPartidas;
-            fila.innerHTML = `
-                <td><input type="text" class="input-cod-partida" value="${d.jur}"  readonly></td>
-                <td><input type="text" class="input-cod-partida" value="${d.prog}" readonly></td>
-                <td><input type="text" class="input-cod-partida" value="00"        readonly></td>
-                <td><input type="text" class="input-cod-partida" value="${d.pry}"  readonly></td>
-                <td><input type="text" class="input-cod-partida" value="${d.ao}"   readonly></td>
-                <td><input type="text" class="input-cod-partida" value="${d.part}" readonly></td>
-                <td><input type="text" class="input-desc-partida full" value="${d.denominacion}" readonly></td>
-                <td><input type="text" class="input-importe-partida" value="${formatearImporte(parseFloat(d.importe))}"></td>
-            `;
-            fila.addEventListener('click', () => seleccionarFila(fila, 'partidasBody'));
+      // JUR viene del detalle (primer registro)
+      const jur = detalle.detalles.length > 0 ? detalle.detalles[0].jur : '51';
 
-            // El importe de partida puede editarse si el usuario lo necesita
-            const inputImp = fila.querySelector('.input-importe-partida');
-            inputImp.addEventListener('blur', () => formatearInputImporte(inputImp));
+      dataUPs.ups.forEach((up) => {
+          contadorPartidas++;
+          const fila = document.createElement('tr');
+          fila.dataset.filaId   = contadorPartidas;
+          fila.dataset.detalleId = up.imputacion_detalle_id;  // ← clave para el guardado
+          fila.dataset.saldoDisponible = up.saldo_disponible;
 
-            partidasBody.appendChild(fila);
-        });
+          fila.innerHTML = `
+              <td><input type="text" class="input-cod-partida" value="${jur}"      readonly></td>
+              <td><input type="text" class="input-cod-partida" value="${up.prog}"  readonly></td>
+              <td><input type="text" class="input-cod-partida" value="00"          readonly></td>
+              <td><input type="text" class="input-cod-partida" value="${up.pry}"   readonly></td>
+              <td><input type="text" class="input-cod-partida" value="${up.ao}"    readonly></td>
+              <td><input type="text" class="input-cod-partida" value="${up.part}"  readonly></td>
+              <td>
+                  <input type="text" class="input-desc-partida full"
+                          value="${up.denominacion}" readonly>
+                  <small class="saldo-label">
+                      Disponible: $${formatearImporte(parseFloat(up.saldo_disponible))}
+                  </small>
+              </td>
+              <td>
+                  <input type="text"
+                          class="input-importe-partida input-importe-up"
+                          placeholder="0,00"
+                          value="">
+              </td>
+          `;
 
-        // ── Importe total ─────────────────────────────────────────────────
-        const total = data.detalles.reduce(
-            (acc, d) => acc + parseFloat(d.importe), 0
-        );
-        const campTotal = document.getElementById('importeTotal');
-        if (campTotal) campTotal.value = formatearImporte(total);
-        actualizarLetras();
+          fila.addEventListener('click', () => seleccionarFila(fila, 'partidasBody'));
+
+          const inputImp = fila.querySelector('.input-importe-up');
+          inputImp.addEventListener('blur',  () => formatearInputImporte(inputImp));
+          inputImp.addEventListener('input', () => {
+              // Validación visual: si supera el saldo disponible → rojo
+              const val  = parsearImporte(inputImp.value);
+              const tope = parseFloat(fila.dataset.saldoDisponible);
+              inputImp.style.borderColor = val > tope ? 'red' : '';
+          });
+
+          partidasBody.appendChild(fila);
+      });
+
+      // ── Importe total (suma de lo imputado en todas las UPs) ──────────
+      const totalImputado = dataUPs.ups.reduce(
+          (acc, up) => acc + parseFloat(up.importe_imputado), 0
+      );
+      const campTotal = document.getElementById('importeTotal');
+      if (campTotal) {
+          campTotal.value = formatearImporte(totalImputado);
+          actualizarLetras();
+      }
 
     } catch (err) {
         console.error('Error autocompletando desde imputación:', err);
@@ -662,6 +694,173 @@
   
     const numero = parsearImporte(importeTotal.value);
     importeLetras.value = numero > 0 ? numeroALetras(numero) : '';
+  }
+
+  async function guardarOrdenPago() {
+    const imputacionId = window._imputacionId;
+    if (!imputacionId) {
+        alert('No hay una imputación asociada a esta Orden de Pago.');
+        return;
+    }
+
+    // ── Recolectar beneficiarios ──────────────────────────────────────────
+    const filasBeneficiarios = document.querySelectorAll('#beneficiariosBody tr');
+    const beneficiarios = [];
+
+    for (const fila of filasBeneficiarios) {
+        const codigo  = fila.querySelector('.input-codigo-beneficiario')?.value.trim() || '';
+        const nombre  = fila.querySelector('.input-nombre-beneficiario')?.value.trim() || '';
+        const importe = parsearImporte(fila.querySelector('.input-importe-beneficiario')?.value);
+
+        if (!nombre && importe === 0) continue;  // fila vacía
+
+        if (!nombre || importe <= 0) {
+            alert('Hay un beneficiario incompleto. Revisá nombre e importe.');
+            return;
+        }
+        beneficiarios.push({ codigo_beneficiario: codigo, beneficiario: nombre, importe });
+    }
+
+    if (beneficiarios.length === 0) {
+        alert('Agregá al menos un beneficiario con importe.');
+        return;
+    }
+
+    // ── Recolectar UPs ────────────────────────────────────────────────────
+    const filasUPs = document.querySelectorAll('#partidasBody tr');
+    const ups = [];
+
+    for (const fila of filasUPs) {
+        const detalleId = fila.dataset.detalleId;
+        const importe   = parsearImporte(fila.querySelector('.input-importe-up')?.value);
+
+        if (!detalleId) continue;
+        if (importe === 0) continue;  // UP con importe 0 se ignora
+
+        if (importe < 0) {
+            alert('El importe de una UP no puede ser negativo.');
+            return;
+        }
+
+        const saldo = parseFloat(fila.dataset.saldoDisponible);
+        if (importe > saldo) {
+            alert(
+                `El importe asignado a una UP supera el saldo disponible.\n` +
+                `Disponible: $${formatearImporte(saldo)}\n` +
+                `Asignado: $${formatearImporte(importe)}`
+            );
+            return;
+        }
+
+        ups.push({ imputacion_detalle_id: detalleId, importe });
+    }
+
+    if (ups.length === 0) {
+        alert('Asigná importe a al menos una Unidad Presupuestaria.');
+        return;
+    }
+
+    // ── V1 y V2: validar que ambas sumas coincidan ────────────────────────
+    const totalBenef = beneficiarios.reduce((acc, b) => acc + b.importe, 0);
+    const totalUPs   = ups.reduce((acc, u) => acc + u.importe, 0);
+
+    if (Math.abs(totalBenef - totalUPs) > 0.01) {
+        alert(
+            `La suma de beneficiarios ($${formatearImporte(totalBenef)}) ` +
+            `no coincide con la suma de UPs ($${formatearImporte(totalUPs)}).\n` +
+            `Ambas deben ser iguales.`
+        );
+        return;
+    }
+
+    // ── Recolectar concepto del pago ──────────────────────────────────────
+    const conceptoLineas = Array.from(
+        document.querySelectorAll('#conceptoDescripcionContainer input')
+    ).map(i => i.value.trim()).filter(v => v).join(' / ');
+
+    const filasConcepto  = document.querySelectorAll('#conceptoPagoBody tr');
+    const codigoConcepto = filasConcepto[0]?.querySelector('.input-codigo-concepto')?.value.trim() || '0';
+    const descConcepto   = filasConcepto[0]?.querySelector('.input-desc-concepto')?.value.trim()   || '';
+
+    // ── Armar payload ─────────────────────────────────────────────────────
+    const payload = {
+        imputacion_id:             imputacionId,
+        nro_orden_pago:            document.getElementById('numeroOrden')?.value.trim()             || '',
+        fecha_vencimiento:         convertirFechaAIso(document.getElementById('fechaVencimiento')?.value) || null,
+        codigo_pago:               document.getElementById('codigoPago')?.value.trim()              || '0',
+        descripcion_codigo_pago:   document.getElementById('descripcionCodigoPago')?.value.trim()   || '',
+        concepto:                  conceptoLineas,
+        nro_factura:               document.getElementById('numeroFactura')?.value.trim()           || '',
+        nro_resolucion:            document.getElementById('resolucion')?.value.trim()              || '',
+        referencia_administrativa: document.getElementById('referenciaAdministrativa')?.value.trim() || '',
+        codigo_concepto_pago:      parseInt(codigoConcepto) || 0,
+        concepto_del_pago:         descConcepto,
+        beneficiarios,
+        ups,
+    };
+
+    // ── Validación mínima del encabezado ──────────────────────────────────
+    if (!payload.nro_orden_pago) {
+        alert('Ingresá el Número de Orden de Pago.');
+        return;
+    }
+
+    // ── POST a la API ─────────────────────────────────────────────────────
+    const btnGuardar = document.getElementById('btnImprimir');
+    try {
+        btnGuardar.disabled     = true;
+        btnGuardar.textContent  = 'Guardando...';
+
+        const csrfToken = getCookie('csrftoken');
+        const resp = await fetch('/api/orden-pago/crear/', {
+            method:  'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken':  csrfToken,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await resp.json();
+
+        if (resp.ok) {
+            alert(
+                `Orden de Pago guardada correctamente.\n` +
+                `Total: $${formatearImporte(parseFloat(data.importe_total))}`
+            );
+        } else {
+            alert('Error al guardar: ' + (data.error || 'revisá los datos.'));
+        }
+
+    } catch (err) {
+        console.error('Error guardando OP:', err);
+        alert('Error de red al guardar la Orden de Pago.');
+    } finally {
+        btnGuardar.disabled    = false;
+        btnGuardar.textContent = '💾 Guardar';
+    }
+  }
+
+  // Convierte "dd/mm/aaaa" → "aaaa-mm-dd" para la API
+  function convertirFechaAIso(fechaDDMMAAAA) {
+    if (!fechaDDMMAAAA) return null;
+    const partes = fechaDDMMAAAA.split('/');
+    if (partes.length !== 3) return null;
+    return `${partes[2]}-${partes[1]}-${partes[0]}`;
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        for (const cookie of document.cookie.split(';')) {
+            const c = cookie.trim();
+            if (c.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(c.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
   }
   
   document.addEventListener("DOMContentLoaded", () => {
