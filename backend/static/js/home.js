@@ -121,6 +121,8 @@ function calcularVariacionPorcentual(movimiento) {
 
 function renderPrograms() {
   const grid = document.getElementById("programsGrid");
+  if (!grid) return;
+
   grid.innerHTML = "";
 
   programsData.forEach((programa) => {
@@ -156,6 +158,50 @@ function renderPrograms() {
 
     grid.appendChild(card);
   });
+
+  window.requestAnimationFrame(() => updateProgramsNavigation());
+}
+
+function updateProgramsNavigation() {
+  const grid = document.getElementById("programsGrid");
+  const prevBtn = document.getElementById("programsPrevBtn");
+  const nextBtn = document.getElementById("programsNextBtn");
+
+  if (!grid || !prevBtn || !nextBtn) return;
+
+  const canScroll = grid.scrollWidth > grid.clientWidth + 1;
+  prevBtn.hidden = !canScroll;
+  nextBtn.hidden = !canScroll;
+
+  const maxScrollLeft = grid.scrollWidth - grid.clientWidth;
+  prevBtn.disabled = grid.scrollLeft <= 2;
+  nextBtn.disabled = grid.scrollLeft >= maxScrollLeft - 2;
+}
+
+function setupProgramsNavigation() {
+  const grid = document.getElementById("programsGrid");
+  const prevBtn = document.getElementById("programsPrevBtn");
+  const nextBtn = document.getElementById("programsNextBtn");
+
+  if (!grid || !prevBtn || !nextBtn) return;
+
+  const getScrollStep = () => {
+    const firstCard = grid.querySelector(".program-card");
+    if (!firstCard) return 220;
+    return firstCard.getBoundingClientRect().width + 16;
+  };
+
+  prevBtn.addEventListener("click", () => {
+    grid.scrollBy({ left: -getScrollStep(), behavior: "smooth" });
+  });
+
+  nextBtn.addEventListener("click", () => {
+    grid.scrollBy({ left: getScrollStep(), behavior: "smooth" });
+  });
+
+  grid.addEventListener("scroll", updateProgramsNavigation);
+  window.addEventListener("resize", updateProgramsNavigation);
+  updateProgramsNavigation();
 }
 
 function onProgramCardClick(programa) {
@@ -447,6 +493,8 @@ function setupSortEvents() {
 
 function renderBarChart(containerId, values) {
   const container = document.getElementById(containerId);
+  if (!container) return;
+
   const width = 140;
   const height = 70;
   const max = Math.max(...values);
@@ -466,6 +514,8 @@ function renderBarChart(containerId, values) {
 
 function renderLineChart(containerId, values) {
   const container = document.getElementById(containerId);
+  if (!container) return;
+
   const width = 220;
   const height = 70;
   const max = Math.max(...values);
@@ -492,8 +542,20 @@ function renderLineChart(containerId, values) {
 }
 
 function renderTopCharts() {
-  renderBarChart("chartInicial", [40, 55, 62, 48, 58, 50, 46, 42]);
-  renderLineChart("chartModificado", [30, 42, 38, 50, 46, 60, 55, 68, 62, 72]);
+  const hasInitialChart = document.getElementById("chartInicial");
+  const hasModifiedChart = document.getElementById("chartModificado");
+
+  if (!hasInitialChart && !hasModifiedChart) {
+    return;
+  }
+
+  if (hasInitialChart) {
+    renderBarChart("chartInicial", [40, 55, 62, 48, 58, 50, 46, 42]);
+  }
+
+  if (hasModifiedChart) {
+    renderLineChart("chartModificado", [30, 42, 38, 50, 46, 60, 55, 68, 62, 72]);
+  }
 }
 
 // =========================================================
@@ -535,6 +597,7 @@ async function init() {
   setupFilterEvents();
   setupSortEvents();
   setupToggleProgramsBtn();
+  setupProgramsNavigation();
   renderTopCharts();
 
   await fetchLineasPresupuestarias();
