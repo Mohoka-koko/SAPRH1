@@ -420,9 +420,57 @@ td { background: var(--white); }
 .tabla-concepto-pago .col-codigo { width: 15%; text-align: center; }
 .tabla-concepto-pago .col-importe { width: 25%; text-align: right; }
 
+.tabla-partidas {
+    table-layout: fixed;
+    width: 100%;
+}
+
 .tabla-partidas th { font-size: 0.8rem; }
-.tabla-partidas .col-partida-desc { width: 35%; }
-.tabla-partidas .col-importe { width: 20%; text-align: right; }
+
+/* JUR */
+.tabla-partidas th:nth-child(1),
+.tabla-partidas td:nth-child(1) { width: 6%; text-align: center; }
+
+/* PROG */
+.tabla-partidas th:nth-child(2),
+.tabla-partidas td:nth-child(2) { width: 6%; text-align: center; }
+
+/* S/PG */
+.tabla-partidas th:nth-child(3),
+.tabla-partidas td:nth-child(3) { width: 6%; text-align: center; }
+
+/* PRY */
+.tabla-partidas th:nth-child(4),
+.tabla-partidas td:nth-child(4) { width: 6%; text-align: center; }
+
+/* A/O */
+.tabla-partidas th:nth-child(5),
+.tabla-partidas td:nth-child(5) { width: 6%; text-align: center; }
+
+/* PART */
+.tabla-partidas th:nth-child(6),
+.tabla-partidas td:nth-child(6) { width: 7%; text-align: center; }
+
+/* FF */
+.tabla-partidas th:nth-child(7),
+.tabla-partidas td:nth-child(7) { width: 7%; text-align: center; }
+
+/* PARTIDA — después */
+.tabla-partidas th:nth-child(8),
+.tabla-partidas td:nth-child(8) { width: 30%; }
+
+/* IMPORTE */
+.tabla-partidas th:nth-child(9),
+.tabla-partidas td:nth-child(9) { width: 12%; text-align: right; }
+
+.tabla-partidas .input-cod-partida {
+    width: 100%;
+    text-align: center;
+    font-size: 0.82rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 .rentas-generales {
     text-align: center;
@@ -459,4 +507,138 @@ td { background: var(--white); }
     font-size: 0.85rem;
     color: #4b5563;
     font-weight: 500;
+}
+
+/* =========================================
+   PANEL FLOTANTE DE SALDOS — mismo estilo que imputación
+========================================= */
+.panel-saldos-widget {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 290px;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    font-family: Arial, sans-serif;
+    z-index: 9999;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.panel-saldos-widget.minimizado {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    border: 1.5px solid #0056b3;
+    overflow: hidden;
+    padding: 0;
+    background-color: transparent;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.panel-saldos-widget.minimizado:hover {
+    transform: scale(1.08);
+    border-color: #2563eb;
+}
+
+.panel-saldos-icono {
+    display: none;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.panel-saldos-widget.minimizado .panel-saldos-icono {
+    display: flex;
+}
+
+.panel-saldos-widget.minimizado .panel-saldos-contenido {
+    display: none;
+}
+
+.panel-saldos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #e2e8f0;
+    padding: 6px 10px;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.panel-saldos-titulo {
+    font-size: 11px;
+    font-weight: bold;
+    color: #1e293b;
+    letter-spacing: 0.3px;
+}
+
+.panel-saldos-cerrar {
+    background: none;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    color: #475569;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.panel-saldos-cerrar:hover {
+    color: #ef4444;
+}
+
+.panel-saldos-body {
+    padding: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.tabla-saldos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.tabla-saldos th,
+.tabla-saldos td {
+    padding: 5px 8px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+}
+
+.tabla-saldos th {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    font-weight: bold;
+}
+
+.saldo-verde {
+    color: #16a34a;
+    font-weight: bold;
+}
+
+.saldo-rojo {
+    color: #ef4444;
+    font-weight: bold;
+}
+
+.icono-imagen-local {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Quitar saldo-label de dentro de la tabla de partidas */
+.saldo-label {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .panel-saldos-widget { display: none !important; }
 }

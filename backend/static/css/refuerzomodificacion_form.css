@@ -24,6 +24,14 @@
     --mf-shadow:       0 2px 4px rgba(0,0,0,0.04);
 }
 
+.modref-page{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 1rem;
+    font-size: 1.1rem;
+}
+
 /* ── Página ─────────────────────────────────────────────────── */
 .mf-pagina {
     padding: 16px 48px 40px;

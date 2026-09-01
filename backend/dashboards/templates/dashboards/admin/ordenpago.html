@@ -160,6 +160,7 @@
                         <th>PRY</th>
                         <th>A/O</th>
                         <th>PART</th>
+                        <th>FF</th>
                         <th class="col-partida-desc">PARTIDA</th>
                         <th class="col-importe">IMPORTE</th>
                     </tr>
@@ -187,6 +188,34 @@
             </div>
 
         </div>
+    </div>
+
+    <div class="panel-saldos-widget" id="panelSaldos">
+
+        <div class="panel-saldos-icono" title="Ver Saldos Disponibles">
+            <img src="{% static 'img/Screenshot_43.png' %}" alt="Saldos" class="icono-imagen-local" />
+        </div>
+    
+        <div class="panel-saldos-contenido">
+            <div class="panel-saldos-header">
+                <span class="panel-saldos-titulo">HERRAMIENTA DE SALDOS DISPONIBLES</span>
+                <button type="button" class="panel-saldos-cerrar" id="btnMinimizarOP" title="Minimizar">&times;</button>
+            </div>
+    
+            <div class="panel-saldos-body">
+                <table class="tabla-saldos">
+                    <thead>
+                        <tr>
+                            <th>Línea</th>
+                            <th>Saldo Actual</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-saldos-body-op">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    
     </div>
 
 </div>
