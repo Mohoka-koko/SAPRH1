@@ -33,6 +33,16 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
+    function parseImporte(valorTexto) {
+        const valor = valorTexto.trim().replace(/\$/g, "");
+        if (!valor) return NaN;
+
+        const normalizado = valor.includes(",")
+            ? valor.replace(/\./g, "").replace(",", ".")
+            : valor;
+        return Number(normalizado);
+    }
+
     function calcularTotal() {
         let total = 0;
         const inputs = document.querySelectorAll(".importe");
@@ -43,9 +53,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            const valor = parseFloat(
-                valorTexto.replace(/\$/g, "").replace(/\./g, "").replace(",", ".")
-            );
+            const valor = parseImporte(valorTexto);
 
             if (!isNaN(valor)) {
                 total += valor;
@@ -515,7 +523,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
 
-                const importe = parseFloat(importeRaw);
+                const importe = parseImporte(importeRaw);
                 if (isNaN(importe) || importe <= 0) {
                     alert("El importe de una fila es inválido.");
                     return;
