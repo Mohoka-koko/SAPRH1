@@ -1697,15 +1697,17 @@ def api_ups_imputacion(request, imputacion_id):
             continue
 
         linea = d.linea_presupuestaria
+        # En api_ups_imputacion, dentro del append:
         resultado.append({
             'imputacion_detalle_id': d.id,
             'prog':                  linea.programa.codigo_programa,
             'pry':                   linea.proyecto.codigo_proyecto,
             'ao':                    linea.actividad_obra.codigo_act_obra,
             'part':                  linea.partida.codigo,
+            'fuente_codigo':         linea.fuente_financiamiento.codigo,  # ← nuevo
             'denominacion':          linea.partida.denominacion,
             'fuente':                linea.fuente_financiamiento.nombre,
-        'importe_imputado':          str(d.importe),
+            'importe_imputado':      str(d.importe),
             'ya_pagado':             str(ya_pagado),
             'saldo_disponible':      str(saldo_disponible),
         })

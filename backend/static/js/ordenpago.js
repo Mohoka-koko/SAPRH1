@@ -138,59 +138,59 @@
      return esValido;
    }
    
-   /* ------------------------------------------------------------------------
-      TABLA: BENEFICIARIOS (Código / Beneficiario / Importe)
-      ------------------------------------------------------------------------ */
+  /* ------------------------------------------------------------------------
+    TABLA: BENEFICIARIOS (Código / Beneficiario / Importe)
+    ------------------------------------------------------------------------ */
+  
+  /**
+  * Crea y agrega una nueva fila a la tabla de beneficiarios.
+  */
+  function agregarFilaBeneficiario() {
+    contadorBeneficiarios++;
+    const id = contadorBeneficiarios;
+  
+    const fila = document.createElement("tr");
+    fila.dataset.filaId = id;
+  
+    fila.innerHTML = `
+      <td class="col-codigo">
+        <input type="text" class="input-codigo-beneficiario" placeholder="0000-0">
+      </td>
+      <td class="col-beneficiario">
+        <input type="text" class="input-nombre-beneficiario" placeholder="Nombre / razón social del beneficiario">
+      </td>
+      <td class="col-importe">
+        <input type="text" class="input-importe-beneficiario" placeholder="0,00">
+      </td>
+    `;
+  
+    const cuerpoTabla = document.getElementById("beneficiariosBody");
+    cuerpoTabla.appendChild(fila);
+  
+    // Evento: seleccionar fila con un clic (para luego poder eliminarla)
+    fila.addEventListener("click", () => seleccionarFila(fila, "beneficiariosBody"));
+  
+    // Formateo y recálculo automático del importe
+    const inputImporte = fila.querySelector(".input-importe-beneficiario");
+    inputImporte.addEventListener("blur", () => {
+      formatearInputImporte(inputImporte);
+      recalcularImporteConcepto();
+    });
+    inputImporte.addEventListener("input", recalcularImporteConcepto);
+  }
    
-   /**
-    * Crea y agrega una nueva fila a la tabla de beneficiarios.
-    */
-   function agregarFilaBeneficiario() {
-     contadorBeneficiarios++;
-     const id = contadorBeneficiarios;
+  /**
+  * Elimina la fila actualmente seleccionada de la tabla de beneficiarios.
+  */
+  function eliminarFilaBeneficiario() {
+    eliminarFilaSeleccionada("beneficiariosBody");
+    recalcularImporteConcepto();
+  }
    
-     const fila = document.createElement("tr");
-     fila.dataset.filaId = id;
-   
-     fila.innerHTML = `
-       <td class="col-codigo">
-         <input type="text" class="input-codigo-beneficiario" placeholder="0000-0">
-       </td>
-       <td class="col-beneficiario">
-         <input type="text" class="input-nombre-beneficiario" placeholder="Nombre / razón social del beneficiario">
-       </td>
-       <td class="col-importe">
-         <input type="text" class="input-importe-beneficiario" placeholder="0,00">
-       </td>
-     `;
-   
-     const cuerpoTabla = document.getElementById("beneficiariosBody");
-     cuerpoTabla.appendChild(fila);
-   
-     // Evento: seleccionar fila con un clic (para luego poder eliminarla)
-     fila.addEventListener("click", () => seleccionarFila(fila, "beneficiariosBody"));
-   
-     // Formateo y recálculo automático del importe
-     const inputImporte = fila.querySelector(".input-importe-beneficiario");
-     inputImporte.addEventListener("blur", () => {
-       formatearInputImporte(inputImporte);
-       recalcularImporteTotal();
-     });
-     inputImporte.addEventListener("input", recalcularImporteTotal);
-   }
-   
-   /**
-    * Elimina la fila actualmente seleccionada de la tabla de beneficiarios.
-    */
-   function eliminarFilaBeneficiario() {
-     eliminarFilaSeleccionada("beneficiariosBody");
-     recalcularImporteTotal();
-   }
-   
-   /* ------------------------------------------------------------------------
-      TABLA: CONCEPTO DEL PAGO
-      ------------------------------------------------------------------------ */
-   
+  /* ------------------------------------------------------------------------
+    TABLA: CONCEPTO DEL PAGO
+    ------------------------------------------------------------------------ */
+  
    function agregarFilaConceptoPago() {
      contadorConceptoPago++;
    
@@ -203,7 +203,7 @@
          <input type="text" class="input-desc-concepto" placeholder="Descripción del concepto de pago">
        </td>
        <td class="col-importe">
-         <input type="text" class="input-importe-concepto" placeholder="0,00">
+         <input type="text" class="input-importe-concepto" placeholder="0,00" readonly>
        </td>
      `;
    
@@ -303,27 +303,57 @@
      }
    }
    
-   /* ------------------------------------------------------------------------
-      CÁLCULO AUTOMÁTICO DEL IMPORTE TOTAL
-      ------------------------------------------------------------------------ */
-   
-   /**
-    * Suma todos los importes cargados en la tabla de beneficiarios y actualiza
-    * el campo "Importe Total" del encabezado del formulario.
-    */
-    function recalcularImporteTotal() {
-      const inputsImporte = document.querySelectorAll(".input-importe-beneficiario");
-      let total = 0;
-    
-      inputsImporte.forEach((input) => {
+  /* ------------------------------------------------------------------------
+   CÁLCULO IMPORTE ORDEN DE PAGO (Señor Tesorero)
+   Suma los importes que el usuario asigna a las UPs.
+   ------------------------------------------------------------------------ */
+  function recalcularImporteOrdenPago() {
+    const inputsUP = document.querySelectorAll(".input-importe-up");
+    let total = 0;
+    inputsUP.forEach((input) => {
         total += parsearImporte(input.value);
-      });
-    
-      const campoTotal = document.getElementById("importeTotal");
-      campoTotal.value = formatearImporte(total);
-      actualizarLetras();
+    });
 
+    const campoTotal = document.getElementById("importeTotal");
+    if (campoTotal) {
+        campoTotal.value = total > 0 ? formatearImporte(total) : "";
+        actualizarLetras();
     }
+  }
+
+  /* ------------------------------------------------------------------------
+  CÁLCULO IMPORTE CONCEPTO DEL PAGO
+  Suma los importes de los beneficiarios y valida contra Señor Tesorero.
+  ------------------------------------------------------------------------ */
+  function recalcularImporteConcepto() {
+    const inputsBenef = document.querySelectorAll(".input-importe-beneficiario");
+    let totalBenef = 0;
+    inputsBenef.forEach((input) => {
+        totalBenef += parsearImporte(input.value);
+    });
+
+    // Actualizar importe de concepto del pago
+    const primeraFilaConcepto = document.querySelector("#conceptoPagoBody tr");
+    if (primeraFilaConcepto) {
+        const inputConcepto = primeraFilaConcepto.querySelector(".input-importe-concepto");
+        if (inputConcepto) {
+            inputConcepto.value = totalBenef > 0 ? formatearImporte(totalBenef) : "";
+        }
+    }
+
+    // Validación: concepto del pago no puede superar Señor Tesorero
+    const campoTotal = document.getElementById("importeTotal");
+    const totalOP    = parsearImporte(campoTotal?.value);
+    const errTotal   = document.getElementById("err-importeTotal");
+
+    if (totalOP > 0 && totalBenef > totalOP) {
+        if (errTotal) {
+            errTotal.textContent = `El total de beneficiarios ($${formatearImporte(totalBenef)}) supera el importe de la OP ($${formatearImporte(totalOP)}).`;
+        }
+    } else {
+        if (errTotal) errTotal.textContent = "";
+    }
+  }
    
    /* ------------------------------------------------------------------------
       ACCIONES GENERALES DEL FORMULARIO
@@ -333,7 +363,7 @@
     * Limpia todos los campos de texto del formulario y vacía las tablas
     * dinámicas, dejando una fila inicial en cada una.
     */
-   function limpiarFormulario() {
+  function limpiarFormulario() {
      const confirmar = confirm("¿Está seguro de que desea limpiar todo el formulario?");
      if (!confirmar) return;
    
@@ -452,24 +482,26 @@
     INICIALIZACIÓN GENERAL DE EVENTOS
     ------------------------------------------------------------------------ */
   
-    function inicializarEventosBotones() {
-      const btnNuevo   = document.getElementById("btnNuevo");
-      const btnLimpiar = document.getElementById("btnLimpiar");
-  
-      if (btnNuevo)   btnNuevo.addEventListener("click", nuevoFormulario);
-      if (btnLimpiar) btnLimpiar.addEventListener("click", limpiarFormulario);
-  
-      document.getElementById("btnAddBeneficiario").addEventListener("click", agregarFilaBeneficiario);
-      document.getElementById("btnDelBeneficiario").addEventListener("click", eliminarFilaBeneficiario);
-  
-      document.getElementById("btnAddConcepto").addEventListener("click", agregarFilaConceptoPago);
-      document.getElementById("btnDelConcepto").addEventListener("click", eliminarFilaConceptoPago);
-  
-      document.getElementById("btnAddPartida").addEventListener("click", agregarFilaPartida);
-      document.getElementById("btnDelPartida").addEventListener("click", eliminarFilaPartida);
-  
-      document.getElementById("btnImprimir").addEventListener("click", guardarOrdenPago);
-      document.getElementById("btnExportarPDF").addEventListener("click", exportarAPDF);
+  function inicializarEventosBotones() {
+    const btnNuevo   = document.getElementById("btnNuevo");
+    const btnLimpiar = document.getElementById("btnLimpiar");
+
+    if (btnNuevo)   btnNuevo.addEventListener("click", nuevoFormulario);
+    if (btnLimpiar) btnLimpiar.addEventListener("click", limpiarFormulario);
+
+    document.getElementById("btnAddBeneficiario").addEventListener("click", agregarFilaBeneficiario);
+    document.getElementById("btnDelBeneficiario").addEventListener("click", eliminarFilaBeneficiario);
+
+    document.getElementById("btnAddConcepto").addEventListener("click", agregarFilaConceptoPago);
+    document.getElementById("btnDelConcepto").addEventListener("click", eliminarFilaConceptoPago);
+
+    document.getElementById("btnAddPartida").addEventListener("click", agregarFilaPartida);
+    document.getElementById("btnDelPartida").addEventListener("click", eliminarFilaPartida);
+
+    document.getElementById("btnImprimir").addEventListener("click", guardarOrdenPago);
+    document.getElementById("btnExportarPDF").addEventListener("click", exportarAPDF);
+
+    inicializarPanelSaldos();
   }
   
   /**
@@ -535,6 +567,7 @@
               <td><input type="text" class="input-cod-partida" value="${up.pry}"   readonly></td>
               <td><input type="text" class="input-cod-partida" value="${up.ao}"    readonly></td>
               <td><input type="text" class="input-cod-partida" value="${up.part}"  readonly></td>
+              <td><input type="text" class="input-cod-partida" value="${up.fuente_codigo}" readonly></td>
               <td>
                   <input type="text" class="input-desc-partida full"
                           value="${up.denominacion}" readonly>
@@ -553,26 +586,30 @@
           fila.addEventListener('click', () => seleccionarFila(fila, 'partidasBody'));
 
           const inputImp = fila.querySelector('.input-importe-up');
-          inputImp.addEventListener('blur',  () => formatearInputImporte(inputImp));
           inputImp.addEventListener('input', () => {
-              // Validación visual: si supera el saldo disponible → rojo
-              const val  = parsearImporte(inputImp.value);
-              const tope = parseFloat(fila.dataset.saldoDisponible);
-              inputImp.style.borderColor = val > tope ? 'red' : '';
+            // Validación visual: si supera el saldo disponible → rojo
+            const val  = parsearImporte(inputImp.value);
+            const tope = parseFloat(fila.dataset.saldoDisponible);
+            inputImp.style.borderColor = val > tope ? 'red' : '';
+            recalcularImporteOrdenPago();
           });
+          inputImp.addEventListener('blur', () => {
+            formatearInputImporte(inputImp);
+            recalcularImporteOrdenPago();
+          });          
 
           partidasBody.appendChild(fila);
+          // Dentro del forEach de dataUPs.ups, después de appendChild(fila):
+          const upIndex = Array.from(partidasBody.children).length - 1;
+          const saldoOrig = parseFloat(up.saldo_disponible);
+
+          inputImp.addEventListener('input', () => {
+              const val = parsearImporte(inputImp.value);
+              actualizarSaldoEnPanel(upIndex, val, saldoOrig);
+          });
       });
 
-      // ── Importe total (suma de lo imputado en todas las UPs) ──────────
-      const totalImputado = dataUPs.ups.reduce(
-          (acc, up) => acc + parseFloat(up.importe_imputado), 0
-      );
-      const campTotal = document.getElementById('importeTotal');
-      if (campTotal) {
-          campTotal.value = formatearImporte(totalImputado);
-          actualizarLetras();
-      }
+      mostrarPanelSaldos(dataUPs.ups);
 
     } catch (err) {
         console.error('Error autocompletando desde imputación:', err);
@@ -760,14 +797,25 @@
         return;
     }
 
-    // ── V1 y V2: validar que ambas sumas coincidan ────────────────────────
+    // ── V1: beneficiarios no pueden superar el importe de la OP ──────────────
     const totalBenef = beneficiarios.reduce((acc, b) => acc + b.importe, 0);
     const totalUPs   = ups.reduce((acc, u) => acc + u.importe, 0);
+    const totalOP    = parsearImporte(document.getElementById('importeTotal')?.value);
 
-    if (Math.abs(totalBenef - totalUPs) > 0.01) {
+    if (totalBenef > totalOP) {
         alert(
-            `La suma de beneficiarios ($${formatearImporte(totalBenef)}) ` +
-            `no coincide con la suma de UPs ($${formatearImporte(totalUPs)}).\n` +
+            `El total de beneficiarios ($${formatearImporte(totalBenef)}) ` +
+            `supera el importe de la Orden de Pago ($${formatearImporte(totalOP)}).\n` +
+            `Ajustá los importes antes de guardar.`
+        );
+        return;
+    }
+
+    // ── V2: UPs deben coincidir con el importe de la OP ──────────────────────
+    if (Math.abs(totalUPs - totalOP) > 0.01) {
+        alert(
+            `La suma de UPs ($${formatearImporte(totalUPs)}) ` +
+            `no coincide con el importe de la OP ($${formatearImporte(totalOP)}).\n` +
             `Ambas deben ser iguales.`
         );
         return;
@@ -862,12 +910,70 @@
     }
     return cookieValue;
   }
-  
+
+  /* ------------------------------------------------------------------------
+   PANEL DE SALDOS DISPONIBLES
+   ------------------------------------------------------------------------ */
+
+  function inicializarPanelSaldos() {
+    const panel       = document.getElementById('panelSaldos');
+    const btnMinimizar = document.getElementById('btnMinimizarOP');
+
+    if (!panel || !btnMinimizar) return;
+
+    // X → minimizar
+    btnMinimizar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        panel.classList.add('minimizado');
+    });
+
+    // Clic en el cuadro minimizado → desplegar
+    panel.addEventListener('click', () => {
+        if (panel.classList.contains('minimizado')) {
+            panel.classList.remove('minimizado');
+        }
+    });
+  }
+
+  function mostrarPanelSaldos(ups) {
+    const tbody = document.getElementById('tabla-saldos-body-op');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    ups.forEach((up, i) => {
+        const saldo   = parseFloat(up.saldo_disponible);
+        const agotado = saldo <= 0;
+        const tr = document.createElement('tr');
+        tr.dataset.upIndex = i;
+        tr.innerHTML = `
+            <td title="${up.denominacion} (PRG ${up.prog} / A/O ${up.ao})">${i + 1}</td>
+            <td class="${agotado ? 'saldo-rojo' : 'saldo-verde'}">
+                $ ${formatearImporte(saldo)}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+  }
+
+  function actualizarSaldoEnPanel(index, importeAsignado, saldoOriginal) {
+    const fila = document.querySelector(`#tabla-saldos-body-op tr[data-up-index="${index}"]`);
+    if (!fila) return;
+
+    const celdaSaldo = fila.querySelector('td:last-child');
+    if (!celdaSaldo) return;
+
+    const saldoRestante = saldoOriginal - importeAsignado;
+    celdaSaldo.textContent = `$ ${formatearImporte(Math.max(saldoRestante, 0))}`;
+    celdaSaldo.className   = saldoRestante < 0 ? 'saldo-rojo' : 'saldo-verde';
+  }
+    
   document.addEventListener("DOMContentLoaded", () => {
     inicializarEventosBotones();
     configurarValidaciones();
     inicializarFilasBase();
-    recalcularImporteTotal();
+    recalcularImporteOrdenPago();
+    recalcularImporteConcepto();
     autocompletarDesdeImputacion();
   
     // Autocompletar delegación contable con valor fijo
