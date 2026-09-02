@@ -380,7 +380,7 @@ function renderUnitsTable() {
       <td>${m.ao}</td>
       <td>${m.partida}</td>
       <td>${m.ff}</td>
-      <td>${m.denominacion}</td>
+      <td class="denominacion-cell">${m.denominacion}</td>
       <td class="numeric">${formatCurrencyDetailed(m.saldoInicial)}</td>
       <td class="numeric saldo-modificado">${formatCurrencyDetailed(m.saldoModificado)}</td>
       <td class="td-expand">

@@ -12,10 +12,11 @@ body{
     background:var(--fondo);
 }
 
-.contenedor{
-    width:95%;
-    max-width:1300px;
-    margin:30px auto;
+.contenedor {
+    width: 100%;
+    max-width: 100%;
+    margin: 30px auto;
+    box-sizing: border-box;
 }
 
 .encabezado{
@@ -123,9 +124,11 @@ button:disabled:hover{
     white-space:nowrap;
 }
 
-.control-presupuesto input[type=number]{
-    width:240px;
-    margin:0;
+.control-presupuesto input[type=number] {
+    width: 240px;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
 }
 
 .alerta-descuadre{
@@ -139,13 +142,23 @@ button:disabled:hover{
     letter-spacing:.2px;
 }
 
-table{
-    width:100%;
-    border-collapse:collapse;
-    background:white;
-    border-radius:14px;
-    overflow:hidden;
-    box-shadow:0 2px 12px rgba(11,61,145,.06);
+table {
+    width: 100%;
+    min-width: 1080px;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(11,61,145,.06);
+    table-layout: auto;
+}
+
+.tabla-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    box-sizing: border-box;
 }
 
 thead{
@@ -183,9 +196,28 @@ tbody tr:hover{
     background:var(--azul-claro);
 }
 
-td:nth-child(6){
+td:nth-child(6),
+th:nth-child(6){
     text-align:left;
     font-weight:500;
+    white-space: normal;
+    line-height:1.45;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    min-width: 260px;
+    max-width: 320px;
+}
+
+th:nth-child(9),
+td:nth-child(9){
+    min-width: 180px;
+    white-space: normal;
+}
+
+td:nth-child(9){
+    text-align:right;
+    font-weight:700;
+    color:var(--verde);
 }
 
 td:last-child{
@@ -328,6 +360,14 @@ tfoot td#totalGeneral.total-descuadrado{
     background:#167e5f;
 }
 
+.encabezado,
+.control-presupuesto,
+.tabla-wrapper {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 .cerrar{
     color:white;
     font-size:32px;
@@ -342,31 +382,33 @@ tfoot td#totalGeneral.total-descuadrado{
     transform:rotate(90deg);
 }
 
-@media(max-width:900px){
+@media(max-width:900px) {
+    .contenedor {
+        padding: 0 16px 40px;
+    }
 
-table{
-    font-size:12px;
-}
+    table {
+        font-size: 12px;
+    }
 
-th,
-td{
-    padding:8px;
-}
+    th,
+    td {
+        padding: 8px;
+    }
 
-#buscador{
-    width:100%;
-}
+    #buscador {
+        width: 100%;
+    }
 
-.encabezado{
-    flex-direction:column;
-    align-items:flex-start;
-}
+    .encabezado {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 
-.modal-header,
-.modal-body,
-.modal-footer{
-    padding-left:20px;
-    padding-right:20px;
-}
-
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
 }

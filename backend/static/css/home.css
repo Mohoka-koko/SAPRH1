@@ -379,6 +379,18 @@ body {
   white-space: nowrap;
 }
 
+.units-table thead th.denominacion-col,
+.units-table td.denominacion-cell {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+  min-width: 180px;
+  max-width: 260px;
+  font-size: 12.5px;
+  vertical-align: top;
+}
+
 .units-table tbody tr:hover {
   background: #f5f9fb;
 }
