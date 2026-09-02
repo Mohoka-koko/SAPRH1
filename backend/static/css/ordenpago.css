@@ -642,3 +642,105 @@ td { background: var(--white); }
 @media (max-width: 900px) {
     .panel-saldos-widget { display: none !important; }
 }
+
+/* ── MODAL DE VALIDACIÓN ─────────────────────────────────────────────────── */
+.modal-validacion-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeInOverlay 0.2s ease;
+}
+
+@keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.modal-validacion-caja {
+    background: #fff;
+    border-radius: 10px;
+    padding: 32px 36px;
+    max-width: 460px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+    animation: slideUpModal 0.22s ease;
+    text-align: center;
+}
+
+@keyframes slideUpModal {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-validacion-icono {
+    font-size: 2.8rem;
+    margin-bottom: 10px;
+}
+
+.modal-validacion-titulo {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #b84a00;
+    margin: 0 0 6px;
+}
+
+.modal-validacion-subtitulo {
+    font-size: 0.92rem;
+    color: #555;
+    margin: 0 0 16px;
+}
+
+.modal-validacion-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 22px;
+    text-align: left;
+}
+
+.modal-validacion-lista li {
+    padding: 7px 10px;
+    border-left: 3px solid #e07800;
+    background: #fff8f2;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.modal-validacion-btn {
+    background: #b84a00;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 32px;
+    font-size: 0.97rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s;
+}
+
+.modal-validacion-btn:hover {
+    background: #8f3800;
+}
+
+/* ── SELECT CÓDIGO DE PAGO ───────────────────────────────────────────────── */
+.select-codigo-pago {
+    height: 28px;
+    border: none;
+    border-bottom: 1px solid #888;
+    border-radius: 0;
+    background: transparent;
+    font-size: 0.88rem;
+    color: #222;
+    cursor: pointer;
+    outline: none;
+    min-width: 90px;
+}
+
+.select-codigo-pago:focus {
+    border-bottom-color: #1a56db;
+}

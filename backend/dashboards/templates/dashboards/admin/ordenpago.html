@@ -80,8 +80,11 @@
             <div class="fila-codigo-pago">
                 <div class="cod-pago-izq">
                     <span class="etiqueta-inline">CÓDIGO DE PAGO:</span>
-                    <input type="text" id="codigoPago" class="input-caja chica" placeholder="000">
-                    <input type="text" id="descripcionCodigoPago" class="input-linea larga" placeholder="Descripción del código de pago">
+                    <select id="codigoPago" class="input-caja select-codigo-pago">
+                        <option value="" disabled selected>-- Seleccioná --</option>
+                    </select>
+                    <input type="text" id="descripcionCodigoPago" class="input-linea larga" 
+                        placeholder="Descripción del código de pago" readonly>
                 </div>
                 <div class="cod-pago-der">
                     <span class="etiqueta-inline">F. de Vencimiento:</span>
@@ -218,6 +221,17 @@
     
     </div>
 
+</div>
+
+<!-- MODAL DE VALIDACIÓN -->
+<div id="modalValidacion" class="modal-validacion-overlay" style="display:none;">
+    <div class="modal-validacion-caja">
+        <div class="modal-validacion-icono">⚠️</div>
+        <h3 class="modal-validacion-titulo">Campos incompletos</h3>
+        <p class="modal-validacion-subtitulo">Completá los siguientes campos antes de guardar:</p>
+        <ul id="modalValidacionLista" class="modal-validacion-lista"></ul>
+        <button id="modalValidacionCerrar" class="modal-validacion-btn">Entendido</button>
+    </div>
 </div>
 {% endblock %}
 

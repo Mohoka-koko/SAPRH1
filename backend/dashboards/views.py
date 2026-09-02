@@ -1879,3 +1879,10 @@ def api_crear_orden_pago(request):
         'orden_pago_id':    orden_pago.id,
         'importe_total':    str(importe_total),
     })
+
+from .models import CodigoPago  # agregá al bloque de imports
+
+@login_required
+def api_codigos_pago(request):
+    codigos = CodigoPago.objects.filter(activo=True).values('codigo', 'descripcion')
+    return JsonResponse(list(codigos), safe=False)

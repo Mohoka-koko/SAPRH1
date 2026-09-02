@@ -337,3 +337,19 @@ class MovimientoHistorial(models.Model):
 
     def __str__(self):
         return f'{self.tipo} - {self.linea_presupuestaria} - {self.monto}'
+    
+# ─────────────────────────────────────────────
+# CÓDIGO DE PAGO
+# ─────────────────────────────────────────────
+class CodigoPago(models.Model):
+    codigo      = models.IntegerField(unique=True)
+    descripcion = models.CharField(max_length=200)
+    activo      = models.BooleanField(default=True)
+
+    class Meta:
+        db_table     = 'codigo_pago'
+        ordering     = ['codigo']
+        verbose_name = 'Código de Pago'
+
+    def __str__(self):
+        return f'{self.codigo} - {self.descripcion}'

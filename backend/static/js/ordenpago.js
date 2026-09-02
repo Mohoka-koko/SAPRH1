@@ -733,159 +733,229 @@
     importeLetras.value = numero > 0 ? numeroALetras(numero) : '';
   }
 
+  /* ------------------------------------------------------------------------
+   MODAL DE VALIDACIÓN
+   ------------------------------------------------------------------------ */
+  function mostrarModalValidacion(errores) {
+    const overlay = document.getElementById('modalValidacion');
+    const lista   = document.getElementById('modalValidacionLista');
+    const btnCerrar = document.getElementById('modalValidacionCerrar');
+
+    lista.innerHTML = '';
+    errores.forEach(msg => {
+      const li = document.createElement('li');
+      li.textContent = msg;
+      lista.appendChild(li);
+    });
+
+    overlay.style.display = 'flex';
+
+    // Cerrar con el botón
+    btnCerrar.onclick = () => { overlay.style.display = 'none'; };
+
+    // Cerrar haciendo clic fuera de la caja
+    overlay.onclick = (e) => {
+      if (e.target === overlay) overlay.style.display = 'none';
+    };
+  }
+
   async function guardarOrdenPago() {
     const imputacionId = window._imputacionId;
-    if (!imputacionId) {
-        alert('No hay una imputación asociada a esta Orden de Pago.');
-        return;
+    const errores = [];
+  
+    // ── Validaciones de encabezado ────────────────────────────────────────
+    const numeroOrden = document.getElementById('numeroOrden')?.value.trim();
+    if (!numeroOrden) errores.push('Número de Orden de Pago es obligatorio.');
+  
+    const expediente = document.getElementById('expediente')?.value.trim();
+    if (!expediente) errores.push('Expediente Nº es obligatorio.');
+  
+    const ejercicio = document.getElementById('ejercicio')?.value.trim();
+    if (!ejercicio) errores.push('Ejercicio es obligatorio.');
+  
+    const jurisdiccion = document.getElementById('jurisdiccion')?.value.trim();
+    if (!jurisdiccion) errores.push('Jurisdicción es obligatoria.');
+  
+    const codigoPago = document.getElementById('codigoPago')?.value.trim();
+    if (!codigoPago) errores.push('Código de Pago es obligatorio.');
+  
+    const fechaVencimiento = document.getElementById('fechaVencimiento')?.value.trim();
+    if (!fechaVencimiento) {
+      errores.push('Fecha de Vencimiento es obligatoria.');
+    } else if (!/^\d{2}\/\d{2}\/\d{4}$/.test(fechaVencimiento)) {
+      errores.push('Fecha de Vencimiento debe tener formato dd/mm/aaaa.');
     }
-
-    // ── Recolectar beneficiarios ──────────────────────────────────────────
-    const filasBeneficiarios = document.querySelectorAll('#beneficiariosBody tr');
+  
+    const importeTotal = parsearImporte(document.getElementById('importeTotal')?.value);
+    if (importeTotal <= 0) errores.push('El importe total debe ser mayor a cero.');
+  
+    // ── Validación de imputación ──────────────────────────────────────────
+    if (!imputacionId) errores.push('No hay una imputación asociada a esta Orden de Pago.');
+  
+    // ── Validación de beneficiarios ───────────────────────────────────────
+    const filasBenef = document.querySelectorAll('#beneficiariosBody tr');
     const beneficiarios = [];
-
-    for (const fila of filasBeneficiarios) {
-        const codigo  = fila.querySelector('.input-codigo-beneficiario')?.value.trim() || '';
-        const nombre  = fila.querySelector('.input-nombre-beneficiario')?.value.trim() || '';
-        const importe = parsearImporte(fila.querySelector('.input-importe-beneficiario')?.value);
-
-        if (!nombre && importe === 0) continue;  // fila vacía
-
-        if (!nombre || importe <= 0) {
-            alert('Hay un beneficiario incompleto. Revisá nombre e importe.');
-            return;
-        }
-        beneficiarios.push({ codigo_beneficiario: codigo, beneficiario: nombre, importe });
+    let benefIncompleto = false;
+  
+    for (const fila of filasBenef) {
+      const nombre  = fila.querySelector('.input-nombre-beneficiario')?.value.trim() || '';
+      const importe = parsearImporte(fila.querySelector('.input-importe-beneficiario')?.value);
+      const codigo  = fila.querySelector('.input-codigo-beneficiario')?.value.trim() || '';
+  
+      if (!nombre && importe === 0) continue; // fila vacía, se ignora
+  
+      if (!nombre || importe <= 0) {
+        benefIncompleto = true;
+        break;
+      }
+      beneficiarios.push({ codigo_beneficiario: codigo, beneficiario: nombre, importe });
     }
-
-    if (beneficiarios.length === 0) {
-        alert('Agregá al menos un beneficiario con importe.');
-        return;
-    }
-
-    // ── Recolectar UPs ────────────────────────────────────────────────────
+  
+    if (benefIncompleto) errores.push('Hay un beneficiario incompleto (falta nombre o importe).');
+    if (beneficiarios.length === 0 && !benefIncompleto) errores.push('Agregá al menos un beneficiario con importe.');
+  
+    // ── Validación de UPs ─────────────────────────────────────────────────
     const filasUPs = document.querySelectorAll('#partidasBody tr');
     const ups = [];
-
+    let upNegativa = false;
+    let upSuperaSaldo = false;
+    let detalleSuperaSaldo = '';
+  
     for (const fila of filasUPs) {
-        const detalleId = fila.dataset.detalleId;
-        const importe   = parsearImporte(fila.querySelector('.input-importe-up')?.value);
-
-        if (!detalleId) continue;
-        if (importe === 0) continue;  // UP con importe 0 se ignora
-
-        if (importe < 0) {
-            alert('El importe de una UP no puede ser negativo.');
-            return;
-        }
-
-        const saldo = parseFloat(fila.dataset.saldoDisponible);
-        if (importe > saldo) {
-            alert(
-                `El importe asignado a una UP supera el saldo disponible.\n` +
-                `Disponible: $${formatearImporte(saldo)}\n` +
-                `Asignado: $${formatearImporte(importe)}`
-            );
-            return;
-        }
-
-        ups.push({ imputacion_detalle_id: detalleId, importe });
+      const detalleId = fila.dataset.detalleId;
+      const importe   = parsearImporte(fila.querySelector('.input-importe-up')?.value);
+  
+      if (!detalleId || importe === 0) continue;
+  
+      if (importe < 0) { upNegativa = true; break; }
+  
+      const saldo = parseFloat(fila.dataset.saldoDisponible);
+      if (importe > saldo) {
+        upSuperaSaldo = true;
+        detalleSuperaSaldo = `Disponible: $${formatearImporte(saldo)} / Asignado: $${formatearImporte(importe)}`;
+        break;
+      }
+      ups.push({ imputacion_detalle_id: detalleId, importe });
     }
-
-    if (ups.length === 0) {
-        alert('Asigná importe a al menos una Unidad Presupuestaria.');
-        return;
-    }
-
-    // ── V1: beneficiarios no pueden superar el importe de la OP ──────────────
+  
+    if (upNegativa)    errores.push('El importe de una Unidad Presupuestaria no puede ser negativo.');
+    if (upSuperaSaldo) errores.push(`Un importe de UP supera el saldo disponible. ${detalleSuperaSaldo}`);
+    if (ups.length === 0 && !upNegativa && !upSuperaSaldo) errores.push('Asigná importe a al menos una Unidad Presupuestaria.');
+  
+    // ── Validación cruzada ────────────────────────────────────────────────
     const totalBenef = beneficiarios.reduce((acc, b) => acc + b.importe, 0);
     const totalUPs   = ups.reduce((acc, u) => acc + u.importe, 0);
-    const totalOP    = parsearImporte(document.getElementById('importeTotal')?.value);
-
-    if (totalBenef > totalOP) {
-        alert(
-            `El total de beneficiarios ($${formatearImporte(totalBenef)}) ` +
-            `supera el importe de la Orden de Pago ($${formatearImporte(totalOP)}).\n` +
-            `Ajustá los importes antes de guardar.`
-        );
-        return;
+  
+    if (beneficiarios.length > 0 && totalBenef > importeTotal) {
+      errores.push(`El total de beneficiarios ($${formatearImporte(totalBenef)}) supera el importe de la OP ($${formatearImporte(importeTotal)}).`);
+    }
+    if (ups.length > 0 && Math.abs(totalUPs - importeTotal) > 0.01) {
+      errores.push(`La suma de UPs ($${formatearImporte(totalUPs)}) no coincide con el importe de la OP ($${formatearImporte(importeTotal)}).`);
+    }
+    
+      // ── Validación de código de beneficiario ──────────────────────────────
+    for (const fila of filasBenef) {
+      const nombre  = fila.querySelector('.input-nombre-beneficiario')?.value.trim() || '';
+      const codigo  = fila.querySelector('.input-codigo-beneficiario')?.value.trim() || '';
+      const importe = parsearImporte(fila.querySelector('.input-importe-beneficiario')?.value);
+      if (!nombre && importe === 0) continue; // fila vacía
+      if (!codigo) {
+        errores.push('Falta el código en uno o más beneficiarios.');
+        break;
+      }
     }
 
-    // ── V2: UPs deben coincidir con el importe de la OP ──────────────────────
-    if (Math.abs(totalUPs - totalOP) > 0.01) {
-        alert(
-            `La suma de UPs ($${formatearImporte(totalUPs)}) ` +
-            `no coincide con el importe de la OP ($${formatearImporte(totalOP)}).\n` +
-            `Ambas deben ser iguales.`
-        );
-        return;
+    // ── Validación de concepto del pago ───────────────────────────────────
+    const filasConceptoVal = document.querySelectorAll('#conceptoPagoBody tr');
+    for (const fila of filasConceptoVal) {
+      const cod  = fila.querySelector('.input-codigo-concepto')?.value.trim() || '';
+      const desc = fila.querySelector('.input-desc-concepto')?.value.trim()   || '';
+      if (!cod)  { errores.push('Falta el código en Concepto del Pago.');       break; }
+      if (!desc) { errores.push('Falta la descripción en Concepto del Pago.');  break; }
     }
 
-    // ── Recolectar concepto del pago ──────────────────────────────────────
+    // ── Validación de descripción del concepto (bloque libre) ────────────
+    const descripcionConcepto = Array.from(
+      document.querySelectorAll('#conceptoDescripcionContainer input')
+    ).map(i => i.value.trim()).filter(v => v);
+    if (descripcionConcepto.length === 0) {
+      errores.push('La descripción del concepto es obligatoria.');
+    }
+
+    // ── Validación de número de factura ───────────────────────────────────
+    const nroFactura = document.getElementById('numeroFactura')?.value.trim();
+    if (!nroFactura) errores.push('El número de factura es obligatorio.');
+
+    // ── Validación de resolución ──────────────────────────────────────────
+    const nroResolucion = document.getElementById('resolucion')?.value.trim();
+    if (!nroResolucion) errores.push('El número de resolución es obligatorio.');
+
+    // ── Validación de fecha de Rentas Generales ───────────────────────────
+    const fechaRentas = document.getElementById('fechaRentas')?.value.trim();
+    if (!fechaRentas) {
+      errores.push('La fecha de Rentas Generales es obligatoria.');
+    }
+
+    // ── Si hay errores → mostrar modal y frenar ───────────────────────────
+    if (errores.length > 0) {
+      mostrarModalValidacion(errores);
+      return;
+    }
+  
+    // ── A partir de acá todo está validado: continuar con el POST ─────────
     const conceptoLineas = Array.from(
-        document.querySelectorAll('#conceptoDescripcionContainer input')
+      document.querySelectorAll('#conceptoDescripcionContainer input')
     ).map(i => i.value.trim()).filter(v => v).join(' / ');
-
+  
     const filasConcepto  = document.querySelectorAll('#conceptoPagoBody tr');
     const codigoConcepto = filasConcepto[0]?.querySelector('.input-codigo-concepto')?.value.trim() || '0';
     const descConcepto   = filasConcepto[0]?.querySelector('.input-desc-concepto')?.value.trim()   || '';
-
-    // ── Armar payload ─────────────────────────────────────────────────────
+  
     const payload = {
-        imputacion_id:             imputacionId,
-        nro_orden_pago:            document.getElementById('numeroOrden')?.value.trim()             || '',
-        fecha_vencimiento:         convertirFechaAIso(document.getElementById('fechaVencimiento')?.value) || null,
-        codigo_pago:               document.getElementById('codigoPago')?.value.trim()              || '0',
-        descripcion_codigo_pago:   document.getElementById('descripcionCodigoPago')?.value.trim()   || '',
-        concepto:                  conceptoLineas,
-        nro_factura:               document.getElementById('numeroFactura')?.value.trim()           || '',
-        nro_resolucion:            document.getElementById('resolucion')?.value.trim()              || '',
-        referencia_administrativa: document.getElementById('referenciaAdministrativa')?.value.trim() || '',
-        codigo_concepto_pago:      parseInt(codigoConcepto) || 0,
-        concepto_del_pago:         descConcepto,
-        beneficiarios,
-        ups,
+      imputacion_id:             imputacionId,
+      nro_orden_pago:            numeroOrden,
+      fecha_vencimiento:         convertirFechaAIso(fechaVencimiento) || null,
+      codigo_pago:               codigoPago,
+      descripcion_codigo_pago:   document.getElementById('descripcionCodigoPago')?.value.trim() || '',
+      concepto:                  conceptoLineas,
+      nro_factura:               document.getElementById('numeroFactura')?.value.trim()          || '',
+      nro_resolucion:            document.getElementById('resolucion')?.value.trim()             || '',
+      referencia_administrativa: document.getElementById('referenciaAdministrativa')?.value.trim() || '',
+      codigo_concepto_pago:      parseInt(codigoConcepto) || 0,
+      concepto_del_pago:         descConcepto,
+      beneficiarios,
+      ups,
     };
-
-    // ── Validación mínima del encabezado ──────────────────────────────────
-    if (!payload.nro_orden_pago) {
-        alert('Ingresá el Número de Orden de Pago.');
-        return;
-    }
-
-    // ── POST a la API ─────────────────────────────────────────────────────
+  
     const btnGuardar = document.getElementById('btnImprimir');
     try {
-        btnGuardar.disabled     = true;
-        btnGuardar.textContent  = 'Guardando...';
-
-        const csrfToken = getCookie('csrftoken');
-        const resp = await fetch('/api/orden-pago/crear/', {
-            method:  'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken':  csrfToken,
-            },
-            body: JSON.stringify(payload),
-        });
-
-        const data = await resp.json();
-
-        if (resp.ok) {
-            alert(
-                `Orden de Pago guardada correctamente.\n` +
-                `Total: $${formatearImporte(parseFloat(data.importe_total))}`
-            );
-        } else {
-            alert('Error al guardar: ' + (data.error || 'revisá los datos.'));
-        }
-
+      btnGuardar.disabled    = true;
+      btnGuardar.textContent = 'Guardando...';
+  
+      const csrfToken = getCookie('csrftoken');
+      const resp = await fetch('/api/orden-pago/crear/', {
+        method:  'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken':  csrfToken,
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      const data = await resp.json();
+  
+      if (resp.ok) {
+        alert(`Orden de Pago guardada correctamente.\nTotal: $${formatearImporte(parseFloat(data.importe_total))}`);
+      } else {
+        mostrarModalValidacion([data.error || 'Error al guardar. Revisá los datos.']);
+      }
+  
     } catch (err) {
-        console.error('Error guardando OP:', err);
-        alert('Error de red al guardar la Orden de Pago.');
+      console.error('Error guardando OP:', err);
+      mostrarModalValidacion(['Error de red al guardar la Orden de Pago.']);
     } finally {
-        btnGuardar.disabled    = false;
-        btnGuardar.textContent = '💾 Guardar';
+      btnGuardar.disabled    = false;
+      btnGuardar.textContent = '💾 Guardar';
     }
   }
 
@@ -967,6 +1037,42 @@
     celdaSaldo.textContent = `$ ${formatearImporte(Math.max(saldoRestante, 0))}`;
     celdaSaldo.className   = saldoRestante < 0 ? 'saldo-rojo' : 'saldo-verde';
   }
+
+  /* ------------------------------------------------------------------------
+   CARGA DE CÓDIGOS DE PAGO
+   ------------------------------------------------------------------------ */
+  async function cargarCodigosPago() {
+    try {
+      const resp = await fetch('/api/codigos-pago/');
+      if (!resp.ok) return;
+      const codigos = await resp.json();
+
+      const select = document.getElementById('codigoPago');
+      if (!select) return;
+
+      // Guardar el mapa código → descripción para el autocompletado
+      window._codigosPagoMap = {};
+
+      codigos.forEach(({ codigo, descripcion }) => {
+        window._codigosPagoMap[codigo] = descripcion;
+        const option = document.createElement('option');
+        option.value       = codigo;
+        option.textContent = `${codigo}`;
+        select.appendChild(option);
+      });
+
+      // Al cambiar la selección, autocompletar la descripción
+      select.addEventListener('change', () => {
+        const desc = document.getElementById('descripcionCodigoPago');
+        if (desc) {
+          desc.value = window._codigosPagoMap[select.value] || '';
+        }
+      });
+
+    } catch (err) {
+      console.error('Error cargando códigos de pago:', err);
+    }
+  }
     
   document.addEventListener("DOMContentLoaded", () => {
     inicializarEventosBotones();
@@ -975,8 +1081,8 @@
     recalcularImporteOrdenPago();
     recalcularImporteConcepto();
     autocompletarDesdeImputacion();
+    cargarCodigosPago(); // ← agregar
   
-    // Autocompletar delegación contable con valor fijo
     const delegacion = document.getElementById("delegacionContable");
     if (delegacion) {
       delegacion.value = "ADM. PCIAL. DE RECURSOS HIDRICOS";

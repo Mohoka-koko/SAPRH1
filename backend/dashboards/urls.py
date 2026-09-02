@@ -70,6 +70,7 @@ urlpatterns = [
     path('refuerzo/editar/<int:refuerzo_id>/',     views.refuerzo_editar, name='refuerzo_editar'),
     path('api/imputacion/<int:imputacion_id>/ups/', views.api_ups_imputacion, name='api_ups_imputacion'),
     path('api/orden-pago/crear/',                   views.api_crear_orden_pago, name='api_crear_orden_pago'),
+    path('api/codigos-pago/', views.api_codigos_pago, name='api_codigos_pago'),
 
     # ── Otros dashboards ───────────────────────────────────────────────────
     path('usuariovip-dashboard/', views.usuariovip_dashboard, name='usuariovip_dashboard'),
