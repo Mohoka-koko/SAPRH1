@@ -536,14 +536,14 @@ def api_movimientos_linea(request, linea_id):
     ordenes_pago   = OrdenPago.objects.in_bulk(ids_por_tipo['ORDEN_PAGO'])
 
     # Nota: todavía no existe una forma de distinguir "O. P." de
-    # "O. P. Personal" en el modelo OrdenPago (no hay campo ni API de
-    # creación implementada aún), así que por ahora todas las órdenes
-    # de pago se etiquetan simplemente como "O. P.".
+    # "O. P. Personal" en el modelo OrdenPago (no hay campo que lo indique),
+    # así que por ahora todas las órdenes de pago se etiquetan como "O. P.".
     TIPO_LABELS = {
         'IMPUTACION':            'Imputación',
         'IMPUTACION_EDICION':    'Imputación (edición)',
         'IMPUTACION_ANULACION':  'Imputación (anulada)',
         'ORDEN_PAGO':            'O. P.',
+        'ORDEN_PAGO_UP':         'O. P.',
         'ORDEN_PAGO_ANULACION':  'O. P. (anulada)',
         'REFUERZO':              'Refuerzo',
         'REFUERZO_EDICION':      'Refuerzo (edición)',
@@ -555,16 +555,64 @@ def api_movimientos_linea(request, linea_id):
         'MODIFICACION_ANULACION': 'Modificación (anulada)',
     }
 
-    data = []
-    for h in historial:
-        expediente = ''
-        decreto    = ''
+    historial_list = list(historial)
 
+    # ── 1ª pasada: crear el "contenedor" de cada Imputación ────────────────
+    # (la OP siempre es más nueva que su Imputación, así que si arma-mos
+    # todo en una sola pasada por -fecha, la OP aparecería antes de que
+    # exista el nodo de su Imputación padre).
+    imputacion_items = {}
+    for h in historial_list:
+        if not h.tipo.startswith('IMPUTACION'):
+            continue
+        if h.referencia_id in imputacion_items:
+            continue
+        origen = imputaciones.get(h.referencia_id)
+        imputacion_items[h.referencia_id] = {
+            'tipo':              TIPO_LABELS.get(h.tipo, h.tipo),
+            'fechaCreacion':     h.fecha.strftime('%d/%m/%Y'),
+            'numeroExpediente':  origen.nro_expediente if origen else '',
+            'usuario':           h.usuario.nombre if h.usuario else '',
+            'importe':           str(h.monto),
+            'decretoResolucion': '',
+            'ordenesPago':       [],
+        }
+
+    # ── 2ª pasada: arma la lista final, anidando cada OP en su Imputación ──
+    data = []
+    imputaciones_agregadas = set()
+
+    for h in historial_list:
         if h.tipo.startswith('IMPUTACION'):
-            origen = imputaciones.get(h.referencia_id)
-            if origen:
-                expediente = origen.nro_expediente
-        elif h.tipo.startswith('REFUERZO'):
+            if h.referencia_id not in imputaciones_agregadas:
+                data.append(imputacion_items[h.referencia_id])
+                imputaciones_agregadas.add(h.referencia_id)
+            continue
+
+        if h.tipo.startswith('ORDEN_PAGO'):
+            origen = ordenes_pago.get(h.referencia_id)
+            op_item = {
+                'tipo':              TIPO_LABELS.get(h.tipo, h.tipo),
+                'fechaCreacion':     h.fecha.strftime('%d/%m/%Y'),
+                'numeroExpediente':  origen.nro_orden_pago if origen else '',
+                'usuario':           h.usuario.nombre if h.usuario else '',
+                'importe':           str(h.monto),
+                'decretoResolucion': origen.nro_resolucion if origen else '',
+            }
+            padre = imputacion_items.get(origen.imputacion_id) if origen else None
+            if padre is not None:
+                padre['ordenesPago'].append(op_item)
+            else:
+                # Caso borde: la OP no tiene, o no se pudo resolver, una
+                # Imputación padre visible en el historial de esta línea.
+                # Se muestra suelta para no perder la información.
+                data.append(op_item)
+            continue
+
+        # Refuerzo / Modificación: quedan al mismo nivel que las Imputaciones
+        expediente = ''
+        decreto = ''
+        if h.tipo.startswith('REFUERZO'):
             origen = refuerzos.get(h.referencia_id)
             if origen:
                 expediente = origen.nro_expediente
@@ -574,11 +622,6 @@ def api_movimientos_linea(request, linea_id):
             if origen:
                 expediente = origen.nro_expediente
                 decreto    = origen.nro_decreto
-        elif h.tipo.startswith('ORDEN_PAGO'):
-            origen = ordenes_pago.get(h.referencia_id)
-            if origen:
-                expediente = origen.nro_orden_pago
-                decreto    = origen.nro_resolucion
 
         data.append({
             'tipo':              TIPO_LABELS.get(h.tipo, h.tipo),

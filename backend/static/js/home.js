@@ -315,41 +315,64 @@ function getMovimientoImporte(movimiento) {
   return Number(movimiento.importe ?? calcularVariacion(movimiento));
 }
 
-function renderMovimientoItem(mov) {
-  const importe = Number(mov.importe);
+function renderMovimientoDetalle(item, numeroLabel) {
+  const importe = Number(item.importe);
   const importeClass = importe >= 0 ? "importe-positiva" : "importe-negativa";
+  const tipoConfig = getTipoConfig(item.tipo);
+
+  return `
+    <div class="detail-grid">
+      <div class="detail-item">
+        <span class="detail-label">Tipo</span>
+        <span class="detail-value detail-badge ${tipoConfig.badgeClass}">${item.tipo}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Fecha de creación</span>
+        <span class="detail-value">${item.fechaCreacion || "--/--/----"}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">${numeroLabel}</span>
+        <span class="detail-value">${item.numeroExpediente || "S/N"}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Usuario</span>
+        <span class="detail-value">${item.usuario || "No asignado"}</span>
+      </div>
+      ${item.decretoResolucion ? `
+        <div class="detail-item">
+          <span class="detail-label">Decreto/Resolución</span>
+          <span class="detail-value">${item.decretoResolucion}</span>
+        </div>
+      ` : ""}
+      <div class="detail-item">
+        <span class="detail-label">Importe</span>
+        <span class="detail-value ${importeClass}">${importe >= 0 ? "+" : ""}${formatCurrencyDetailed(importe)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderMovimientoItem(mov) {
   const tipoConfig = getTipoConfig(mov.tipo);
+  const esImputacion = mov.tipo.startsWith("Imputación");
+  const ordenesPago = mov.ordenesPago || [];
 
   return `
     <div class="detail-movimiento ${tipoConfig.className}">
-      <div class="detail-grid">
-        <div class="detail-item">
-          <span class="detail-label">Tipo</span>
-          <span class="detail-value detail-badge ${tipoConfig.badgeClass}">${mov.tipo}</span>
+      ${renderMovimientoDetalle(mov, esImputacion ? "N° de Expediente" : "N° de Orden de Pago")}
+      ${ordenesPago.length > 0 ? `
+        <div class="detail-ordenes-pago">
+          ${ordenesPago
+            .map(
+              (op) => `
+                <div class="detail-movimiento detail-movimiento-op ${getTipoConfig(op.tipo).className}">
+                  ${renderMovimientoDetalle(op, "N° de Orden de Pago")}
+                </div>
+              `
+            )
+            .join("")}
         </div>
-        <div class="detail-item">
-          <span class="detail-label">Fecha de creación</span>
-          <span class="detail-value">${mov.fechaCreacion || "--/--/----"}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">N° de Expediente</span>
-          <span class="detail-value">${mov.numeroExpediente || "S/N"}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Usuario</span>
-          <span class="detail-value">${mov.usuario || "No asignado"}</span>
-        </div>
-        ${mov.decretoResolucion ? `
-          <div class="detail-item">
-            <span class="detail-label">Decreto/Resolución</span>
-            <span class="detail-value">${mov.decretoResolucion}</span>
-          </div>
-        ` : ""}
-        <div class="detail-item">
-          <span class="detail-label">Importe</span>
-          <span class="detail-value ${importeClass}">${importe >= 0 ? "+" : ""}${formatCurrencyDetailed(importe)}</span>
-        </div>
-      </div>
+      ` : ""}
     </div>
   `;
 }
