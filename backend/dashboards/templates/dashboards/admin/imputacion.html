@@ -135,7 +135,7 @@
                         </select>
                     </td>
                     <td class="proveedor-cell">
-                        <input type="text" class="proveedor-input">
+                        <textarea class="proveedor-input" rows="2"></textarea>
                     </td>
                     <td class="importe-cell">
                         <input class="importe-input importe" type="number" inputmode="numeric" step="0.01" min="0">
@@ -148,12 +148,13 @@
 
                 <tr>
 
-                    <td colspan="6" class="foot-field">
+                    <td colspan="7" class="foot-field">
 
-                        Contabilizado por:
-
-                        <div class="select-wrapper static-display">
-                            <span class="id-user user-display" id="contabilizado-select">{{ request.user.get_full_name|default:request.user.nombre }}</span>
+                        <div class="contabilizado-box">
+                            <span class="contabilizado-label">Contabilizado por:</span>
+                            <div class="select-wrapper static-display">
+                                <span class="id-user user-display" id="contabilizado-select">{{ request.user.get_full_name|default:request.user.nombre }}</span>
+                            </div>
                         </div>
 
                     </td>
@@ -173,7 +174,7 @@
                 </tr>
 
                 <tr>
-                    <td colspan="6"></td>
+                    <td colspan="7"></td>
                     <td class="label-total">
                         FECHA
                     </td>

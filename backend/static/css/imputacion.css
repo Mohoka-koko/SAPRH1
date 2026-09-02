@@ -405,8 +405,8 @@ select:focus {
 .cod-cell {
   position: relative;
   text-align: center;
-  width: 34px;
-  min-width: 34px;
+  width: 64px;
+  min-width: 64px;
   border: 1px solid #374151;
 }
 
@@ -418,7 +418,7 @@ input.cod {
   text-align: center;
   font-size: 1rem !important;
   outline: none;
-  color: #374151;
+  color: transparent;
   font-family: inherit;
   cursor: pointer;
   appearance: none;
@@ -464,8 +464,14 @@ select.id-user::-ms-expand {
 }
 
 .select-wrapper.static-display {
+  display: inline-block;
+  min-width: 0;
   background: transparent;
-  padding: 0.5rem 0;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin-left: 0.25rem;
+  vertical-align: middle;
 }
 
 .select-wrapper.static-display::after {
@@ -500,8 +506,8 @@ select.id-user {
 
 /* --- Columna proveedor --- */
 .proveedor-header {
-  width: 400px;
-  min-width: 400px;
+  width: 260px;
+  min-width: 260px;
   border: 1px solid #374151 !important;
 }
 
@@ -515,8 +521,8 @@ select.id-user {
 }
 
 .importe-header {
-  width: 360px;
-  min-width: 360px;
+  width: 190px;
+  min-width: 190px;
   border-left: 1px solid #374151;
 }
 
@@ -525,11 +531,16 @@ select.id-user {
   border-left: 1px solid #374151;
 }
 
-input.proveedor-input {
+textarea.proveedor-input {
   width: 100%;
+  height: 3.2rem;
+  resize: none;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
   border: none;
   background: transparent;
   font-size: 1.2rem !important;
+  line-height: 1.25;
   outline: none;
   color: #000000;
   font-family: inherit;
@@ -567,9 +578,25 @@ input[type=number] {
 .foot-field {
   border: none !important;
   background: transparent;
-  padding: 0.85rem 1rem;
+  padding: 1rem;
   font-size: 1.05rem;
   color: #374151;
+}
+
+.contabilizado-box {
+  position: relative;
+  top: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+  background: #ffffff;
+  padding: 0.3rem 0.55rem;
+}
+
+.contabilizado-label {
+  white-space: nowrap;
 }
 
 .asiento-foot-cell {
@@ -870,4 +897,27 @@ input.comp-input-full {
   height: 100%;
   object-fit: cover; /* Cubre todo el cuadro sin deformar la imagen */
   display: block;
+}
+
+select.cod option {
+  color: #374151;
+}
+
+select.cod:focus,
+.cod-cell.mostrar-codigo select.cod:focus {
+  color: #374151;
+}
+
+.cod-cell.mostrar-codigo select.cod {
+  color: transparent;
+}
+
+.cod-cell.mostrar-codigo::before {
+  content: attr(data-codigo);
+  position: absolute;
+  inset: 50% 1rem auto 0;
+  transform: translateY(-50%);
+  text-align: center;
+  color: #374151;
+  pointer-events: none;
 }
