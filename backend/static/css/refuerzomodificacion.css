@@ -1,12 +1,6 @@
 /* ===== CONTENEDOR PRINCIPAL ===== */
 .pagina {
   width: 100%;
-  max-width: 1200px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.04);
-  padding: 2rem;
-  margin: 0 auto;
 }
 
 .header-pagina {
@@ -141,47 +135,119 @@
 }
 
 /* ===== TABLA DE REGISTROS ===== */
-.tabla-wrapper {
-  margin-bottom: 1.5rem;
-  overflow-x: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-}
-
-.tabla-registros {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  text-align: left;
-}
-
-/* Cabecera principal única con tu color naranja */
+/* Cabecera principal rediseñada */
 .tabla-registros th {
-  background: #cde4ff; /* Tu color naranja claro */
-  color: #062f81; /* Texto en contraste */
+  background: #002d70;
+  color: #b6b6b6;
   font-weight: 600;
   font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
   padding: 0.85rem 1rem;
-  border-bottom: 2px solid #cbd5e1; /* Línea para separar fuertemente la cabecera de los datos */
+  border-bottom: 1px solid #002d70;
 }
 
-/* Filas de datos */
-.tabla-registros td {
-  padding: 1rem;
-  border-bottom: 1px solid #0049a3; /* Línea separadora estándar entre registros */
+/* Fila principal interactivas */
+.fila-principal {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.fila-principal:hover {
+  background-color: #f9fafb;
+}
+.fila-principal td {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Celda de icono toggle */
+.toggle-cell {
+  width: 40px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+/* Estilos de la fila desplegada (Detalle) */
+.fila-detalle {
+  background-color: #ffffff;
+}
+.detalle-container {
+  display: flex;
+  justify-content: flex-start;
+  gap: 4rem;
+  padding: 1rem 3rem 1.5rem 3rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.detalle-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+.detalle-titulo {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #111827;
+  text-transform: uppercase;
+}
+.detalle-lista {
+  margin: 0;
+  padding-left: 1.2rem;
   font-size: 0.875rem;
   color: #374151;
-  vertical-align: middle;
+}
+.detalle-lista li {
+  margin-bottom: 0.25rem;
+}
+.detalle-subtotal {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
 }
 
-.tabla-registros tbody tr:last-child td {
-  border-bottom: none;
+/* Contenedor de acciones */
+.acciones-contenedor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.tabla-registros tbody tr:hover {
-  background-color: #c2c2c2;
+/* Botones de acción limpios */
+.btn-accion {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #6b7280; /* Gris sutil */
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hover específico por acción */
+.btn-ver:hover {
+  background-color: #eff6ff;
+  color: #2563eb; /* Azul */
+}
+
+.btn-editar:hover {
+  background-color: #f0fdf4;
+  color: #16a34a; /* Verde */
+}
+
+.btn-eliminar:hover {
+  background-color: #fef2f2;
+  color: #dc2626; /* Rojo */
+}
+
+.btn-accion:focus {
+  outline: none;
 }
 
 /* ===== ESTADO SIN RESULTADOS ===== */

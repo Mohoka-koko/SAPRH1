@@ -19,34 +19,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const REGISTROS_POR_PAGINA = 4;
   
   // ─── COLUMNAS ─────────────────────────────────────────────────────────────
-  const columnas = [
-    { key: "fecha", label: "Fecha", valor: (r) => formatearFecha(r.fecha) },
-    {
-      key: "transferentes",
-      label: "N° Unidad\nTransferente",
-      valor: (r) => (r.transferentes || []).map(f => formatearUnidad(f.numero)).join("<br>") || "—"
-    },
-    {
-      key: "importe_transferente",
-      label: "Importe\nTransferente",
-      valor: (r) => (r.transferentes || []).map(f => `$${formatearImporte(f.importe)}`).join("<br>") || "—",
-      clase: "col-importe"
-    },
-    {
-      key: "receptoras",
-      label: "N° Unidad\nReceptora",
-      valor: (r) => (r.receptoras || []).map(f => formatearUnidad(f.numero)).join("<br>") || "—"
-    },
-    {
-      key: "importe_receptora",
-      label: "Importe\nReceptora",
-      valor: (r) => (r.receptoras || []).map(f => `$${formatearImporte(f.importe)}`).join("<br>") || "—",
-      clase: "col-importe"
-    },
-    { key: "expediente", label: "N° Expediente", valor: (r) => r.expediente },
-    { key: "usuario",    label: "Usuario",       valor: (r) => r.usuario },
-    { key: "decreto",    label: "Decreto/\nResolución", valor: (r) => r.decreto },
-    { key: "importe_total", label: "Importe\nTotal", valor: (r) => `$${formatearImporte(r.importe_total)}`, clase: "col-importe" },
+  // ─── COLUMNAS PRINCIPALES (Sin Transferente/Receptora) ───────────
+  const columnasMain = [
+    { key: "fecha", label: "FECHA", valor: (r) => formatearFecha(r.fecha) },
+    
+    // Expediente vuelve a ser texto normal (sin enlace, color por defecto)
+    { key: "expediente", label: "EXPEDIENTE", valor: (r) => r.expediente },
+    
+    // Usuario con icono de FontAwesome
+    { key: "usuario", label: "USUARIO", valor: (r) => `<span style="display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-circle-user" style="color:#3b82f6;"></i> ${r.usuario}</span>` },
+    
+    // Decreto/Resolución ahora es el enlace azul con icono de archivo
+    { key: "decreto", label: "DOC. REFERENCIA", valor: (r) => `<a href="/ruta-a-tu-pdf/${r.id}" target="_blank" style="color:#2563eb; text-decoration:underline; display:flex; align-items:center; gap:6px;" title="Ver documento"><i class="fa-regular fa-file-pdf"></i> ${r.decreto}</a>` },
+    
+    { key: "importe_total", label: "IMPORTE TOTAL", valor: (r) => `<strong>$${formatearImporte(r.importe_total)}</strong>` }
   ];
   
   // ─── UTILIDADES ───────────────────────────────────────────────────────────
@@ -92,13 +78,21 @@ document.addEventListener("DOMContentLoaded", () => {
   
     thead.innerHTML = "";
     const trHead = document.createElement("tr");
-    columnas.forEach((col) => {
+    
+    // Columna para el ícono de desplegar
+    const thToggle = document.createElement("th");
+    thToggle.style.width = "40px";
+    trHead.appendChild(thToggle);
+
+    columnasMain.forEach((col) => {
       const th = document.createElement("th");
-      th.innerHTML = col.label.replace("\n", "<br/>");
+      th.innerHTML = col.label;
       trHead.appendChild(th);
     });
+    
+    // Columna de Acciones
     const thAcc = document.createElement("th");
-    thAcc.style.width = "30px";
+    thAcc.innerHTML = "ACCIONES";
     trHead.appendChild(thAcc);
     thead.appendChild(trHead);
   
@@ -113,44 +107,101 @@ document.addEventListener("DOMContentLoaded", () => {
   
     const totalPaginas = Math.ceil(lista.length / REGISTROS_POR_PAGINA);
     if (paginaActual > totalPaginas) paginaActual = totalPaginas;
-  
     const inicio = (paginaActual - 1) * REGISTROS_POR_PAGINA;
-    const fin    = inicio + REGISTROS_POR_PAGINA;
-    const pagina = lista.slice(inicio, fin);
+    const pagina = lista.slice(inicio, inicio + REGISTROS_POR_PAGINA);
   
     pagina.forEach((reg) => {
-      const trDato = document.createElement("tr");
-      trDato.className = "fila-dato";
-      trDato.dataset.id = reg.id;
-  
-      columnas.forEach((col) => {
+      // 1. FILA PRINCIPAL
+      const trMain = document.createElement("tr");
+      trMain.className = "fila-principal";
+      
+      const tdToggle = document.createElement("td");
+      tdToggle.className = "toggle-cell";
+      tdToggle.innerHTML = "<span>&#8964;</span>"; // Icono chevron down
+      trMain.appendChild(tdToggle);
+
+      columnasMain.forEach((col) => {
         const td = document.createElement("td");
         td.innerHTML = col.valor(reg);
-        if (col.clase) td.className = col.clase;
-        trDato.appendChild(td);
+        trMain.appendChild(td);
       });
   
-      const tdDel = document.createElement("td");
-      const btnDel = document.createElement("button");
-      btnDel.className = "btn-eliminar-fila";
-      btnDel.title = "Eliminar registro";
-      btnDel.textContent = "✕";
-      btnDel.addEventListener("click", (e) => {
+      // Acciones (Visualizar, Editar, Eliminar)
+      const tdAcc = document.createElement("td");
+      tdAcc.innerHTML = `
+        <div class="acciones-contenedor">
+            <button class="btn-accion btn-ver" title="Ver detalle">
+                <i class="fa-regular fa-eye"></i>
+            </button>
+            <button class="btn-accion btn-editar" title="Editar registro">
+                <i class="fa-regular fa-pen-to-square"></i>
+            </button>
+            <button class="btn-accion btn-eliminar" title="Eliminar registro">
+                <i class="fa-regular fa-trash-can"></i>
+            </button>
+        </div>
+      `;
+
+      // Lógica del botón VER
+      tdAcc.querySelector('.btn-ver').addEventListener("click", (e) => {
+        e.stopPropagation();
+        window.location.href = `/modificacion/ver/${reg.id}/`; 
+      });
+
+      // Lógica del botón EDITAR
+      tdAcc.querySelector('.btn-editar').addEventListener("click", (e) => {
+        e.stopPropagation();
+        window.location.href = `/modificacion/editar/${reg.id}/`; 
+      });
+
+      // Lógica del botón ELIMINAR
+      tdAcc.querySelector('.btn-eliminar').addEventListener("click", (e) => {
         e.stopPropagation();
         eliminarRegistro(reg.id);
       });
-      tdDel.appendChild(btnDel);
-      trDato.appendChild(tdDel);
+
+      trMain.appendChild(tdAcc);
   
-      trDato.addEventListener("click", () => {
-        window.location.href = `/modificacion/editar/${reg.id}/`;
+      // 2. FILA DETALLE (Oculta por defecto)
+      const trDetails = document.createElement("tr");
+      trDetails.className = "fila-detalle";
+      trDetails.style.display = "none";
+      
+      const tdDetails = document.createElement("td");
+      tdDetails.colSpan = columnasMain.length + 2;
+      
+      // Generar listas dinámicas de Origen y Destino
+      const liOrigen = reg.transferentes.map(t => `<li>${formatearUnidad(t.numero)} ($${formatearImporte(t.importe)})</li>`).join("");
+      const liDestino = reg.receptoras.map(r => `<li>${formatearUnidad(r.numero)} ($${formatearImporte(r.importe)})</li>`).join("");
+
+      tdDetails.innerHTML = `
+        <div class="detalle-container">
+            <div class="detalle-col">
+                <div class="detalle-titulo">ORIGEN (Transferente)</div>
+                <ul class="detalle-lista">${liOrigen}</ul>
+                <div class="detalle-subtotal">Subtotal Origen: $${formatearImporte(reg.importe_total)}</div>
+            </div>
+            <div class="detalle-col">
+                <div class="detalle-titulo">DESTINO (Receptora)</div>
+                <ul class="detalle-lista">${liDestino}</ul>
+                <div class="detalle-subtotal">Subtotal Destino: $${formatearImporte(reg.importe_total)}</div>
+            </div>
+        </div>
+      `;
+      trDetails.appendChild(tdDetails);
+
+      // Evento para expandir/contraer
+      trMain.addEventListener("click", () => {
+        const isHidden = trDetails.style.display === "none";
+        trDetails.style.display = isHidden ? "table-row" : "none";
+        tdToggle.innerHTML = isHidden ? "<span>&#8963;</span>" : "<span>&#8964;</span>"; // Cambia chevron up/down
       });
-      tbody.appendChild(trDato);
+
+      tbody.appendChild(trMain);
+      tbody.appendChild(trDetails);
     });
   
     renderPaginacion(lista.length);
-  
-    // Guardar lista actual para que la paginación funcione
     renderTabla._listaActual = lista;
   }
 

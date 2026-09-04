@@ -449,11 +449,23 @@ def api_home_lineas(request):
         )
 
     # Fecha exacta de la última modificación del presupuesto: el registro
-    # de MovimientoHistorial más reciente entre las líneas del ejercicio
-    # (se crea automáticamente cada vez que un refuerzo, modificación o
-    # imputación cambia el saldo_actual de una línea).
+    # de MovimientoHistorial más reciente que afecta a este ejercicio.
+    # Imputación, Refuerzo y Modificación ahora registran un único
+    # movimiento por operación con linea_presupuestaria=None, así que se
+    # identifican por el año de la propia operación en lugar de la línea.
+    # Órdenes de Pago siguen atadas a una línea (se filtran por
+    # línea__ejercicio) — ver nota en api_movimientos_linea.
+    from django.db.models import Q
+
+    imputacion_ids_ejercicio   = Imputacion.objects.filter(fecha__year=ejercicio).values_list('id', flat=True)
+    refuerzo_ids_ejercicio     = Refuerzo.objects.filter(fecha__year=ejercicio).values_list('id', flat=True)
+    modificacion_ids_ejercicio = Modificacion.objects.filter(fecha__year=ejercicio).values_list('id', flat=True)
+
     ultima_modificacion = MovimientoHistorial.objects.filter(
-        linea_presupuestaria__ejercicio=ejercicio
+        Q(linea_presupuestaria__ejercicio=ejercicio) |
+        Q(tipo__startswith='IMPUTACION', referencia_id__in=imputacion_ids_ejercicio) |
+        Q(tipo__startswith='REFUERZO', referencia_id__in=refuerzo_ids_ejercicio) |
+        Q(tipo__startswith='MODIFICACION', referencia_id__in=modificacion_ids_ejercicio)
     ).order_by('-fecha').values_list('fecha', flat=True).first()
 
     fecha_ultima_modificacion = (
@@ -509,128 +521,116 @@ def api_home_lineas(request):
 # ==========================================
 @rol_requerido('admin', 'adminprincipal')
 def api_movimientos_linea(request, linea_id):
-    from collections import defaultdict
-
     linea = get_object_or_404(LineaPresupuestaria, id=linea_id)
 
-    historial = MovimientoHistorial.objects.filter(
+    items_ordenables = []  # (fecha_datetime, item) -> se ordena al final
+
+    # ── Imputaciones: se leen directamente de ImputacionDetalle, NO de
+    #    MovimientoHistorial (que ahora guarda un único registro por toda
+    #    la Imputación, sin línea asociada). Así el importe mostrado es
+    #    siempre el exacto imputado a ESTA línea, sin riesgo de duplicados.
+    imputacion_items = {}  # imputacion_id -> item (para anidar las OP)
+
+    detalles_imputacion = ImputacionDetalle.objects.filter(
         linea_presupuestaria=linea
-    ).select_related('usuario').order_by('-fecha')
+    ).select_related('imputacion', 'imputacion__usuario')
 
-    # Agrupamos los referencia_id por documento de origen para resolver
-    # expediente/decreto en bloque y evitar una consulta por movimiento.
-    ids_por_tipo = defaultdict(set)
-    for h in historial:
-        if h.tipo.startswith('IMPUTACION'):
-            ids_por_tipo['IMPUTACION'].add(h.referencia_id)
-        elif h.tipo.startswith('REFUERZO'):
-            ids_por_tipo['REFUERZO'].add(h.referencia_id)
-        elif h.tipo.startswith('MODIFICACION'):
-            ids_por_tipo['MODIFICACION'].add(h.referencia_id)
-        elif h.tipo.startswith('ORDEN_PAGO'):
-            ids_por_tipo['ORDEN_PAGO'].add(h.referencia_id)
-
-    imputaciones   = Imputacion.objects.in_bulk(ids_por_tipo['IMPUTACION'])
-    refuerzos      = Refuerzo.objects.in_bulk(ids_por_tipo['REFUERZO'])
-    modificaciones = Modificacion.objects.in_bulk(ids_por_tipo['MODIFICACION'])
-    ordenes_pago   = OrdenPago.objects.in_bulk(ids_por_tipo['ORDEN_PAGO'])
-
-    # Nota: todavía no existe una forma de distinguir "O. P." de
-    # "O. P. Personal" en el modelo OrdenPago (no hay campo que lo indique),
-    # así que por ahora todas las órdenes de pago se etiquetan como "O. P.".
-    TIPO_LABELS = {
-        'IMPUTACION':            'Imputación',
-        'IMPUTACION_EDICION':    'Imputación (edición)',
-        'IMPUTACION_ANULACION':  'Imputación (anulada)',
-        'ORDEN_PAGO':            'O. P.',
-        'ORDEN_PAGO_UP':         'O. P.',
-        'ORDEN_PAGO_ANULACION':  'O. P. (anulada)',
-        'REFUERZO':              'Refuerzo',
-        'REFUERZO_EDICION':      'Refuerzo (edición)',
-        'REFUERZO_ANULACION':    'Refuerzo (anulado)',
-        'MODIFICACION_SALIDA':   'Modificación',
-        'MODIFICACION_ENTRADA':  'Modificación',
-        'MODIFICACION':          'Modificación',
-        'MODIFICACION_EDICION':  'Modificación (edición)',
-        'MODIFICACION_ANULACION': 'Modificación (anulada)',
-    }
-
-    historial_list = list(historial)
-
-    # ── 1ª pasada: crear el "contenedor" de cada Imputación ────────────────
-    # (la OP siempre es más nueva que su Imputación, así que si arma-mos
-    # todo en una sola pasada por -fecha, la OP aparecería antes de que
-    # exista el nodo de su Imputación padre).
-    imputacion_items = {}
-    for h in historial_list:
-        if not h.tipo.startswith('IMPUTACION'):
-            continue
-        if h.referencia_id in imputacion_items:
-            continue
-        origen = imputaciones.get(h.referencia_id)
-        imputacion_items[h.referencia_id] = {
-            'tipo':              TIPO_LABELS.get(h.tipo, h.tipo),
-            'fechaCreacion':     h.fecha.strftime('%d/%m/%Y'),
-            'numeroExpediente':  origen.nro_expediente if origen else '',
-            'usuario':           h.usuario.nombre if h.usuario else '',
-            'importe':           str(h.monto),
+    for det in detalles_imputacion:
+        imp = det.imputacion
+        item = {
+            'tipo':              'Imputación',
+            'fechaCreacion':     imp.fecha_creacion.strftime('%d/%m/%Y'),
+            'numeroExpediente':  imp.nro_expediente,
+            'usuario':           imp.usuario.nombre if imp.usuario else '',
+            'importe':           str(-det.importe),
             'decretoResolucion': '',
             'ordenesPago':       [],
         }
+        imputacion_items[imp.id] = item
+        items_ordenables.append((imp.fecha_creacion, item))
 
-    # ── 2ª pasada: arma la lista final, anidando cada OP en su Imputación ──
-    data = []
-    imputaciones_agregadas = set()
+    # ── Órdenes de Pago: se anidan dentro de su Imputación de origen usando
+    #    la FK real de la línea de detalle (imputacion_detalle.imputacion_id),
+    #    con el importe que ESA OP usó específicamente de ESTA línea.
+    ups_op = OrdenPagoUnidadPresupuestaria.objects.filter(
+        imputacion_detalle__linea_presupuestaria=linea
+    ).select_related('orden_pago', 'orden_pago__usuario', 'imputacion_detalle__imputacion')
 
-    for h in historial_list:
-        if h.tipo.startswith('IMPUTACION'):
-            if h.referencia_id not in imputaciones_agregadas:
-                data.append(imputacion_items[h.referencia_id])
-                imputaciones_agregadas.add(h.referencia_id)
-            continue
+    for up in ups_op:
+        op = up.orden_pago
+        op_item = {
+            'tipo':              'O. P.',
+            'fechaCreacion':     op.fecha_creacion.strftime('%d/%m/%Y'),
+            'numeroExpediente':  op.nro_orden_pago,
+            'usuario':           op.usuario.nombre if op.usuario else '',
+            'importe':           str(-up.importe),
+            'decretoResolucion': op.nro_resolucion,
+        }
+        padre = imputacion_items.get(up.imputacion_detalle.imputacion_id)
+        if padre is not None:
+            padre['ordenesPago'].append(op_item)
+        else:
+            # Caso borde (no debería pasar dado el filtro de arriba):
+            # se muestra suelta para no perder la información.
+            items_ordenables.append((op.fecha_creacion, op_item))
 
-        if h.tipo.startswith('ORDEN_PAGO'):
-            origen = ordenes_pago.get(h.referencia_id)
-            op_item = {
-                'tipo':              TIPO_LABELS.get(h.tipo, h.tipo),
-                'fechaCreacion':     h.fecha.strftime('%d/%m/%Y'),
-                'numeroExpediente':  origen.nro_orden_pago if origen else '',
-                'usuario':           h.usuario.nombre if h.usuario else '',
-                'importe':           str(h.monto),
-                'decretoResolucion': origen.nro_resolucion if origen else '',
-            }
-            padre = imputacion_items.get(origen.imputacion_id) if origen else None
-            if padre is not None:
-                padre['ordenesPago'].append(op_item)
-            else:
-                # Caso borde: la OP no tiene, o no se pudo resolver, una
-                # Imputación padre visible en el historial de esta línea.
-                # Se muestra suelta para no perder la información.
-                data.append(op_item)
-            continue
+    # ── Refuerzos: se leen directamente de RefuerzoDetalle, NO de
+    #    MovimientoHistorial (que ahora guarda un único registro por todo
+    #    el Refuerzo, sin línea asociada).
+    detalles_refuerzo = RefuerzoDetalle.objects.filter(
+        linea_destino=linea
+    ).select_related('refuerzo', 'refuerzo__usuario')
 
-        # Refuerzo / Modificación: quedan al mismo nivel que las Imputaciones
-        expediente = ''
-        decreto = ''
-        if h.tipo.startswith('REFUERZO'):
-            origen = refuerzos.get(h.referencia_id)
-            if origen:
-                expediente = origen.nro_expediente
-                decreto    = origen.nro_decreto_resolucion
-        elif h.tipo.startswith('MODIFICACION'):
-            origen = modificaciones.get(h.referencia_id)
-            if origen:
-                expediente = origen.nro_expediente
-                decreto    = origen.nro_decreto
+    for det in detalles_refuerzo:
+        ref = det.refuerzo
+        item = {
+            'tipo':              'Refuerzo',
+            'fechaCreacion':     ref.fecha_creacion.strftime('%d/%m/%Y'),
+            'numeroExpediente':  ref.nro_expediente,
+            'usuario':           ref.usuario.nombre if ref.usuario else '',
+            'importe':           str(det.importe),
+            'decretoResolucion': ref.nro_decreto_resolucion,
+        }
+        items_ordenables.append((ref.fecha_creacion, item))
 
-        data.append({
-            'tipo':              TIPO_LABELS.get(h.tipo, h.tipo),
-            'fechaCreacion':     h.fecha.strftime('%d/%m/%Y'),
-            'numeroExpediente':  expediente,
-            'usuario':           h.usuario.nombre if h.usuario else '',
-            'importe':           str(h.monto),
-            'decretoResolucion': decreto,
-        })
+    # ── Modificaciones: se leen directamente de ModificacionTransferente
+    #    (líneas de origen, importe negativo) y ModificacionReceptora
+    #    (líneas de destino, importe positivo), NO de MovimientoHistorial.
+    transferentes = ModificacionTransferente.objects.filter(
+        linea_origen=linea
+    ).select_related('modificacion', 'modificacion__usuario')
+
+    for det in transferentes:
+        mod = det.modificacion
+        item = {
+            'tipo':              'Modificación',
+            'fechaCreacion':     mod.fecha_creacion.strftime('%d/%m/%Y'),
+            'numeroExpediente':  mod.nro_expediente,
+            'usuario':           mod.usuario.nombre if mod.usuario else '',
+            'importe':           str(-det.importe),
+            'decretoResolucion': mod.nro_decreto,
+        }
+        items_ordenables.append((mod.fecha_creacion, item))
+
+    receptoras = ModificacionReceptora.objects.filter(
+        linea_destino=linea
+    ).select_related('modificacion', 'modificacion__usuario')
+
+    for det in receptoras:
+        mod = det.modificacion
+        item = {
+            'tipo':              'Modificación',
+            'fechaCreacion':     mod.fecha_creacion.strftime('%d/%m/%Y'),
+            'numeroExpediente':  mod.nro_expediente,
+            'usuario':           mod.usuario.nombre if mod.usuario else '',
+            'importe':           str(det.importe),
+            'decretoResolucion': mod.nro_decreto,
+        }
+        items_ordenables.append((mod.fecha_creacion, item))
+
+    # ── Orden final: más reciente primero ──────────────────────────────
+    items_ordenables.sort(key=lambda par: par[0], reverse=True)
+    data = [item for _, item in items_ordenables]
 
     return JsonResponse({'movimientos': data})
 
@@ -699,14 +699,19 @@ def api_crear_refuerzo(request):
                 linea.saldo_actual += importe
                 linea.save()
 
-                MovimientoHistorial.objects.create(
-                    linea_presupuestaria = linea,
-                    tipo                 = 'REFUERZO',
-                    referencia_id        = refuerzo.id,
-                    usuario              = request.user,
-                    monto                = importe,
-                    descripcion          = f'Refuerzo por decreto {nro_decreto} — expediente {nro_expediente}',
-                )
+            # ── Un único registro de historial para TODO el Refuerzo ──────
+            # (antes se creaba uno por cada línea afectada, dentro del loop
+            # de arriba, lo que hacía que el mismo Refuerzo apareciera
+            # duplicado en el Home). El detalle por línea sigue disponible
+            # en RefuerzoDetalle, que es de ahí de donde lo lee el Home.
+            MovimientoHistorial.objects.create(
+                linea_presupuestaria = None,
+                tipo                 = 'REFUERZO',
+                referencia_id        = refuerzo.id,
+                usuario              = request.user,
+                monto                = importe_total,
+                descripcion          = f'Refuerzo por decreto {nro_decreto} — expediente {nro_expediente}',
+            )
 
     except ValueError as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -833,14 +838,6 @@ def api_crear_modificacion(request):
                 )
                 linea.saldo_actual -= importe
                 linea.save()
-                MovimientoHistorial.objects.create(
-                    linea_presupuestaria = linea,
-                    tipo                 = 'MODIFICACION',
-                    referencia_id        = modificacion.id,
-                    usuario              = request.user,
-                    monto                = -importe,
-                    descripcion          = f'Modificación origen — decreto {nro_decreto} — expediente {nro_expediente}',
-                )
 
             # Crear detalles y actualizar saldos receptoras
             for linea, importe in lineas_receptoras:
@@ -851,14 +848,21 @@ def api_crear_modificacion(request):
                 )
                 linea.saldo_actual += importe
                 linea.save()
-                MovimientoHistorial.objects.create(
-                    linea_presupuestaria = linea,
-                    tipo                 = 'MODIFICACION',
-                    referencia_id        = modificacion.id,
-                    usuario              = request.user,
-                    monto                = importe,
-                    descripcion          = f'Modificación destino — decreto {nro_decreto} — expediente {nro_expediente}',
-                )
+
+            # ── Un único registro de historial para TODA la Modificación ──
+            # (antes se creaba uno por cada línea transferente/receptora,
+            # dentro de los loops de arriba, lo que hacía que la misma
+            # Modificación apareciera duplicada en el Home). El detalle por
+            # línea sigue disponible en ModificacionTransferente /
+            # ModificacionReceptora, que es de ahí de donde lo lee el Home.
+            MovimientoHistorial.objects.create(
+                linea_presupuestaria = None,
+                tipo                 = 'MODIFICACION',
+                referencia_id        = modificacion.id,
+                usuario              = request.user,
+                monto                = total_transferente,
+                descripcion          = f'Modificación — decreto {nro_decreto} — expediente {nro_expediente}',
+            )
 
     except ValueError as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -1200,7 +1204,7 @@ def api_crear_imputacion(request):
                 usuario        = request.user,
             )
 
-            # ── Crear detalles, descontar saldo y registrar historial ─────
+            # ── Crear detalles y descontar saldo (sin cambios) ────────────
             importe_total = Decimal('0')
             for d in detalles_expandidos:
                 linea = d['linea']
@@ -1215,19 +1219,21 @@ def api_crear_imputacion(request):
                 linea.saldo_actual -= d['importe']
                 linea.save()
 
-                MovimientoHistorial.objects.create(
-                    linea_presupuestaria = linea,
-                    tipo                 = 'IMPUTACION',
-                    referencia_id        = imputacion.id,
-                    usuario              = request.user,
-                    monto                = -d['importe'],
-                    descripcion          = (
-                        f'Imputación exp. {nro_expediente} '
-                        f'asiento {asiento_nro} — {d["proveedor_concepto"]}'
-                    ),
-                )
-
                 importe_total += d['importe']
+
+            # ── Un único registro de historial para TODA la Imputación ────
+            # (antes se creaba uno por cada línea afectada, dentro del loop
+            # de arriba, lo que hacía que la misma Imputación apareciera
+            # duplicada en el Home). El detalle por línea sigue disponible
+            # en ImputacionDetalle, que es de ahí de donde lo lee el Home.
+            MovimientoHistorial.objects.create(
+                linea_presupuestaria = None,
+                tipo                 = 'IMPUTACION',
+                referencia_id        = imputacion.id,
+                usuario              = request.user,
+                monto                = -importe_total,
+                descripcion          = f'Imputación exp. {nro_expediente} asiento {asiento_nro}',
+            )
 
     except ValueError as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -1887,7 +1893,12 @@ def api_crear_orden_pago(request):
                     importe             = Decimal(str(b['importe'])),
                 )
 
-            # --- Crear UPs, deconectar saldo de línea y registrar historial
+            # --- Crear UPs y registrar historial ------------------------------
+            # IMPORTANTE: la OP NO modifica saldo_actual de la UP. Ese saldo
+            # ya se descontó una vez cuando se creó la Imputación. La OP solo
+            # consume parte del saldo imputado disponible, que se calcula al
+            # vuelo (ImputacionDetalle.importe - SUM(OrdenPagoUnidadPresupuestaria))
+            # y ya se validó más arriba — no se guarda en ningún campo aparte.
             for detalle, importe in detalles_validos:
                 OrdenPagoUnidadPresupuestaria.objects.create(
                     orden_pago          = orden_pago,
@@ -1896,8 +1907,6 @@ def api_crear_orden_pago(request):
                 )
 
                 linea = detalle.linea_presupuestaria
-                linea.saldo_actual -=importe
-                linea.save()
 
                 MovimientoHistorial.objects.create(
                     linea_presupuestaria = linea,

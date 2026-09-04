@@ -322,7 +322,15 @@ class MovimientoHistorial(models.Model):
         ('ORDEN_PAGO_ANULACION', 'Orden de Pago - Anulación'),
     ]
 
-    linea_presupuestaria = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, related_name='historial')
+    # Opcional: una operación (p. ej. una Imputación) puede afectar varias
+    # líneas a la vez y registrarse como UN SOLO movimiento histórico, sin
+    # atarse a una línea en particular. El detalle por línea se consulta
+    # directamente en la tabla de detalle de cada operación (ImputacionDetalle,
+    # RefuerzoDetalle, etc.), no acá.
+    linea_presupuestaria = models.ForeignKey(
+        LineaPresupuestaria, on_delete=models.PROTECT, related_name='historial',
+        null=True, blank=True,
+    )
     tipo           = models.CharField(max_length=25, choices=TIPO_CHOICES)
     referencia_id  = models.IntegerField()
     fecha          = models.DateTimeField(auto_now_add=True)
