@@ -17,6 +17,8 @@ let movementsData = [];
 let currentSort = { key: null, direction: "asc" };
 let currentSearch = "";
 let currentPrograma = "todos";
+const PAGE_SIZE = 10;
+let currentPage = 1;
 
 // =========================================================
 // CARGA DE DATOS DESDE LA BD
@@ -381,16 +383,22 @@ function renderUnitsTable() {
   const tbody = document.getElementById("unitsTableBody");
   const noResults = document.getElementById("noResults");
   const movements = getFilteredMovements();
+  const totalPages = Math.max(1, Math.ceil(movements.length / PAGE_SIZE));
+
+  currentPage = Math.min(currentPage, totalPages);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const pageMovements = movements.slice(startIndex, startIndex + PAGE_SIZE);
 
   tbody.innerHTML = "";
 
   if (movements.length === 0) {
     noResults.hidden = false;
+    updatePagination(0, 0, 0, 0);
     return;
   }
   noResults.hidden = true;
 
-  movements.forEach((m) => {
+  pageMovements.forEach((m) => {
     const isOpen = expandedRows.has(m._id);
 
     const row = document.createElement("tr");
@@ -460,6 +468,44 @@ function renderUnitsTable() {
       }
     });
   });
+
+  updatePagination(startIndex + 1, startIndex + pageMovements.length, movements.length, totalPages);
+}
+
+function updatePagination(firstRecord, lastRecord, totalRecords, totalPages) {
+  const pagination = document.getElementById("tablePagination");
+  const summary = document.getElementById("paginationSummary");
+  const pageLabel = document.getElementById("paginationPage");
+  const previousButton = document.getElementById("paginationPrev");
+  const nextButton = document.getElementById("paginationNext");
+
+  if (!pagination || !summary || !pageLabel || !previousButton || !nextButton) return;
+
+  const hasResults = totalRecords > 0;
+  pagination.hidden = !hasResults;
+  if (!hasResults) return;
+
+  summary.textContent = `Mostrando ${firstRecord}-${lastRecord} de ${totalRecords} registros`;
+  pageLabel.textContent = `Página ${currentPage} de ${totalPages}`;
+  previousButton.disabled = currentPage === 1;
+  nextButton.disabled = currentPage === totalPages;
+}
+
+function setupPaginationEvents() {
+  document.getElementById("paginationPrev").addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage -= 1;
+      renderUnitsTable();
+    }
+  });
+
+  document.getElementById("paginationNext").addEventListener("click", () => {
+    const totalPages = Math.ceil(getFilteredMovements().length / PAGE_SIZE);
+    if (currentPage < totalPages) {
+      currentPage += 1;
+      renderUnitsTable();
+    }
+  });
 }
 
 // =========================================================
@@ -469,6 +515,7 @@ function renderUnitsTable() {
 function applyFilters() {
   currentSearch = document.getElementById("searchInput").value;
   currentPrograma = document.getElementById("filterPrograma").value;
+  currentPage = 1;
   renderUnitsTable();
 }
 
@@ -477,6 +524,7 @@ function setupFilterEvents() {
 
   document.getElementById("searchInput").addEventListener("input", () => {
     currentSearch = document.getElementById("searchInput").value;
+    currentPage = 1;
     renderUnitsTable();
   });
 
@@ -501,6 +549,8 @@ function setupSortEvents() {
         currentSort.key = key;
         currentSort.direction = "asc";
       }
+
+      currentPage = 1;
 
       headers.forEach((h) => h.classList.remove("sort-asc", "sort-desc"));
       th.classList.add(currentSort.direction === "asc" ? "sort-asc" : "sort-desc");
@@ -619,6 +669,7 @@ function setupToggleProgramsBtn() {
 async function init() {
   setupFilterEvents();
   setupSortEvents();
+  setupPaginationEvents();
   setupToggleProgramsBtn();
   setupProgramsNavigation();
   renderTopCharts();
