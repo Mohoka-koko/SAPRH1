@@ -961,6 +961,15 @@ tbody td {
     box-shadow: 0 6px 20px rgba(253, 207, 108, 0.4) !important;
 }
 
+.btn-xl-green{
+    background-color: #00d1c0;
+    color: #000000;
+}
+
+.btn-xl-green:hover {
+    box-shadow: 0 6px 20px rgba(23, 122, 81, 0.5);
+}
+
 .btn-xl-outline {
     background-color: transparent !important;
     border: 2px solid var(--border) !important;
