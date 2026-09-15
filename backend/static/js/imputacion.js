@@ -33,6 +33,16 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
+    function parseImporte(valorTexto) {
+        const valor = valorTexto.trim().replace(/\$/g, "");
+        if (!valor) return NaN;
+
+        const normalizado = valor.includes(",")
+            ? valor.replace(/\./g, "").replace(",", ".")
+            : valor;
+        return Number(normalizado);
+    }
+
     function calcularTotal() {
         let total = 0;
         const inputs = document.querySelectorAll(".importe");
@@ -43,9 +53,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
-            const valor = parseFloat(
-                valorTexto.replace(/\$/g, "").replace(/\./g, "").replace(",", ".")
-            );
+            const valor = parseImporte(valorTexto);
 
             if (!isNaN(valor)) {
                 total += valor;
@@ -190,8 +198,16 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!filaBase || !filasBody) return;
     
         const nuevaFila = filaBase.cloneNode(true);
-        nuevaFila.classList.remove("fila-registro");
-        nuevaFila.querySelectorAll("select, input").forEach((el) => { el.value = ""; });
+        nuevaFila.querySelectorAll("select, input, textarea").forEach((el) => {
+            el.value = "";
+            if (el.tagName === "SELECT") el.selectedIndex = 0;
+            el.removeAttribute("data-codigo-eventos");
+            el.style.borderColor = "";
+        });
+        nuevaFila.querySelectorAll(".cod-cell").forEach((celda) => {
+            celda.classList.remove("mostrar-codigo");
+            delete celda.dataset.codigo;
+        });
         filasBody.appendChild(nuevaFila);
     
         // Inicializar cascada y autocompletado en la nueva fila
@@ -265,7 +281,28 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     const csrftoken = getCookie("csrftoken");
 
-    function llenarSelect(select, items, valueKey, labelFn, placeholder) {
+    function actualizarCodigoVisible(select) {
+        const celda = select.closest(".cod-cell");
+        const opcion = select.options[select.selectedIndex];
+        if (!celda) return;
+
+        celda.dataset.codigo = opcion?.dataset.codigo || opcion?.textContent || "";
+        celda.classList.toggle("mostrar-codigo", Boolean(select.value));
+    }
+
+    function configurarVisualizacionCodigo(select) {
+        if (!select.dataset.codigoEventos) {
+            select.addEventListener("focus", () => {
+                select.closest(".cod-cell")?.classList.remove("mostrar-codigo");
+            });
+            select.addEventListener("change", () => actualizarCodigoVisible(select));
+            select.addEventListener("blur", () => actualizarCodigoVisible(select));
+            select.dataset.codigoEventos = "true";
+        }
+        actualizarCodigoVisible(select);
+    }
+
+    function llenarSelect(select, items, valueKey, codeFn, descriptionFn, placeholder) {
         select.innerHTML = "";
         const opt0 = document.createElement("option");
         opt0.value = "";
@@ -274,9 +311,12 @@ document.addEventListener("DOMContentLoaded", function () {
         items.forEach((item) => {
             const opt = document.createElement("option");
             opt.value = item[valueKey];
-            opt.textContent = labelFn(item);
+            const codigo = String(codeFn(item));
+            opt.textContent = `${codigo} - ${descriptionFn(item)}`;
+            opt.dataset.codigo = codigo;
             select.appendChild(opt);
         });
+        configurarVisualizacionCodigo(select);
     }
 
     function llenarSelectFuentes(select, lineas) {
@@ -288,11 +328,13 @@ document.addEventListener("DOMContentLoaded", function () {
         lineas.forEach((l) => {
             const opt = document.createElement("option");
             opt.value = l.fuente_id;
-            opt.textContent = `${l.fuente_codigo} - ${l.fuente}`; 
+            opt.textContent = `${l.fuente_codigo} - ${l.fuente}`;
+            opt.dataset.codigo = String(l.fuente_codigo);
             opt.dataset.saldo = l.saldo_actual;
             opt.dataset.lineaId = l.linea_id;
             select.appendChild(opt);
         });
+        configurarVisualizacionCodigo(select);
     }
 
     // ---- Fuente (una sola vez, a nivel encabezado) ----
@@ -302,7 +344,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .then((r) => r.json())
             .then((data) => {
                 llenarSelect(selectFuente, data.fuentes, "id",
-                    (f) => `${f.codigo} - ${f.nombre}`, "Seleccionar fuente...");
+                    (f) => f.codigo, (f) => f.nombre, "Seleccionar fuente...");
             })
             .catch((err) => console.error("Error cargando fuentes:", err));
     }
@@ -334,9 +376,11 @@ document.addEventListener("DOMContentLoaded", function () {
             const opt = document.createElement("option");
             opt.value = valor;
             opt.textContent = valor;
+            opt.dataset.codigo = valor;
             opt.selected = true;
             select.appendChild(opt);
             select.disabled = true;
+            configurarVisualizacionCodigo(select);
         }
     
         setValorFijo(selectJur, "51");
@@ -346,18 +390,19 @@ document.addEventListener("DOMContentLoaded", function () {
             .then((r) => r.json())
             .then((data) => {
                 llenarSelect(selectPrg, data.programas, "id",
-                    (p) => `${p.codigo_programa} - ${p.nombre}`, "Seleccionar PRG...");
+                    (p) => String(p.codigo_programa).padStart(2, "0"),
+                    (p) => p.nombre, "Seleccionar PRG...");
             })
             .catch((err) => console.error("Error cargando programas:", err));
     
         getPartidas().then((partidas) => {
             llenarSelect(selectPar, partidas, "id",
-                (p) => `${p.codigo} - ${p.denominacion}`, "Seleccionar PAR...");
+                (p) => p.codigo, (p) => p.denominacion, "Seleccionar PAR...");
         });
     
         selectPrg.addEventListener("change", function () {
-            llenarSelect(selectPry, [], "id", () => "", "Seleccionar PRY...");
-            llenarSelect(selectAo, [], "id", () => "", "Seleccionar A/O...");
+            llenarSelect(selectPry, [], "id", () => "", () => "", "Seleccionar PRY...");
+            llenarSelect(selectAo, [], "id", () => "", () => "", "Seleccionar A/O...");
             llenarSelectFuentes(selectFf, []);
             actualizarPanelSaldos();
             if (!selectPrg.value) return;
@@ -365,13 +410,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then((r) => r.json())
                 .then((data) => {
                     llenarSelect(selectPry, data.proyectos, "id",
-                        (p) => `${p.codigo_proyecto} - ${p.nombre}`, "Seleccionar PRY...");
+                        (p) => String(p.codigo_proyecto).padStart(3, "0"),
+                        (p) => p.nombre, "Seleccionar PRY...");
                 })
                 .catch((err) => console.error("Error cargando proyectos:", err));
         });
     
         selectPry.addEventListener("change", function () {
-            llenarSelect(selectAo, [], "id", () => "", "Seleccionar A/O...");
+            llenarSelect(selectAo, [], "id", () => "", () => "", "Seleccionar A/O...");
             llenarSelectFuentes(selectFf, []);
             actualizarPanelSaldos();
             if (!selectPry.value) return;
@@ -379,7 +425,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then((r) => r.json())
                 .then((data) => {
                     llenarSelect(selectAo, data.actividades, "id",
-                        (a) => `${a.codigo_act_obra} - ${a.nombre}`, "Seleccionar A/O...");
+                        (a) => String(a.codigo_act_obra).padStart(3, "0"),
+                        (a) => a.nombre, "Seleccionar A/O...");
                 })
                 .catch((err) => console.error("Error cargando actividades:", err));
         });
@@ -476,7 +523,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
 
-                const importe = parseFloat(importeRaw);
+                const importe = parseImporte(importeRaw);
                 if (isNaN(importe) || importe <= 0) {
                     alert("El importe de una fila es inválido.");
                     return;
@@ -557,7 +604,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 );
                 document.getElementById("input-expediente").value = "";
                 document.querySelectorAll("#filas-body tr:not(:first-child)").forEach(f => f.remove());
-                document.querySelectorAll("#filas-body tr:first-child select, #filas-body tr:first-child input")
+                document.querySelectorAll("#filas-body tr:first-child select, #filas-body tr:first-child input, #filas-body tr:first-child textarea")
                     .forEach(el => { el.value = ""; });
                 calcularTotal();
                 actualizarPanelSaldos();

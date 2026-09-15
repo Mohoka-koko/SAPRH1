@@ -113,6 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span>PRY</span>
             <span>A/O</span>
             <span>PAR</span>
+            <span>FF</span>
         `;
   
         const fila = document.createElement("div");
@@ -125,7 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <select class="fila-pry"><option value="">Seleccione</option></select>
             <select class="fila-ao"><option value="">Seleccione</option></select>
             <select class="fila-par"><option value="">Seleccione</option></select>
-            <select class="fila-fuente" style="display:none; grid-column:1/-1; margin-top:4px; height:32px;"><option value="">Fuente...</option></select>
+            <select class="fila-fuente" disabled><option value="">FF...</option></select>
             <input type="hidden" class="fila-linea-id" value="" />
         `;
   
@@ -174,11 +175,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const inputLineaId = fila.querySelector(".fila-linea-id");
     
         function resetLinea() {
-            inputLineaId.value         = "";
-            saldoInput.value = "";
-            saldoInput.placeholder = "—";
-            selectFuente.style.display = "none";
-            selectFuente.innerHTML     = `<option value="">Fuente...</option>`;
+          inputLineaId.value         = "";
+          saldoInput.value           = "";
+          saldoInput.placeholder     = "—";
+          // selectFuente.style.display = "none"; <- (Se elimina esta línea)
+          selectFuente.innerHTML     = `<option value="">FF...</option>`;
+          selectFuente.disabled      = true; // Lo mantenemos deshabilitado hasta que haya datos
         }
   
       // ── Resolver línea ───────────────────────────────────────────
@@ -201,21 +203,35 @@ document.addEventListener("DOMContentLoaded", () => {
             inputLineaId.value  = linea.linea_id;
             saldoInput.value = `$${formatearImporte(parseFloat(linea.saldo_actual))}`;
             saldoInput.style.color = "#2e7d32";
+            
+            // NUEVO: Fijar el código de la fuente en el cajón y deshabilitarlo
+            const codigoFF = linea.fuente_nombre.split(" - ")[0]; // Extrae "11", "12", etc.
+            selectFuente.innerHTML = `<option value="${linea.linea_id}">${codigoFF}</option>`;
+            selectFuente.disabled = true;
+  
           } else {
-            selectFuente.innerHTML = `<option value="">Seleccionar fuente...</option>`;
+            selectFuente.innerHTML = `<option value="">Elegir FF</option>`;
             data.lineas.forEach(l => {
               const opt = document.createElement("option");
               opt.value          = l.linea_id;
               opt.dataset.saldo  = l.saldo_actual;
               opt.dataset.label  = l.fuente_nombre;
               opt.dataset.codigo = l.fuente_nombre.split(" - ")[0];
-              opt.textContent    = `${l.fuente_nombre} — Saldo: $${formatearImporte(parseFloat(l.saldo_actual))}`;
+              
+              // ELIMINAR O COMENTAR ESTA LÍNEA VIEJA:
+              // opt.textContent = `${opt.dataset.codigo} - Saldo: $${formatearImporte(parseFloat(l.saldo_actual))}`;
+              
+              // AGREGAR ESTA NUEVA LÍNEA:
+              opt.textContent = opt.dataset.codigo; 
+              
               selectFuente.appendChild(opt);
             });
-            selectFuente.style.display = "";
+            
+            // selectFuente.style.display = ""; <- (Se elimina esta línea)
+            selectFuente.disabled = false; // Se habilita para que el usuario pueda hacer click
+            
             saldoInput.value = "";
-            saldoInput.placeholder = "Seleccioná fuente";
-            saldoInput.style.color        = "#888";
+            saldoInput.style.color = "#2e7d32"
   
             if (datos.fuente_id) {
               const optFuente = Array.from(selectFuente.options).find(o =>
@@ -237,8 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!selectFuente.value) {
             inputLineaId.value  = "";
             saldoInput.value = "";
-            saldoInput.placeholder = "Seleccioná fuente";
-            saldoInput.style.color = "#888";
+            saldoInput.style.color = "#2e7d32";
             return;
         }
         const opt = selectFuente.options[selectFuente.selectedIndex];

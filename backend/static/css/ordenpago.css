@@ -1,70 +1,148 @@
-.ordenpago-page{
+/* ==========================================================
+   TOOLBAR FLOTANTE LATERAL — igual estilo que Orden de Pago Personal
+   Reemplaza el bloque .toolbar / .toolbar-group / .btn-tool
+   que tenías antes (la barra horizontal de arriba).
+   ========================================================== */
+
+/* El contenedor de toda la página necesita dejar espacio
+   a la derecha para que la barra flotante no tape la hoja */
+.ordenpago-page {
     display: flex;
     flex-direction: column;
     width: 100%;
     gap: 1rem;
+    padding-right: 140px;
 }
 
 .toolbar {
-    width: 96%;
-    max-width: 1400px;
-    background: var(--white);
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-md);
-    margin-bottom: 1.5rem;
+    position: fixed;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+
+    width: 125px;
+
+    background: #ffffff;
+    padding: 9px;
+
+    border: 1px solid #d5d5d5;
+    border-radius: 9px;
+
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
-    align-items: center;
-    border: 1px solid var(--border);
+    flex-direction: column;
+    gap: 8px;
+
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.10);
+
+    z-index: 50;
 }
 
 .toolbar-group {
     display: flex;
-    gap: 8px;
-    padding: 0 12px;
-    border-right: 1px solid var(--border);
+    flex-direction: column;
+    gap: 5px;
+
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e2e2;
 }
 
 .toolbar-group:last-child {
-    border-right: none;
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
 .btn-tool {
-    background: var(--white);
-    color: var(--text);
-    border: 1.5px solid var(--border);
-    border-radius: 4px;
-    padding: 0.5rem 0.8rem;
-    font-size: 0.85rem;
+    width: 100%;
+
+    background: #f7f7f7;
+    color: #333;
+
+    border: 1px solid #d3d3d3;
+    border-radius: 6px;
+
+    padding: 8px 5px;
+
+    font-family: inherit;
+    font-size: 10.5px;
     font-weight: 600;
+
     cursor: pointer;
-    transition: all 0.2s ease;
+    white-space: nowrap;
+    text-align: center;
+
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 4px;
+
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .btn-tool:hover {
-    background: #f9f9ff;
-    border-color: var(--primary);
-    color: var(--primary);
+    background: #eeeeee;
+    border-color: #bdbdbd;
 }
 
+.btn-tool:active {
+    background: #e2e2e2;
+}
+
+/* Botones destacados (Imprimir / Exportar a PDF) mantienen su color primario,
+   pero conservan el tamaño chico y sobrio del resto de la barra */
 .btn-tool.primary {
     background: var(--primary);
-    color: var(--white);
+    color: #ffffff;
     border-color: var(--primary);
 }
 
 .btn-tool.primary:hover {
     background: var(--primary-hover);
     border-color: var(--primary-hover);
-    color: var(--white);
+    color: #ffffff;
 }
 
+/* ==========================================================
+   RESPONSIVE — en pantallas chicas, la barra baja
+   y se acuesta horizontal para no tapar contenido
+   ========================================================== */
+@media (max-width: 900px) {
+
+    .ordenpago-page {
+        padding-right: 0;
+    }
+
+    .toolbar {
+        top: auto;
+        bottom: 12px;
+        right: 50%;
+        transform: translateX(50%);
+
+        width: auto;
+        max-width: 95vw;
+        overflow-x: auto;
+
+        flex-direction: row;
+        padding: 8px;
+    }
+
+    .toolbar-group {
+        flex-direction: row;
+
+        border-bottom: none;
+        border-right: 1px solid #e5e5e5;
+
+        padding: 0 6px;
+    }
+
+    .toolbar-group:last-child {
+        border-right: none;
+    }
+
+    .btn-tool {
+        width: auto;
+        min-width: 90px;
+    }
+}
 
 /* =========================================
    HOJA DE PAGO (PAGE SIZING)
@@ -342,9 +420,57 @@ td { background: var(--white); }
 .tabla-concepto-pago .col-codigo { width: 15%; text-align: center; }
 .tabla-concepto-pago .col-importe { width: 25%; text-align: right; }
 
+.tabla-partidas {
+    table-layout: fixed;
+    width: 100%;
+}
+
 .tabla-partidas th { font-size: 0.8rem; }
-.tabla-partidas .col-partida-desc { width: 35%; }
-.tabla-partidas .col-importe { width: 20%; text-align: right; }
+
+/* JUR */
+.tabla-partidas th:nth-child(1),
+.tabla-partidas td:nth-child(1) { width: 6%; text-align: center; }
+
+/* PROG */
+.tabla-partidas th:nth-child(2),
+.tabla-partidas td:nth-child(2) { width: 6%; text-align: center; }
+
+/* S/PG */
+.tabla-partidas th:nth-child(3),
+.tabla-partidas td:nth-child(3) { width: 6%; text-align: center; }
+
+/* PRY */
+.tabla-partidas th:nth-child(4),
+.tabla-partidas td:nth-child(4) { width: 6%; text-align: center; }
+
+/* A/O */
+.tabla-partidas th:nth-child(5),
+.tabla-partidas td:nth-child(5) { width: 6%; text-align: center; }
+
+/* PART */
+.tabla-partidas th:nth-child(6),
+.tabla-partidas td:nth-child(6) { width: 7%; text-align: center; }
+
+/* FF */
+.tabla-partidas th:nth-child(7),
+.tabla-partidas td:nth-child(7) { width: 7%; text-align: center; }
+
+/* PARTIDA — después */
+.tabla-partidas th:nth-child(8),
+.tabla-partidas td:nth-child(8) { width: 30%; }
+
+/* IMPORTE */
+.tabla-partidas th:nth-child(9),
+.tabla-partidas td:nth-child(9) { width: 12%; text-align: right; }
+
+.tabla-partidas .input-cod-partida {
+    width: 100%;
+    text-align: center;
+    font-size: 0.82rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 .rentas-generales {
     text-align: center;
@@ -381,4 +507,240 @@ td { background: var(--white); }
     font-size: 0.85rem;
     color: #4b5563;
     font-weight: 500;
+}
+
+/* =========================================
+   PANEL FLOTANTE DE SALDOS — mismo estilo que imputación
+========================================= */
+.panel-saldos-widget {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 290px;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    font-family: Arial, sans-serif;
+    z-index: 9999;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.panel-saldos-widget.minimizado {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    border: 1.5px solid #0056b3;
+    overflow: hidden;
+    padding: 0;
+    background-color: transparent;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.panel-saldos-widget.minimizado:hover {
+    transform: scale(1.08);
+    border-color: #2563eb;
+}
+
+.panel-saldos-icono {
+    display: none;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.panel-saldos-widget.minimizado .panel-saldos-icono {
+    display: flex;
+}
+
+.panel-saldos-widget.minimizado .panel-saldos-contenido {
+    display: none;
+}
+
+.panel-saldos-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #e2e8f0;
+    padding: 6px 10px;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.panel-saldos-titulo {
+    font-size: 11px;
+    font-weight: bold;
+    color: #1e293b;
+    letter-spacing: 0.3px;
+}
+
+.panel-saldos-cerrar {
+    background: none;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    color: #475569;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.panel-saldos-cerrar:hover {
+    color: #ef4444;
+}
+
+.panel-saldos-body {
+    padding: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.tabla-saldos {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.tabla-saldos th,
+.tabla-saldos td {
+    padding: 5px 8px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+}
+
+.tabla-saldos th {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    font-weight: bold;
+}
+
+.saldo-verde {
+    color: #16a34a;
+    font-weight: bold;
+}
+
+.saldo-rojo {
+    color: #ef4444;
+    font-weight: bold;
+}
+
+.icono-imagen-local {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Quitar saldo-label de dentro de la tabla de partidas */
+.saldo-label {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .panel-saldos-widget { display: none !important; }
+}
+
+/* ── MODAL DE VALIDACIÓN ─────────────────────────────────────────────────── */
+.modal-validacion-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeInOverlay 0.2s ease;
+}
+
+@keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.modal-validacion-caja {
+    background: #fff;
+    border-radius: 10px;
+    padding: 32px 36px;
+    max-width: 460px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+    animation: slideUpModal 0.22s ease;
+    text-align: center;
+}
+
+@keyframes slideUpModal {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-validacion-icono {
+    font-size: 2.8rem;
+    margin-bottom: 10px;
+}
+
+.modal-validacion-titulo {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #b84a00;
+    margin: 0 0 6px;
+}
+
+.modal-validacion-subtitulo {
+    font-size: 0.92rem;
+    color: #555;
+    margin: 0 0 16px;
+}
+
+.modal-validacion-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 22px;
+    text-align: left;
+}
+
+.modal-validacion-lista li {
+    padding: 7px 10px;
+    border-left: 3px solid #e07800;
+    background: #fff8f2;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.modal-validacion-btn {
+    background: #b84a00;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 32px;
+    font-size: 0.97rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.18s;
+}
+
+.modal-validacion-btn:hover {
+    background: #8f3800;
+}
+
+/* ── SELECT CÓDIGO DE PAGO ───────────────────────────────────────────────── */
+.select-codigo-pago {
+    height: 28px;
+    border: none;
+    border-bottom: 1px solid #888;
+    border-radius: 0;
+    background: transparent;
+    font-size: 0.88rem;
+    color: #222;
+    cursor: pointer;
+    outline: none;
+    min-width: 90px;
+}
+
+.select-codigo-pago:focus {
+    border-bottom-color: #1a56db;
 }

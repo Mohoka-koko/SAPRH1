@@ -20,17 +20,14 @@
         <h2 class="card-label">PRESUPUESTO OFICIAL INICIAL 2026</h2>
         <p class="card-value" id="presupuestoInicialValue">$0,00</p>
         <p class="card-sub">Aprobado: 01/01/2024</p>
-        <div class="mini-chart" id="chartInicial" aria-label="Gráfico de barras del presupuesto inicial"></div>
       </div>
 
       <div class="card card-budget">
         <h2 class="card-label">PRESUPUESTO OFICIAL MODIFICADO ACTUAL</h2>
         <p class="card-value" id="presupuestoModificadoValue">$0,00</p>
         <p class="card-sub">
-          Actualizado: <span id="fechaUltimaModificacionValue">--/--/----</span> | Aumento:
-          <span class="increase" id="aumentoPctValue">0%</span>
+          Actualizado: <span id="fechaUltimaModificacionValue">--/--/----</span>
         </p>
-        <div class="mini-chart" id="chartModificado" aria-label="Gráfico de línea del presupuesto modificado"></div>
       </div>
 
     </section>
@@ -38,9 +35,17 @@
     <!-- ===== PROGRAMAS DE GESTIÓN ===== -->
     <div class="section-title-wrapper">
       <h2 class="section-title">DETALLE POR PROGRAMAS DE GESTIÓN</h2>
-      <button id="toggleProgramsBtn" class="toggle-programs-btn" aria-label="Mostrar/Ocultar programas">
-        <i class="fas fa-chevron-down"></i>
-      </button>
+      <div class="programs-controls">
+        <button id="programsPrevBtn" class="programs-nav-btn" type="button" aria-label="Ver programas anteriores">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button id="programsNextBtn" class="programs-nav-btn" type="button" aria-label="Ver más programas">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        <button id="toggleProgramsBtn" class="toggle-programs-btn" aria-label="Mostrar/Ocultar programas">
+          <i class="fas fa-chevron-down"></i>
+        </button>
+      </div>
     </div>
 
     <section class="programs-grid" id="programsGrid">
@@ -73,14 +78,14 @@
         <table class="units-table" id="unitsTable">
           <thead>
             <tr>
-              <th data-key="jurisdiccion">Jurisdicción</th>
-              <th data-key="programa">Programa</th>
-              <th data-key="subprograma">Subprograma</th>
-              <th data-key="proyecto">Proyecto</th>
+              <th data-key="jurisdiccion">Jur.</th>
+              <th data-key="programa">Prg.</th>
+              <th data-key="subprograma">Sprg.</th>
+              <th data-key="proyecto">Pry.</th>
               <th data-key="ao">A/O</th>
-              <th data-key="partida">Partida</th>
+              <th data-key="partida">Par.</th>
               <th data-key="ff">F.F.</th>
-              <th data-key="denominacion">Denominación</th>
+              <th data-key="denominacion" class="denominacion-col">Denominación</th>
               <th data-key="saldoInicial">Saldo Inicial</th>
               <th data-key="saldoModificado">Saldo Modificado</th>
               <th class="th-expand" aria-hidden="true"></th>
@@ -92,6 +97,19 @@
         </table>
         <p class="no-results" id="noResults" hidden>No se encontraron movimientos para los filtros aplicados.</p>
       </div>
+
+      <nav class="table-pagination" id="tablePagination" aria-label="Paginación de movimientos" hidden>
+        <span class="pagination-summary" id="paginationSummary" aria-live="polite"></span>
+        <div class="pagination-controls">
+          <button id="paginationPrev" class="pagination-btn" type="button" aria-label="Ver página anterior">
+            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+          </button>
+          <span class="pagination-page" id="paginationPage" aria-live="polite"></span>
+          <button id="paginationNext" class="pagination-btn" type="button" aria-label="Ver página siguiente">
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      </nav>
 
     </section>
 

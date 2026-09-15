@@ -17,6 +17,8 @@ let movementsData = [];
 let currentSort = { key: null, direction: "asc" };
 let currentSearch = "";
 let currentPrograma = "todos";
+const PAGE_SIZE = 10;
+let currentPage = 1;
 
 // =========================================================
 // CARGA DE DATOS DESDE LA BD
@@ -121,6 +123,8 @@ function calcularVariacionPorcentual(movimiento) {
 
 function renderPrograms() {
   const grid = document.getElementById("programsGrid");
+  if (!grid) return;
+
   grid.innerHTML = "";
 
   programsData.forEach((programa) => {
@@ -156,6 +160,50 @@ function renderPrograms() {
 
     grid.appendChild(card);
   });
+
+  window.requestAnimationFrame(() => updateProgramsNavigation());
+}
+
+function updateProgramsNavigation() {
+  const grid = document.getElementById("programsGrid");
+  const prevBtn = document.getElementById("programsPrevBtn");
+  const nextBtn = document.getElementById("programsNextBtn");
+
+  if (!grid || !prevBtn || !nextBtn) return;
+
+  const canScroll = grid.scrollWidth > grid.clientWidth + 1;
+  prevBtn.hidden = !canScroll;
+  nextBtn.hidden = !canScroll;
+
+  const maxScrollLeft = grid.scrollWidth - grid.clientWidth;
+  prevBtn.disabled = grid.scrollLeft <= 2;
+  nextBtn.disabled = grid.scrollLeft >= maxScrollLeft - 2;
+}
+
+function setupProgramsNavigation() {
+  const grid = document.getElementById("programsGrid");
+  const prevBtn = document.getElementById("programsPrevBtn");
+  const nextBtn = document.getElementById("programsNextBtn");
+
+  if (!grid || !prevBtn || !nextBtn) return;
+
+  const getScrollStep = () => {
+    const firstCard = grid.querySelector(".program-card");
+    if (!firstCard) return 220;
+    return firstCard.getBoundingClientRect().width + 16;
+  };
+
+  prevBtn.addEventListener("click", () => {
+    grid.scrollBy({ left: -getScrollStep(), behavior: "smooth" });
+  });
+
+  nextBtn.addEventListener("click", () => {
+    grid.scrollBy({ left: getScrollStep(), behavior: "smooth" });
+  });
+
+  grid.addEventListener("scroll", updateProgramsNavigation);
+  window.addEventListener("resize", updateProgramsNavigation);
+  updateProgramsNavigation();
 }
 
 function onProgramCardClick(programa) {
@@ -269,41 +317,64 @@ function getMovimientoImporte(movimiento) {
   return Number(movimiento.importe ?? calcularVariacion(movimiento));
 }
 
-function renderMovimientoItem(mov) {
-  const importe = Number(mov.importe);
+function renderMovimientoDetalle(item, numeroLabel) {
+  const importe = Number(item.importe);
   const importeClass = importe >= 0 ? "importe-positiva" : "importe-negativa";
+  const tipoConfig = getTipoConfig(item.tipo);
+
+  return `
+    <div class="detail-grid">
+      <div class="detail-item">
+        <span class="detail-label">Tipo</span>
+        <span class="detail-value detail-badge ${tipoConfig.badgeClass}">${item.tipo}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Fecha de creación</span>
+        <span class="detail-value">${item.fechaCreacion || "--/--/----"}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">${numeroLabel}</span>
+        <span class="detail-value">${item.numeroExpediente || "S/N"}</span>
+      </div>
+      <div class="detail-item">
+        <span class="detail-label">Usuario</span>
+        <span class="detail-value">${item.usuario || "No asignado"}</span>
+      </div>
+      ${item.decretoResolucion ? `
+        <div class="detail-item">
+          <span class="detail-label">Decreto/Resolución</span>
+          <span class="detail-value">${item.decretoResolucion}</span>
+        </div>
+      ` : ""}
+      <div class="detail-item">
+        <span class="detail-label">Importe</span>
+        <span class="detail-value ${importeClass}">${importe >= 0 ? "+" : ""}${formatCurrencyDetailed(importe)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderMovimientoItem(mov) {
   const tipoConfig = getTipoConfig(mov.tipo);
+  const esImputacion = mov.tipo.startsWith("Imputación");
+  const ordenesPago = mov.ordenesPago || [];
 
   return `
     <div class="detail-movimiento ${tipoConfig.className}">
-      <div class="detail-grid">
-        <div class="detail-item">
-          <span class="detail-label">Tipo</span>
-          <span class="detail-value detail-badge ${tipoConfig.badgeClass}">${mov.tipo}</span>
+      ${renderMovimientoDetalle(mov, esImputacion ? "N° de Expediente" : "N° de Orden de Pago")}
+      ${ordenesPago.length > 0 ? `
+        <div class="detail-ordenes-pago">
+          ${ordenesPago
+            .map(
+              (op) => `
+                <div class="detail-movimiento detail-movimiento-op ${getTipoConfig(op.tipo).className}">
+                  ${renderMovimientoDetalle(op, "N° de Orden de Pago")}
+                </div>
+              `
+            )
+            .join("")}
         </div>
-        <div class="detail-item">
-          <span class="detail-label">Fecha de creación</span>
-          <span class="detail-value">${mov.fechaCreacion || "--/--/----"}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">N° de Expediente</span>
-          <span class="detail-value">${mov.numeroExpediente || "S/N"}</span>
-        </div>
-        <div class="detail-item">
-          <span class="detail-label">Usuario</span>
-          <span class="detail-value">${mov.usuario || "No asignado"}</span>
-        </div>
-        ${mov.decretoResolucion ? `
-          <div class="detail-item">
-            <span class="detail-label">Decreto/Resolución</span>
-            <span class="detail-value">${mov.decretoResolucion}</span>
-          </div>
-        ` : ""}
-        <div class="detail-item">
-          <span class="detail-label">Importe</span>
-          <span class="detail-value ${importeClass}">${importe >= 0 ? "+" : ""}${formatCurrencyDetailed(importe)}</span>
-        </div>
-      </div>
+      ` : ""}
     </div>
   `;
 }
@@ -312,16 +383,22 @@ function renderUnitsTable() {
   const tbody = document.getElementById("unitsTableBody");
   const noResults = document.getElementById("noResults");
   const movements = getFilteredMovements();
+  const totalPages = Math.max(1, Math.ceil(movements.length / PAGE_SIZE));
+
+  currentPage = Math.min(currentPage, totalPages);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const pageMovements = movements.slice(startIndex, startIndex + PAGE_SIZE);
 
   tbody.innerHTML = "";
 
   if (movements.length === 0) {
     noResults.hidden = false;
+    updatePagination(0, 0, 0, 0);
     return;
   }
   noResults.hidden = true;
 
-  movements.forEach((m) => {
+  pageMovements.forEach((m) => {
     const isOpen = expandedRows.has(m._id);
 
     const row = document.createElement("tr");
@@ -334,7 +411,7 @@ function renderUnitsTable() {
       <td>${m.ao}</td>
       <td>${m.partida}</td>
       <td>${m.ff}</td>
-      <td>${m.denominacion}</td>
+      <td class="denominacion-cell">${m.denominacion}</td>
       <td class="numeric">${formatCurrencyDetailed(m.saldoInicial)}</td>
       <td class="numeric saldo-modificado">${formatCurrencyDetailed(m.saldoModificado)}</td>
       <td class="td-expand">
@@ -391,6 +468,44 @@ function renderUnitsTable() {
       }
     });
   });
+
+  updatePagination(startIndex + 1, startIndex + pageMovements.length, movements.length, totalPages);
+}
+
+function updatePagination(firstRecord, lastRecord, totalRecords, totalPages) {
+  const pagination = document.getElementById("tablePagination");
+  const summary = document.getElementById("paginationSummary");
+  const pageLabel = document.getElementById("paginationPage");
+  const previousButton = document.getElementById("paginationPrev");
+  const nextButton = document.getElementById("paginationNext");
+
+  if (!pagination || !summary || !pageLabel || !previousButton || !nextButton) return;
+
+  const hasResults = totalRecords > 0;
+  pagination.hidden = !hasResults;
+  if (!hasResults) return;
+
+  summary.textContent = `Mostrando ${firstRecord}-${lastRecord} de ${totalRecords} registros`;
+  pageLabel.textContent = `Página ${currentPage} de ${totalPages}`;
+  previousButton.disabled = currentPage === 1;
+  nextButton.disabled = currentPage === totalPages;
+}
+
+function setupPaginationEvents() {
+  document.getElementById("paginationPrev").addEventListener("click", () => {
+    if (currentPage > 1) {
+      currentPage -= 1;
+      renderUnitsTable();
+    }
+  });
+
+  document.getElementById("paginationNext").addEventListener("click", () => {
+    const totalPages = Math.ceil(getFilteredMovements().length / PAGE_SIZE);
+    if (currentPage < totalPages) {
+      currentPage += 1;
+      renderUnitsTable();
+    }
+  });
 }
 
 // =========================================================
@@ -400,6 +515,7 @@ function renderUnitsTable() {
 function applyFilters() {
   currentSearch = document.getElementById("searchInput").value;
   currentPrograma = document.getElementById("filterPrograma").value;
+  currentPage = 1;
   renderUnitsTable();
 }
 
@@ -408,6 +524,7 @@ function setupFilterEvents() {
 
   document.getElementById("searchInput").addEventListener("input", () => {
     currentSearch = document.getElementById("searchInput").value;
+    currentPage = 1;
     renderUnitsTable();
   });
 
@@ -433,6 +550,8 @@ function setupSortEvents() {
         currentSort.direction = "asc";
       }
 
+      currentPage = 1;
+
       headers.forEach((h) => h.classList.remove("sort-asc", "sort-desc"));
       th.classList.add(currentSort.direction === "asc" ? "sort-asc" : "sort-desc");
 
@@ -447,6 +566,8 @@ function setupSortEvents() {
 
 function renderBarChart(containerId, values) {
   const container = document.getElementById(containerId);
+  if (!container) return;
+
   const width = 140;
   const height = 70;
   const max = Math.max(...values);
@@ -466,6 +587,8 @@ function renderBarChart(containerId, values) {
 
 function renderLineChart(containerId, values) {
   const container = document.getElementById(containerId);
+  if (!container) return;
+
   const width = 220;
   const height = 70;
   const max = Math.max(...values);
@@ -492,8 +615,20 @@ function renderLineChart(containerId, values) {
 }
 
 function renderTopCharts() {
-  renderBarChart("chartInicial", [40, 55, 62, 48, 58, 50, 46, 42]);
-  renderLineChart("chartModificado", [30, 42, 38, 50, 46, 60, 55, 68, 62, 72]);
+  const hasInitialChart = document.getElementById("chartInicial");
+  const hasModifiedChart = document.getElementById("chartModificado");
+
+  if (!hasInitialChart && !hasModifiedChart) {
+    return;
+  }
+
+  if (hasInitialChart) {
+    renderBarChart("chartInicial", [40, 55, 62, 48, 58, 50, 46, 42]);
+  }
+
+  if (hasModifiedChart) {
+    renderLineChart("chartModificado", [30, 42, 38, 50, 46, 60, 55, 68, 62, 72]);
+  }
 }
 
 // =========================================================
@@ -534,7 +669,9 @@ function setupToggleProgramsBtn() {
 async function init() {
   setupFilterEvents();
   setupSortEvents();
+  setupPaginationEvents();
   setupToggleProgramsBtn();
+  setupProgramsNavigation();
   renderTopCharts();
 
   await fetchLineasPresupuestarias();

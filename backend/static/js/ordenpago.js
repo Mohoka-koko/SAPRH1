@@ -138,59 +138,59 @@
      return esValido;
    }
    
-   /* ------------------------------------------------------------------------
-      TABLA: BENEFICIARIOS (Código / Beneficiario / Importe)
-      ------------------------------------------------------------------------ */
+  /* ------------------------------------------------------------------------
+    TABLA: BENEFICIARIOS (Código / Beneficiario / Importe)
+    ------------------------------------------------------------------------ */
+  
+  /**
+  * Crea y agrega una nueva fila a la tabla de beneficiarios.
+  */
+  function agregarFilaBeneficiario() {
+    contadorBeneficiarios++;
+    const id = contadorBeneficiarios;
+  
+    const fila = document.createElement("tr");
+    fila.dataset.filaId = id;
+  
+    fila.innerHTML = `
+      <td class="col-codigo">
+        <input type="text" class="input-codigo-beneficiario" placeholder="0000-0">
+      </td>
+      <td class="col-beneficiario">
+        <input type="text" class="input-nombre-beneficiario" placeholder="Nombre / razón social del beneficiario">
+      </td>
+      <td class="col-importe">
+        <input type="text" class="input-importe-beneficiario" placeholder="0,00">
+      </td>
+    `;
+  
+    const cuerpoTabla = document.getElementById("beneficiariosBody");
+    cuerpoTabla.appendChild(fila);
+  
+    // Evento: seleccionar fila con un clic (para luego poder eliminarla)
+    fila.addEventListener("click", () => seleccionarFila(fila, "beneficiariosBody"));
+  
+    // Formateo y recálculo automático del importe
+    const inputImporte = fila.querySelector(".input-importe-beneficiario");
+    inputImporte.addEventListener("blur", () => {
+      formatearInputImporte(inputImporte);
+      recalcularImporteConcepto();
+    });
+    inputImporte.addEventListener("input", recalcularImporteConcepto);
+  }
    
-   /**
-    * Crea y agrega una nueva fila a la tabla de beneficiarios.
-    */
-   function agregarFilaBeneficiario() {
-     contadorBeneficiarios++;
-     const id = contadorBeneficiarios;
+  /**
+  * Elimina la fila actualmente seleccionada de la tabla de beneficiarios.
+  */
+  function eliminarFilaBeneficiario() {
+    eliminarFilaSeleccionada("beneficiariosBody");
+    recalcularImporteConcepto();
+  }
    
-     const fila = document.createElement("tr");
-     fila.dataset.filaId = id;
-   
-     fila.innerHTML = `
-       <td class="col-codigo">
-         <input type="text" class="input-codigo-beneficiario" placeholder="0000-0">
-       </td>
-       <td class="col-beneficiario">
-         <input type="text" class="input-nombre-beneficiario" placeholder="Nombre / razón social del beneficiario">
-       </td>
-       <td class="col-importe">
-         <input type="text" class="input-importe-beneficiario" placeholder="0,00">
-       </td>
-     `;
-   
-     const cuerpoTabla = document.getElementById("beneficiariosBody");
-     cuerpoTabla.appendChild(fila);
-   
-     // Evento: seleccionar fila con un clic (para luego poder eliminarla)
-     fila.addEventListener("click", () => seleccionarFila(fila, "beneficiariosBody"));
-   
-     // Formateo y recálculo automático del importe
-     const inputImporte = fila.querySelector(".input-importe-beneficiario");
-     inputImporte.addEventListener("blur", () => {
-       formatearInputImporte(inputImporte);
-       recalcularImporteTotal();
-     });
-     inputImporte.addEventListener("input", recalcularImporteTotal);
-   }
-   
-   /**
-    * Elimina la fila actualmente seleccionada de la tabla de beneficiarios.
-    */
-   function eliminarFilaBeneficiario() {
-     eliminarFilaSeleccionada("beneficiariosBody");
-     recalcularImporteTotal();
-   }
-   
-   /* ------------------------------------------------------------------------
-      TABLA: CONCEPTO DEL PAGO
-      ------------------------------------------------------------------------ */
-   
+  /* ------------------------------------------------------------------------
+    TABLA: CONCEPTO DEL PAGO
+    ------------------------------------------------------------------------ */
+  
    function agregarFilaConceptoPago() {
      contadorConceptoPago++;
    
@@ -203,7 +203,7 @@
          <input type="text" class="input-desc-concepto" placeholder="Descripción del concepto de pago">
        </td>
        <td class="col-importe">
-         <input type="text" class="input-importe-concepto" placeholder="0,00">
+         <input type="text" class="input-importe-concepto" placeholder="0,00" readonly>
        </td>
      `;
    
@@ -303,27 +303,57 @@
      }
    }
    
-   /* ------------------------------------------------------------------------
-      CÁLCULO AUTOMÁTICO DEL IMPORTE TOTAL
-      ------------------------------------------------------------------------ */
-   
-   /**
-    * Suma todos los importes cargados en la tabla de beneficiarios y actualiza
-    * el campo "Importe Total" del encabezado del formulario.
-    */
-    function recalcularImporteTotal() {
-      const inputsImporte = document.querySelectorAll(".input-importe-beneficiario");
-      let total = 0;
-    
-      inputsImporte.forEach((input) => {
+  /* ------------------------------------------------------------------------
+   CÁLCULO IMPORTE ORDEN DE PAGO (Señor Tesorero)
+   Suma los importes que el usuario asigna a las UPs.
+   ------------------------------------------------------------------------ */
+  function recalcularImporteOrdenPago() {
+    const inputsUP = document.querySelectorAll(".input-importe-up");
+    let total = 0;
+    inputsUP.forEach((input) => {
         total += parsearImporte(input.value);
-      });
-    
-      const campoTotal = document.getElementById("importeTotal");
-      campoTotal.value = formatearImporte(total);
-      actualizarLetras();
+    });
 
+    const campoTotal = document.getElementById("importeTotal");
+    if (campoTotal) {
+        campoTotal.value = total > 0 ? formatearImporte(total) : "";
+        actualizarLetras();
     }
+  }
+
+  /* ------------------------------------------------------------------------
+  CÁLCULO IMPORTE CONCEPTO DEL PAGO
+  Suma los importes de los beneficiarios y valida contra Señor Tesorero.
+  ------------------------------------------------------------------------ */
+  function recalcularImporteConcepto() {
+    const inputsBenef = document.querySelectorAll(".input-importe-beneficiario");
+    let totalBenef = 0;
+    inputsBenef.forEach((input) => {
+        totalBenef += parsearImporte(input.value);
+    });
+
+    // Actualizar importe de concepto del pago
+    const primeraFilaConcepto = document.querySelector("#conceptoPagoBody tr");
+    if (primeraFilaConcepto) {
+        const inputConcepto = primeraFilaConcepto.querySelector(".input-importe-concepto");
+        if (inputConcepto) {
+            inputConcepto.value = totalBenef > 0 ? formatearImporte(totalBenef) : "";
+        }
+    }
+
+    // Validación: concepto del pago no puede superar Señor Tesorero
+    const campoTotal = document.getElementById("importeTotal");
+    const totalOP    = parsearImporte(campoTotal?.value);
+    const errTotal   = document.getElementById("err-importeTotal");
+
+    if (totalOP > 0 && totalBenef > totalOP) {
+        if (errTotal) {
+            errTotal.textContent = `El total de beneficiarios ($${formatearImporte(totalBenef)}) supera el importe de la OP ($${formatearImporte(totalOP)}).`;
+        }
+    } else {
+        if (errTotal) errTotal.textContent = "";
+    }
+  }
    
    /* ------------------------------------------------------------------------
       ACCIONES GENERALES DEL FORMULARIO
@@ -333,7 +363,7 @@
     * Limpia todos los campos de texto del formulario y vacía las tablas
     * dinámicas, dejando una fila inicial en cada una.
     */
-   function limpiarFormulario() {
+  function limpiarFormulario() {
      const confirmar = confirm("¿Está seguro de que desea limpiar todo el formulario?");
      if (!confirmar) return;
    
@@ -452,24 +482,26 @@
     INICIALIZACIÓN GENERAL DE EVENTOS
     ------------------------------------------------------------------------ */
   
-    function inicializarEventosBotones() {
-      const btnNuevo   = document.getElementById("btnNuevo");
-      const btnLimpiar = document.getElementById("btnLimpiar");
-  
-      if (btnNuevo)   btnNuevo.addEventListener("click", nuevoFormulario);
-      if (btnLimpiar) btnLimpiar.addEventListener("click", limpiarFormulario);
-  
-      document.getElementById("btnAddBeneficiario").addEventListener("click", agregarFilaBeneficiario);
-      document.getElementById("btnDelBeneficiario").addEventListener("click", eliminarFilaBeneficiario);
-  
-      document.getElementById("btnAddConcepto").addEventListener("click", agregarFilaConceptoPago);
-      document.getElementById("btnDelConcepto").addEventListener("click", eliminarFilaConceptoPago);
-  
-      document.getElementById("btnAddPartida").addEventListener("click", agregarFilaPartida);
-      document.getElementById("btnDelPartida").addEventListener("click", eliminarFilaPartida);
-  
-      document.getElementById("btnImprimir").addEventListener("click", imprimirDocumento);
-      document.getElementById("btnExportarPDF").addEventListener("click", exportarAPDF);
+  function inicializarEventosBotones() {
+    const btnNuevo   = document.getElementById("btnNuevo");
+    const btnLimpiar = document.getElementById("btnLimpiar");
+
+    if (btnNuevo)   btnNuevo.addEventListener("click", nuevoFormulario);
+    if (btnLimpiar) btnLimpiar.addEventListener("click", limpiarFormulario);
+
+    document.getElementById("btnAddBeneficiario").addEventListener("click", agregarFilaBeneficiario);
+    document.getElementById("btnDelBeneficiario").addEventListener("click", eliminarFilaBeneficiario);
+
+    document.getElementById("btnAddConcepto").addEventListener("click", agregarFilaConceptoPago);
+    document.getElementById("btnDelConcepto").addEventListener("click", eliminarFilaConceptoPago);
+
+    document.getElementById("btnAddPartida").addEventListener("click", agregarFilaPartida);
+    document.getElementById("btnDelPartida").addEventListener("click", eliminarFilaPartida);
+
+    document.getElementById("btnImprimir").addEventListener("click", guardarOrdenPago);
+    document.getElementById("btnExportarPDF").addEventListener("click", exportarAPDF);
+
+    inicializarPanelSaldos();
   }
   
   /**
@@ -481,66 +513,103 @@
    Lee el parámetro imputacion_id de la URL y completa los campos.
    ------------------------------------------------------------------------ */
   async function autocompletarDesdeImputacion() {
-    const params      = new URLSearchParams(window.location.search);
+    const params       = new URLSearchParams(window.location.search);
     const imputacionId = params.get('imputacion_id');
     if (!imputacionId) return;
 
+    // Guardamos el id globalmente para usarlo al guardar
+    window._imputacionId = imputacionId;
+
     try {
-        const resp = await fetch(`/api/imputacion/${imputacionId}/detalle/`);
-        if (!resp.ok) {
-            console.error('No se pudo cargar la imputación');
-            return;
-        }
-        const data = await resp.json();
+      // ── Datos del encabezado (expediente, jurisdicción, ejercicio) ────
+      const respDetalle = await fetch(`/api/imputacion/${imputacionId}/detalle/`);
+      if (!respDetalle.ok) {
+          console.error('No se pudo cargar el detalle de la imputación');
+          return;
+      }
+      const detalle = await respDetalle.json();
 
-        // ── Campos de encabezado ──────────────────────────────────────────
-        const campExpediente = document.getElementById('expediente');
-        const campEjercicio  = document.getElementById('ejercicio');
-        const campJurisdiccion = document.getElementById('jurisdiccion');
+      const campExpediente   = document.getElementById('expediente');
+      const campEjercicio    = document.getElementById('ejercicio');
+      const campJurisdiccion = document.getElementById('jurisdiccion');
 
-        if (campExpediente)   campExpediente.value   = data.expediente   || '';
-        if (campJurisdiccion) campJurisdiccion.value = data.jurisdiccion  || '';
+      if (campExpediente)   campExpediente.value   = detalle.expediente   || '';
+      if (campJurisdiccion) campJurisdiccion.value = detalle.jurisdiccion  || '';
+      if (campEjercicio && detalle.detalles.length > 0) {
+          campEjercicio.value = detalle.detalles[0].ejercicio || '';
+      }
 
-        // Ejercicio — tomar del primer detalle
-        if (campEjercicio && data.detalles.length > 0) {
-            campEjercicio.value = data.detalles[0].ejercicio || '';
-        }
+      // ── UPs disponibles con saldo ─────────────────────────────────────
+      const respUPs = await fetch(`/api/imputacion/${imputacionId}/ups/`);
+      if (!respUPs.ok) {
+          console.error('No se pudo cargar las UPs de la imputación');
+          return;
+      }
+      const dataUPs = await respUPs.json();
 
-        // ── Tabla de partidas ─────────────────────────────────────────────
-        // Limpiar la fila base que se crea al inicializar
-        const partidasBody = document.getElementById('partidasBody');
-        partidasBody.innerHTML = '';
+      const partidasBody = document.getElementById('partidasBody');
+      partidasBody.innerHTML = '';
 
-        data.detalles.forEach((d) => {
-            contadorPartidas++;
-            const fila = document.createElement('tr');
-            fila.dataset.filaId = contadorPartidas;
-            fila.innerHTML = `
-                <td><input type="text" class="input-cod-partida" value="${d.jur}"  readonly></td>
-                <td><input type="text" class="input-cod-partida" value="${d.prog}" readonly></td>
-                <td><input type="text" class="input-cod-partida" value="00"        readonly></td>
-                <td><input type="text" class="input-cod-partida" value="${d.pry}"  readonly></td>
-                <td><input type="text" class="input-cod-partida" value="${d.ao}"   readonly></td>
-                <td><input type="text" class="input-cod-partida" value="${d.part}" readonly></td>
-                <td><input type="text" class="input-desc-partida full" value="${d.denominacion}" readonly></td>
-                <td><input type="text" class="input-importe-partida" value="${formatearImporte(parseFloat(d.importe))}"></td>
-            `;
-            fila.addEventListener('click', () => seleccionarFila(fila, 'partidasBody'));
+      // JUR viene del detalle (primer registro)
+      const jur = detalle.detalles.length > 0 ? detalle.detalles[0].jur : '51';
 
-            // El importe de partida puede editarse si el usuario lo necesita
-            const inputImp = fila.querySelector('.input-importe-partida');
-            inputImp.addEventListener('blur', () => formatearInputImporte(inputImp));
+      dataUPs.ups.forEach((up) => {
+          contadorPartidas++;
+          const fila = document.createElement('tr');
+          fila.dataset.filaId   = contadorPartidas;
+          fila.dataset.detalleId = up.imputacion_detalle_id;  // ← clave para el guardado
+          fila.dataset.saldoDisponible = up.saldo_disponible;
 
-            partidasBody.appendChild(fila);
-        });
+          fila.innerHTML = `
+              <td><input type="text" class="input-cod-partida" value="${jur}"      readonly></td>
+              <td><input type="text" class="input-cod-partida" value="${up.prog}"  readonly></td>
+              <td><input type="text" class="input-cod-partida" value="00"          readonly></td>
+              <td><input type="text" class="input-cod-partida" value="${up.pry}"   readonly></td>
+              <td><input type="text" class="input-cod-partida" value="${up.ao}"    readonly></td>
+              <td><input type="text" class="input-cod-partida" value="${up.part}"  readonly></td>
+              <td><input type="text" class="input-cod-partida" value="${up.fuente_codigo}" readonly></td>
+              <td>
+                  <input type="text" class="input-desc-partida full"
+                          value="${up.denominacion}" readonly>
+                  <small class="saldo-label">
+                      Disponible: $${formatearImporte(parseFloat(up.saldo_disponible))}
+                  </small>
+              </td>
+              <td>
+                  <input type="text"
+                          class="input-importe-partida input-importe-up"
+                          placeholder="0,00"
+                          value="">
+              </td>
+          `;
 
-        // ── Importe total ─────────────────────────────────────────────────
-        const total = data.detalles.reduce(
-            (acc, d) => acc + parseFloat(d.importe), 0
-        );
-        const campTotal = document.getElementById('importeTotal');
-        if (campTotal) campTotal.value = formatearImporte(total);
-        actualizarLetras();
+          fila.addEventListener('click', () => seleccionarFila(fila, 'partidasBody'));
+
+          const inputImp = fila.querySelector('.input-importe-up');
+          inputImp.addEventListener('input', () => {
+            // Validación visual: si supera el saldo disponible → rojo
+            const val  = parsearImporte(inputImp.value);
+            const tope = parseFloat(fila.dataset.saldoDisponible);
+            inputImp.style.borderColor = val > tope ? 'red' : '';
+            recalcularImporteOrdenPago();
+          });
+          inputImp.addEventListener('blur', () => {
+            formatearInputImporte(inputImp);
+            recalcularImporteOrdenPago();
+          });          
+
+          partidasBody.appendChild(fila);
+          // Dentro del forEach de dataUPs.ups, después de appendChild(fila):
+          const upIndex = Array.from(partidasBody.children).length - 1;
+          const saldoOrig = parseFloat(up.saldo_disponible);
+
+          inputImp.addEventListener('input', () => {
+              const val = parsearImporte(inputImp.value);
+              actualizarSaldoEnPanel(upIndex, val, saldoOrig);
+          });
+      });
+
+      mostrarPanelSaldos(dataUPs.ups);
 
     } catch (err) {
         console.error('Error autocompletando desde imputación:', err);
@@ -663,15 +732,357 @@
     const numero = parsearImporte(importeTotal.value);
     importeLetras.value = numero > 0 ? numeroALetras(numero) : '';
   }
+
+  /* ------------------------------------------------------------------------
+   MODAL DE VALIDACIÓN
+   ------------------------------------------------------------------------ */
+  function mostrarModalValidacion(errores) {
+    const overlay = document.getElementById('modalValidacion');
+    const lista   = document.getElementById('modalValidacionLista');
+    const btnCerrar = document.getElementById('modalValidacionCerrar');
+
+    lista.innerHTML = '';
+    errores.forEach(msg => {
+      const li = document.createElement('li');
+      li.textContent = msg;
+      lista.appendChild(li);
+    });
+
+    overlay.style.display = 'flex';
+
+    // Cerrar con el botón
+    btnCerrar.onclick = () => { overlay.style.display = 'none'; };
+
+    // Cerrar haciendo clic fuera de la caja
+    overlay.onclick = (e) => {
+      if (e.target === overlay) overlay.style.display = 'none';
+    };
+  }
+
+  async function guardarOrdenPago() {
+    const imputacionId = window._imputacionId;
+    const errores = [];
   
+    // ── Validaciones de encabezado ────────────────────────────────────────
+    const numeroOrden = document.getElementById('numeroOrden')?.value.trim();
+    if (!numeroOrden) errores.push('Número de Orden de Pago es obligatorio.');
+  
+    const expediente = document.getElementById('expediente')?.value.trim();
+    if (!expediente) errores.push('Expediente Nº es obligatorio.');
+  
+    const ejercicio = document.getElementById('ejercicio')?.value.trim();
+    if (!ejercicio) errores.push('Ejercicio es obligatorio.');
+  
+    const jurisdiccion = document.getElementById('jurisdiccion')?.value.trim();
+    if (!jurisdiccion) errores.push('Jurisdicción es obligatoria.');
+  
+    const codigoPago = document.getElementById('codigoPago')?.value.trim();
+    if (!codigoPago) errores.push('Código de Pago es obligatorio.');
+  
+    const fechaVencimiento = document.getElementById('fechaVencimiento')?.value.trim();
+    if (!fechaVencimiento) {
+      errores.push('Fecha de Vencimiento es obligatoria.');
+    } else if (!/^\d{2}\/\d{2}\/\d{4}$/.test(fechaVencimiento)) {
+      errores.push('Fecha de Vencimiento debe tener formato dd/mm/aaaa.');
+    }
+  
+    const importeTotal = parsearImporte(document.getElementById('importeTotal')?.value);
+    if (importeTotal <= 0) errores.push('El importe total debe ser mayor a cero.');
+  
+    // ── Validación de imputación ──────────────────────────────────────────
+    if (!imputacionId) errores.push('No hay una imputación asociada a esta Orden de Pago.');
+  
+    // ── Validación de beneficiarios ───────────────────────────────────────
+    const filasBenef = document.querySelectorAll('#beneficiariosBody tr');
+    const beneficiarios = [];
+    let benefIncompleto = false;
+  
+    for (const fila of filasBenef) {
+      const nombre  = fila.querySelector('.input-nombre-beneficiario')?.value.trim() || '';
+      const importe = parsearImporte(fila.querySelector('.input-importe-beneficiario')?.value);
+      const codigo  = fila.querySelector('.input-codigo-beneficiario')?.value.trim() || '';
+  
+      if (!nombre && importe === 0) continue; // fila vacía, se ignora
+  
+      if (!nombre || importe <= 0) {
+        benefIncompleto = true;
+        break;
+      }
+      beneficiarios.push({ codigo_beneficiario: codigo, beneficiario: nombre, importe });
+    }
+  
+    if (benefIncompleto) errores.push('Hay un beneficiario incompleto (falta nombre o importe).');
+    if (beneficiarios.length === 0 && !benefIncompleto) errores.push('Agregá al menos un beneficiario con importe.');
+  
+    // ── Validación de UPs ─────────────────────────────────────────────────
+    const filasUPs = document.querySelectorAll('#partidasBody tr');
+    const ups = [];
+    let upNegativa = false;
+    let upSuperaSaldo = false;
+    let detalleSuperaSaldo = '';
+  
+    for (const fila of filasUPs) {
+      const detalleId = fila.dataset.detalleId;
+      const importe   = parsearImporte(fila.querySelector('.input-importe-up')?.value);
+  
+      if (!detalleId || importe === 0) continue;
+  
+      if (importe < 0) { upNegativa = true; break; }
+  
+      const saldo = parseFloat(fila.dataset.saldoDisponible);
+      if (importe > saldo) {
+        upSuperaSaldo = true;
+        detalleSuperaSaldo = `Disponible: $${formatearImporte(saldo)} / Asignado: $${formatearImporte(importe)}`;
+        break;
+      }
+      ups.push({ imputacion_detalle_id: detalleId, importe });
+    }
+  
+    if (upNegativa)    errores.push('El importe de una Unidad Presupuestaria no puede ser negativo.');
+    if (upSuperaSaldo) errores.push(`Un importe de UP supera el saldo disponible. ${detalleSuperaSaldo}`);
+    if (ups.length === 0 && !upNegativa && !upSuperaSaldo) errores.push('Asigná importe a al menos una Unidad Presupuestaria.');
+  
+    // ── Validación cruzada ────────────────────────────────────────────────
+    const totalBenef = beneficiarios.reduce((acc, b) => acc + b.importe, 0);
+    const totalUPs   = ups.reduce((acc, u) => acc + u.importe, 0);
+  
+    if (beneficiarios.length > 0 && totalBenef > importeTotal) {
+      errores.push(`El total de beneficiarios ($${formatearImporte(totalBenef)}) supera el importe de la OP ($${formatearImporte(importeTotal)}).`);
+    }
+    if (ups.length > 0 && Math.abs(totalUPs - importeTotal) > 0.01) {
+      errores.push(`La suma de UPs ($${formatearImporte(totalUPs)}) no coincide con el importe de la OP ($${formatearImporte(importeTotal)}).`);
+    }
+    
+      // ── Validación de código de beneficiario ──────────────────────────────
+    for (const fila of filasBenef) {
+      const nombre  = fila.querySelector('.input-nombre-beneficiario')?.value.trim() || '';
+      const codigo  = fila.querySelector('.input-codigo-beneficiario')?.value.trim() || '';
+      const importe = parsearImporte(fila.querySelector('.input-importe-beneficiario')?.value);
+      if (!nombre && importe === 0) continue; // fila vacía
+      if (!codigo) {
+        errores.push('Falta el código en uno o más beneficiarios.');
+        break;
+      }
+    }
+
+    // ── Validación de concepto del pago ───────────────────────────────────
+    const filasConceptoVal = document.querySelectorAll('#conceptoPagoBody tr');
+    for (const fila of filasConceptoVal) {
+      const cod  = fila.querySelector('.input-codigo-concepto')?.value.trim() || '';
+      const desc = fila.querySelector('.input-desc-concepto')?.value.trim()   || '';
+      if (!cod)  { errores.push('Falta el código en Concepto del Pago.');       break; }
+      if (!desc) { errores.push('Falta la descripción en Concepto del Pago.');  break; }
+    }
+
+    // ── Validación de descripción del concepto (bloque libre) ────────────
+    const descripcionConcepto = Array.from(
+      document.querySelectorAll('#conceptoDescripcionContainer input')
+    ).map(i => i.value.trim()).filter(v => v);
+    if (descripcionConcepto.length === 0) {
+      errores.push('La descripción del concepto es obligatoria.');
+    }
+
+    // ── Validación de número de factura ───────────────────────────────────
+    const nroFactura = document.getElementById('numeroFactura')?.value.trim();
+    if (!nroFactura) errores.push('El número de factura es obligatorio.');
+
+    // ── Validación de resolución ──────────────────────────────────────────
+    const nroResolucion = document.getElementById('resolucion')?.value.trim();
+    if (!nroResolucion) errores.push('El número de resolución es obligatorio.');
+
+    // ── Validación de fecha de Rentas Generales ───────────────────────────
+    const fechaRentas = document.getElementById('fechaRentas')?.value.trim();
+    if (!fechaRentas) {
+      errores.push('La fecha de Rentas Generales es obligatoria.');
+    }
+
+    // ── Si hay errores → mostrar modal y frenar ───────────────────────────
+    if (errores.length > 0) {
+      mostrarModalValidacion(errores);
+      return;
+    }
+  
+    // ── A partir de acá todo está validado: continuar con el POST ─────────
+    const conceptoLineas = Array.from(
+      document.querySelectorAll('#conceptoDescripcionContainer input')
+    ).map(i => i.value.trim()).filter(v => v).join(' / ');
+  
+    const filasConcepto  = document.querySelectorAll('#conceptoPagoBody tr');
+    const codigoConcepto = filasConcepto[0]?.querySelector('.input-codigo-concepto')?.value.trim() || '0';
+    const descConcepto   = filasConcepto[0]?.querySelector('.input-desc-concepto')?.value.trim()   || '';
+  
+    const payload = {
+      imputacion_id:             imputacionId,
+      nro_orden_pago:            numeroOrden,
+      fecha_vencimiento:         convertirFechaAIso(fechaVencimiento) || null,
+      codigo_pago:               codigoPago,
+      descripcion_codigo_pago:   document.getElementById('descripcionCodigoPago')?.value.trim() || '',
+      concepto:                  conceptoLineas,
+      nro_factura:               document.getElementById('numeroFactura')?.value.trim()          || '',
+      nro_resolucion:            document.getElementById('resolucion')?.value.trim()             || '',
+      referencia_administrativa: document.getElementById('referenciaAdministrativa')?.value.trim() || '',
+      codigo_concepto_pago:      parseInt(codigoConcepto) || 0,
+      concepto_del_pago:         descConcepto,
+      beneficiarios,
+      ups,
+    };
+  
+    const btnGuardar = document.getElementById('btnImprimir');
+    try {
+      btnGuardar.disabled    = true;
+      btnGuardar.textContent = 'Guardando...';
+  
+      const csrfToken = getCookie('csrftoken');
+      const resp = await fetch('/api/orden-pago/crear/', {
+        method:  'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken':  csrfToken,
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      const data = await resp.json();
+  
+      if (resp.ok) {
+        alert(`Orden de Pago guardada correctamente.\nTotal: $${formatearImporte(parseFloat(data.importe_total))}`);
+      } else {
+        mostrarModalValidacion([data.error || 'Error al guardar. Revisá los datos.']);
+      }
+  
+    } catch (err) {
+      console.error('Error guardando OP:', err);
+      mostrarModalValidacion(['Error de red al guardar la Orden de Pago.']);
+    } finally {
+      btnGuardar.disabled    = false;
+      btnGuardar.textContent = '💾 Guardar';
+    }
+  }
+
+  // Convierte "dd/mm/aaaa" → "aaaa-mm-dd" para la API
+  function convertirFechaAIso(fechaDDMMAAAA) {
+    if (!fechaDDMMAAAA) return null;
+    const partes = fechaDDMMAAAA.split('/');
+    if (partes.length !== 3) return null;
+    return `${partes[2]}-${partes[1]}-${partes[0]}`;
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        for (const cookie of document.cookie.split(';')) {
+            const c = cookie.trim();
+            if (c.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(c.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+  }
+
+  /* ------------------------------------------------------------------------
+   PANEL DE SALDOS DISPONIBLES
+   ------------------------------------------------------------------------ */
+
+  function inicializarPanelSaldos() {
+    const panel       = document.getElementById('panelSaldos');
+    const btnMinimizar = document.getElementById('btnMinimizarOP');
+
+    if (!panel || !btnMinimizar) return;
+
+    // X → minimizar
+    btnMinimizar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        panel.classList.add('minimizado');
+    });
+
+    // Clic en el cuadro minimizado → desplegar
+    panel.addEventListener('click', () => {
+        if (panel.classList.contains('minimizado')) {
+            panel.classList.remove('minimizado');
+        }
+    });
+  }
+
+  function mostrarPanelSaldos(ups) {
+    const tbody = document.getElementById('tabla-saldos-body-op');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    ups.forEach((up, i) => {
+        const saldo   = parseFloat(up.saldo_disponible);
+        const agotado = saldo <= 0;
+        const tr = document.createElement('tr');
+        tr.dataset.upIndex = i;
+        tr.innerHTML = `
+            <td title="${up.denominacion} (PRG ${up.prog} / A/O ${up.ao})">${i + 1}</td>
+            <td class="${agotado ? 'saldo-rojo' : 'saldo-verde'}">
+                $ ${formatearImporte(saldo)}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+  }
+
+  function actualizarSaldoEnPanel(index, importeAsignado, saldoOriginal) {
+    const fila = document.querySelector(`#tabla-saldos-body-op tr[data-up-index="${index}"]`);
+    if (!fila) return;
+
+    const celdaSaldo = fila.querySelector('td:last-child');
+    if (!celdaSaldo) return;
+
+    const saldoRestante = saldoOriginal - importeAsignado;
+    celdaSaldo.textContent = `$ ${formatearImporte(Math.max(saldoRestante, 0))}`;
+    celdaSaldo.className   = saldoRestante < 0 ? 'saldo-rojo' : 'saldo-verde';
+  }
+
+  /* ------------------------------------------------------------------------
+   CARGA DE CÓDIGOS DE PAGO
+   ------------------------------------------------------------------------ */
+  async function cargarCodigosPago() {
+    try {
+      const resp = await fetch('/api/codigos-pago/');
+      if (!resp.ok) return;
+      const codigos = await resp.json();
+
+      const select = document.getElementById('codigoPago');
+      if (!select) return;
+
+      // Guardar el mapa código → descripción para el autocompletado
+      window._codigosPagoMap = {};
+
+      codigos.forEach(({ codigo, descripcion }) => {
+        window._codigosPagoMap[codigo] = descripcion;
+        const option = document.createElement('option');
+        option.value       = codigo;
+        option.textContent = `${codigo}`;
+        select.appendChild(option);
+      });
+
+      // Al cambiar la selección, autocompletar la descripción
+      select.addEventListener('change', () => {
+        const desc = document.getElementById('descripcionCodigoPago');
+        if (desc) {
+          desc.value = window._codigosPagoMap[select.value] || '';
+        }
+      });
+
+    } catch (err) {
+      console.error('Error cargando códigos de pago:', err);
+    }
+  }
+    
   document.addEventListener("DOMContentLoaded", () => {
     inicializarEventosBotones();
     configurarValidaciones();
     inicializarFilasBase();
-    recalcularImporteTotal();
+    recalcularImporteOrdenPago();
+    recalcularImporteConcepto();
     autocompletarDesdeImputacion();
+    cargarCodigosPago(); // ← agregar
   
-    // Autocompletar delegación contable con valor fijo
     const delegacion = document.getElementById("delegacionContable");
     if (delegacion) {
       delegacion.value = "ADM. PCIAL. DE RECURSOS HIDRICOS";

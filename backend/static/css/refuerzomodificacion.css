@@ -1,231 +1,12 @@
 /* ===== CONTENEDOR PRINCIPAL ===== */
 .pagina {
   width: 100%;
-  max-width: 1200px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.04);
-  padding: 2rem;
-  margin: 0 auto;
 }
 
 .header-pagina {
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid #000000;
-  padding-bottom: 0.75rem;
 }
 
-.titulo-principal {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
-  letter-spacing: -0.02em;
-  margin: 0;
-}
-
-/* ===== BARRA DE FILTRADO ===== */
-.barra-filtrado {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 1.5rem;
-  padding: 0.85rem 1.25rem;
-  border-radius: 8px;
-  flex-wrap: wrap;
-  background: #f8fafc; /* Gris muy claro, no naranja */
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-}
-
-.filtro-grupo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.filtrado-label {
-  font-weight: 700;
-  font-size: 0.875rem;
-  color: #111827;
-}
-
-.campo-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.select-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.select-wrapper::after {
-  content: "▼";
-  font-size: 0.65rem;
-  color: #3a4a5c;
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-
-.select-wrapper select {
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 28px;
-}
-
-.select-campo {
-  height: 40px;
-  min-width: 190px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 0 0.85rem;
-  font-size: 0.875rem;
-  background: #ffffff;
-  color: #374151;
-  outline: none;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-/* Grupo del Input Búsqueda */
-.busqueda-grupo {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  max-width: 400px;
-  position: relative;
-}
-
-.input-busqueda {
-  width: 100%;
-  height: 40px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 0 2.75rem 0 0.85rem;
-  font-size: 0.875rem;
-  color: #1f2937;
-  outline: none;
-  transition: all 0.2s ease;
-  background: #ffffff;
-}
-
-.btn-buscar {
-  position: absolute;
-  right: 4px;
-  height: 32px;
-  width: 32px;
-  background: transparent;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
-  transition: all 0.2s;
-}
-
-.btn-buscar:hover {
-  background: #f3f4f6;
-  color: #4338ca;
-}
-
-.select-campo:focus,
-.input-busqueda:focus {
-  border-color: #4338ca;
-  box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
-}
-
-/* ===== TABLA DE REGISTROS ===== */
-.tabla-wrapper {
-  margin-bottom: 1.5rem;
-  overflow-x: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-}
-
-.tabla-registros {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  text-align: left;
-}
-
-/* Cabecera principal única con tu color naranja */
-.tabla-registros th {
-  background: #cde4ff; /* Tu color naranja claro */
-  color: #062f81; /* Texto en contraste */
-  font-weight: 600;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.85rem 1rem;
-  border-bottom: 2px solid #cbd5e1; /* Línea para separar fuertemente la cabecera de los datos */
-}
-
-/* Filas de datos */
-.tabla-registros td {
-  padding: 1rem;
-  border-bottom: 1px solid #0049a3; /* Línea separadora estándar entre registros */
-  font-size: 0.875rem;
-  color: #374151;
-  vertical-align: middle;
-}
-
-.tabla-registros tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.tabla-registros tbody tr:hover {
-  background-color: #c2c2c2;
-}
-
-/* ===== ESTADO SIN RESULTADOS ===== */
-.sin-resultados {
-  padding: 3rem 1.5rem;
-  text-align: center;
-  color: #6b7280;
-  font-size: 0.9rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.pag-btn {
-  padding: 6px 16px;
-  border: 1px solid #c8cdd6;
-  border-radius: 4px;
-  background: #fff;
-  color: #3a4a5c;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.pag-btn:hover:not(:disabled) {
-  background: #185adb;
-  color: #fff;
-  border-color: #185adb;
-}
-
-.pag-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.pag-info {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #3a4a5c;
-  min-width: 60px;
-  text-align: center;
-}
 
 /* ===== BOTÓN AGREGAR (FAB) ===== */
 .btn-agregar-wrapper {
@@ -235,7 +16,7 @@
 .btn-agregar {
   position: fixed;
   bottom: 2.5rem;
-  right: 2.5rem;
+  right: 0.5rem;
   width: 56px;
   height: 56px;
   background-color: #4338ca;
@@ -258,251 +39,381 @@
   transform: translateY(-2px) scale(1.03);
 }
 
-/* ===== MODAL & OVERLAY ===== */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(17, 24, 39, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1.5rem;
-}
+/* ===================================================
+   MODIFICACION — estilos adicionales estilo prototipo2
+   Agregar al final de refuerzomodificacion.css
+   =================================================== */
 
-.modal {
+/* ── Tabla principal ───────────────────────────────── */
+.tabla-wrapper {
   background: #ffffff;
-  width: 100%;
-  max-width: 580px;
-  max-height: 90vh;
   border-radius: 12px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  display: flex;
-  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  border: 1px solid #e2e8f0;
   overflow: hidden;
 }
 
-.modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
-}
-
-.modal-titulo {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-}
-
-.modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.modal-campo {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.modal-campo label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #374151;
-}
-
-/* Campos de entrada en modal */
-.linea-input {
-  height: 40px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 0 0.85rem;
-  font-size: 0.9rem;
-  color: #111827;
-  outline: none;
-  background: #ffffff;
-  transition: all 0.2s ease;
+.tabla-registros {
   width: 100%;
-  box-sizing: border-box;
-}
-
-.linea-input:focus {
-  border-color: #4338ca;
-  box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.12);
-}
-
-.input-readonly {
-  background: #f3f4f6;
-  color: #6b7280;
-  border-color: #e5e7eb;
-  cursor: not-allowed;
-}
-
-/* Contenedores Dinámicos (Filas generadas) */
-.contenedor-dinamico {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.btn-agregar-campo {
-  align-self: flex-start;
-  padding: 0.4rem 0.85rem;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  color: #4338ca;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 0.25rem;
-}
-
-.btn-agregar-campo:hover {
-  background: #e0e7ff;
-  border-color: #a5b4fc;
-}
-
-.total-asignado-row {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  background: #f9fafb;
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-}
-
-.total-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #4b5563;
-}
-
-.total-monto {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #059669;
-}
-
-.error-mensaje {
-  font-size: 0.8rem;
-  color: #ef4444;
-  font-weight: 500;
-}
-
-/* Carga de Archivo Personalizada */
-.file-upload-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.file-input-hidden {
-  display: none;
-}
-
-.btn-file-upload {
-  padding: 0.5rem 0.85rem;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  color: #374151;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-file-upload:hover {
-  background: #f9fafb;
-  border-color: #4338ca;
-  color: #4338ca;
-}
-
-.archivo-nombre {
-  font-size: 0.85rem;
-  color: #6b7280;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  color: #475569;
   white-space: nowrap;
 }
 
-/* Acciones del Modal (Footer) */
-.modal-acciones {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  background: #f9fafb;
+/* Cabecera */
+.tabla-registros thead tr {
+  background: #00d1c0;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.btn-cancelar,
-.btn-guardar {
-  padding: 0.55rem 1.25rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  border-radius: 6px;
+.tabla-registros th {
+  padding: 14px 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+  background: #00d1c0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* Fila principal */
+.fila-principal {
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.btn-cancelar {
-  background: #ffffff;
-  border: 1px solid #d1d5db;
+.fila-principal:hover {
+  background: #e3fcfa;
+}
+
+.fila-principal td {
+  padding: 14px 20px;
+  vertical-align: middle;
   color: #374151;
 }
 
-.btn-cancelar:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
+/* Celda toggle */
+.toggle-cell {
+  width: 44px;
+  text-align: center;
+  color: #94a3b8;
 }
 
-.btn-guardar {
-  background: #4338ca;
-  border: 1px solid #4338ca;
-  color: #ffffff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.btn-guardar:hover {
-  background: #3730a3;
-  border-color: #3730a3;
-}
-
-/* ===== BOTÓN ELIMINAR FILA (X) ===== */
-.btn-eliminar-fila {
-  background-color: transparent; /* Fondo transparente por defecto */
-  border: none; /* Quitamos el borde por defecto del navegador */
-  color: #9ca3af; /* Un gris sutil para que no llame demasiado la atención de entrada */
-  font-size: 1.1rem; /* Un poco más grande para que sea fácil de hacer clic */
-  font-weight: bold;
+.toggle-cell button {
+  background: none;
+  border: none;
   cursor: pointer;
-  padding: 0.3rem 0.5rem;
-  border-radius: 6px; /* Bordes redondeados para el hover */
-  transition: all 0.2s ease-in-out; /* Animación suave */
-  display: flex;
+  color: #94a3b8;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Efecto al pasar el mouse por encima (Hover) */
-.btn-eliminar-fila:hover {
-  color: #ef4444; /* La 'x' se vuelve roja */
-  background-color: #fee2e2; /* Fondo rojo muy clarito para destacar */
+.toggle-cell button:hover {
+  color: #2563eb;
 }
 
-/* Quitar el recuadro azul molesto al hacer clic */
-.btn-eliminar-fila:focus {
+/* Celda usuario con ícono */
+.usuario-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.usuario-avatar {
+  background: #dbeafe;
+  color: #2563eb;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Celda decreto/doc referencia */
+/* Celda decreto/doc referencia */
+.doc-link {
+  display: flex;
+  align-items: flex-start; /* Cambiado: mantiene el ícono arriba si hay múltiples líneas */
+  gap: 6px;
+  color: #0d9488;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s;
+  
+  /* --- NUEVAS REGLAS PARA EL MANEJO DE TEXTO --- */
+  white-space: normal; /* Sobrescribe el 'nowrap' general de la tabla */
+  overflow-wrap: anywhere; /* Fuerza el corte de palabras largas sin espacios (ej: nombres de PDF) */
+  max-width: 260px; /* Define un tope máximo de ancho. Ajusta este valor si lo deseas */
+  line-height: 1.4; /* Añade un poco de espacio entre líneas para mejor lectura */
+}
+
+.doc-link:hover {
+  color: #0f766e;
+  text-decoration: underline;
+}
+
+/* Regla para proteger el ícono del documento */
+.doc-link svg {
+  flex-shrink: 0; /* Evita que el SVG se aplaste al comprimirse el texto */
+  margin-top: 2px; /* Alineación fina para que quede centrado con la primera línea de texto */
+}
+
+/* Importe total — alineado derecha */
+.col-importe-total {
+  text-align: right;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* ── Fila de detalle expandible ────────────────────── */
+/* Color base para la fila de detalle completa */
+.fila-detalle {
+  background: #e2e2e2 !important; 
+}
+
+/* Evitar que cambie al pasar el mouse por encima de la fila completa */
+.fila-detalle:hover {
+  background-color: #e2e2e2 !important; 
+}
+
+/* Color para el contenedor interno (el del borde azul) */
+.detalle-container {
+  border-left: 4px solid #1d4ed8;
+  padding: 24px 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  max-width: 900px;
+}
+
+.detalle-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.detalle-titulo {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #475569;
+  margin-bottom: 12px;
+}
+
+.detalle-lista {
+  list-style: disc;
+  padding-left: 18px;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detalle-lista li {
+  font-size: 1rem;
+  color: #374151;
+}
+
+.detalle-lista li::marker {
+  color: #2563eb;
+}
+
+.detalle-lista-destino li::marker {
+  color: #0d9488;
+}
+
+.detalle-subtotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid #01214b;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-top: auto;
+}
+
+/* ── Botones de acción ─────────────────────────────── */
+.acciones-contenedor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-accion {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  color: #94a3b8;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-ver:hover    { color: #2563eb; }
+.btn-editar:hover { color: #2563eb; }
+.btn-eliminar:hover { color: #ef4444; }
+
+.btn-accion:focus { outline: none; }
+
+/* ── Barra de filtrado estilo prototipo ────────────── */
+.barra-filtrado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 1.5rem;
+  padding: 12px 20px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  flex-wrap: nowrap;
+}
+
+.filtro-grupo {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Esto agrega una pequeña separación entre el texto y el select */
+}
+
+/* 1. Texto "Filtrado:" en negrita */
+.filtrado-label {
+  font-weight: 700;
+  color: #1e293b; /* Color oscuro para resaltar la negrita */
+}
+
+/* 2. Texto "Campo" en gris */
+.campo-label {
+  color: #64748b; /* Gris acorde a la paleta de tu diseño */
+}
+
+/* 3. Estilos del select con la flecha personalizada */
+.select-campo {
+  /* Mantén tus estilos originales */
+  border-radius: 8px !important;
+  border-color: #cbd5e1 !important;
+  font-size: 0.875rem !important;
+  color: #374151 !important;
+  border: 1px solid #cbd5e1; /* Borde explícito */
+  
+  /* Nuevos estilos para la flecha */
+  appearance: none; /* Oculta la flecha por defecto */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #ffffff !important;
+  padding: 8px 36px 8px 12px !important; /* Espacio derecho (36px) para que el texto no pise la flecha */
+  
+  /* SVG de la flecha insertado como fondo */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important; /* Posiciona la flecha a la derecha */
+  background-size: 16px !important;
+}
+
+.busqueda-grupo {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 320px;
+}
+
+.input-busqueda {
+  width: 100%;
+  height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 12px 0 36px;
+  font-size: 0.875rem;
+  color: #374151;
   outline: none;
+  background: #ffffff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-busqueda:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* ── Paginación ────────────────────────────────────── */
+#paginacion-modificaciones,
+#paginacion-refuerzos {
+  margin-top: 8px;
+}
+
+/* Footer / Pagination */
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background-color: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+  font-size: 14px;
+}
+
+.pagination-info {
+  color: #1e293b;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-page {
+  padding: 6px 16px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+/* Estilo para el pequeño cuadrado de la página */
+.btn-page.page-number {
+  min-width: 32px;
+  padding: 6px 0;
+  background-color: #00d1c0;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.btn-page:hover:not(:disabled) {
+  background-color: #00d1c0;
+  color: white;
+}
+
+.btn-page:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  background-color: #f8fafc;
+}
+
+.btn-page.active {
+  border-style: solid;
+  border-width: 0.5px;
+  border-color: #cbd5e1;
 }

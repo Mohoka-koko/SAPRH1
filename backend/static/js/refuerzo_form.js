@@ -123,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <span>PRY</span>
         <span>A/O</span>
         <span>PAR</span>
+        <span>FF</span>        
       `;
   
       const fila = document.createElement("div");
@@ -135,10 +136,10 @@ document.addEventListener("DOMContentLoaded", () => {
         <select class="fila-pry"><option value="">Seleccione</option></select>
         <select class="fila-ao"><option value="">Seleccione</option></select>
         <select class="fila-par"><option value="">Seleccione</option></select>
-        <select class="fila-fuente" style="display:none; grid-column:1/-1; margin-top:4px; height:32px;"><option value="">Fuente...</option></select>
+        <select class="fila-fuente" disabled><option value="">FF...</option></select>
         <input type="hidden" class="fila-linea-id" value="" />
       `;
-  
+    
       wrapper.appendChild(cabecera);
       wrapper.appendChild(fila);
       document.getElementById("contenedor-receptoras").appendChild(wrapper);
@@ -188,8 +189,8 @@ document.addEventListener("DOMContentLoaded", () => {
         inputLineaId.value         = "";
         saldoInput.value           = "";
         saldoInput.placeholder     = "—";
-        selectFuente.style.display = "none";
-        selectFuente.innerHTML     = `<option value="">Fuente...</option>`;
+        selectFuente.disabled      = true; 
+        selectFuente.innerHTML     = `<option value="">FF...</option>`;
       }
   
       // ── Resolver línea ───────────────────────────────────────────
@@ -211,19 +212,27 @@ document.addEventListener("DOMContentLoaded", () => {
             inputLineaId.value     = linea.linea_id;
             saldoInput.value       = `$${formatearImporte(parseFloat(linea.saldo_actual))}`;
             saldoInput.style.color = "#2e7d32";
+            
+            // NUEVAS 2 LÍNEAS PARA MOSTRAR EL FF ÚNICO:
+            selectFuente.innerHTML = `<option value="${linea.linea_id}">${linea.fuente_nombre.split(" - ")[0]}</option>`;
+            selectFuente.disabled = false;
+  
           } else {
-            selectFuente.innerHTML = `<option value="">Seleccionar fuente...</option>`;
+            selectFuente.innerHTML = `<option value="">Elegir FF</option>`;
+            selectFuente.disabled = false; // NUEVA LÍNEA: habilita el selector
+            
             data.lineas.forEach(l => {
               const opt = document.createElement("option");
               opt.value          = l.linea_id;
               opt.dataset.saldo  = l.saldo_actual;
               opt.dataset.label  = l.fuente_nombre;
               opt.dataset.codigo = l.fuente_nombre.split(" - ")[0];
-              opt.textContent    = `${l.fuente_nombre} — Saldo: $${formatearImporte(parseFloat(l.saldo_actual))}`;
+              
+              // LA LÍNEA MÁGICA: Le asigna SOLO el número de código, sin el saldo
+              opt.textContent    = opt.dataset.codigo;
+              
               selectFuente.appendChild(opt);
             });
-            selectFuente.style.display = "";
-            saldoInput.placeholder     = "Seleccioná fuente";
   
             if (datos.fuente_id) {
               const optFuente = Array.from(selectFuente.options).find(o =>
@@ -242,9 +251,8 @@ document.addEventListener("DOMContentLoaded", () => {
   
       selectFuente.addEventListener("change", () => {
         if (!selectFuente.value) {
-          inputLineaId.value     = "";
-          saldoInput.placeholder = "Seleccioná fuente";
-          saldoInput.value       = "";
+          inputLineaId.value     = "";;
+          saldoInput.value       = "---";
           return;
         }
         const opt = selectFuente.options[selectFuente.selectedIndex];
