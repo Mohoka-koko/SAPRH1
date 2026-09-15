@@ -201,6 +201,67 @@ class OrdenPagoDetalle(models.Model):
         return f'{self.orden_pago} - {self.beneficiario} - {self.importe}'
 
 # ─────────────────────────────────────────────
+# ORDEN DE PAGO PERSONAL
+# Se carga ANTES de que exista la imputación. El sistema (app) genera
+# después la Imputación + ImputacionDetalle a partir de las líneas de
+# orden_pago_personal_partida, y completa 'imputacion' / 'imputacion_detalle'
+# una vez creadas.
+# Pegar esta sección DESPUÉS de OrdenPagoDetalle y ANTES de "# REFUERZO"
+# ─────────────────────────────────────────────
+class OrdenPagoPersonal(models.Model):
+    nro_orden_pago  = models.CharField(max_length=50)
+    nro_expediente  = models.CharField(max_length=50)
+    importe_total   = models.DecimalField(max_digits=18, decimal_places=2)
+    codigo          = models.CharField(max_length=20)
+    concepto        = models.TextField()
+    fecha           = models.DateField()
+    # Se completa una vez que el sistema genera la imputación automáticamente
+    imputacion      = models.ForeignKey(Imputacion, on_delete=models.PROTECT, null=True, blank=True, related_name='ordenes_pago_personal')
+    usuario         = models.ForeignKey(UsuarioPersonalizado, on_delete=models.PROTECT, related_name='ordenes_pago_personal')
+    fecha_creacion  = models.DateTimeField(auto_now_add=True)
+    anulada         = models.BooleanField(default=False)
+    fecha_anulacion = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table     = 'orden_pago_personal'
+        ordering     = ['-fecha']
+        verbose_name = 'Orden de Pago Personal'
+
+    def __str__(self):
+        return f'OP Personal {self.nro_orden_pago} - {self.importe_total}'
+
+
+class OrdenPagoPersonalBeneficiario(models.Model):
+    orden_pago_personal    = models.ForeignKey(OrdenPagoPersonal, on_delete=models.CASCADE, related_name='beneficiarios')
+    codigo                 = models.CharField(max_length=20)
+    nomina_beneficiarios   = models.TextField()
+    importe_parcial        = models.DecimalField(max_digits=18, decimal_places=2)
+    importe_total          = models.DecimalField(max_digits=18, decimal_places=2)
+
+    class Meta:
+        db_table     = 'orden_pago_personal_beneficiario'
+        verbose_name = 'Beneficiario de OP Personal'
+
+    def __str__(self):
+        return f'{self.orden_pago_personal} - {self.nomina_beneficiarios}'
+
+
+class OrdenPagoPersonalPartida(models.Model):
+    orden_pago_personal   = models.ForeignKey(OrdenPagoPersonal, on_delete=models.CASCADE, related_name='partidas')
+    linea_presupuestaria  = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, related_name='ordenes_pago_personal_partida')
+    descripcion           = models.CharField(max_length=300)
+    importe               = models.DecimalField(max_digits=18, decimal_places=2)
+    # Se completa cuando el sistema genera la ImputacionDetalle correspondiente
+    imputacion_detalle    = models.ForeignKey(ImputacionDetalle, on_delete=models.PROTECT, null=True, blank=True, related_name='origen_op_personal')
+
+    class Meta:
+        db_table     = 'orden_pago_personal_partida'
+        verbose_name = 'Partida de OP Personal'
+
+    def __str__(self):
+        return f'{self.orden_pago_personal} - {self.descripcion} - {self.importe}'
+
+# ─────────────────────────────────────────────
 # REFUERZO
 # ─────────────────────────────────────────────
 class Refuerzo(models.Model):
@@ -294,10 +355,12 @@ class MovimientoHistorial(models.Model):
         ('MODIFICACION_EDICION','Modificación - Edición'),
         ('MODIFICACION_ANULACION', 'Modificación - Anulación'),
         ('ORDEN_PAGO_ANULACION', 'Orden de Pago - Anulación'),
+        ('ORDEN_PAGO_PERSONAL',           'Orden de Pago Personal'),
+        ('ORDEN_PAGO_PERSONAL_ANULACION', 'Orden de Pago Personal - Anulación'),
     ]
 
     linea_presupuestaria = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, related_name='historial')
-    tipo           = models.CharField(max_length=25, choices=TIPO_CHOICES)
+    tipo           = models.CharField(max_length=40, choices=TIPO_CHOICES)
     referencia_id  = models.IntegerField()
     fecha          = models.DateTimeField(auto_now_add=True)
     usuario        = models.ForeignKey(UsuarioPersonalizado, on_delete=models.PROTECT, related_name='movimientos')
