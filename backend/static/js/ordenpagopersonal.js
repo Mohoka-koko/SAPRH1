@@ -784,7 +784,7 @@ if (btnAddBeneficiarioTabla) {
         btnDelErogacion.addEventListener("click", eliminarFilaErogacionSeleccionada);
     }
 
-    const btnGuardar = document.getElementById("btnGuardar");
+    const btnGuardar = document.getElementById("btnImprimir");
 
 if (btnGuardar) {
     btnGuardar.addEventListener("click", guardarOrdenPago);
@@ -900,8 +900,14 @@ function guardarOrdenPago() {
         return;
     }
 
-    // Acá después podemos enviar los datos al backend
-    // para guardarlos en Django.
+    const camposObligatorios = ["expediente", "jurisdiccion", "uPresupuestaria"];
+    for (const id of camposObligatorios) {
+      const campo = document.getElementById(id);
+      if (!validarCampoObligatorio(campo)) {
+        campo.focus();
+        return;
+      }
+    }
 
-    alert("Orden de Pago guardada correctamente.");
+    alert("La validación local finalizó, pero el guardado de la Orden de Pago Personal todavía no está implementado.");
 }

@@ -165,6 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const inputImporte = document.createElement("input");
       inputImporte.type        = "text";
       inputImporte.className   = "fila-importe";
+      inputImporte.required    = true;
       inputImporte.placeholder = "Ingrese importe";
       if (datos.importe) inputImporte.value = formatearImporte(parseFloat(datos.importe));
   
@@ -352,6 +353,23 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       return result;
     }
+
+    function validarFilas() {
+      const filas = document.querySelectorAll("#contenedor-receptoras .fila-receptora-refuerzo");
+      const importes = document.querySelectorAll("#bloque-importes-receptoras .mf-importe-fila");
+      let valido = filas.length > 0;
+
+      filas.forEach((fila, i) => {
+        const lineaId = fila.querySelector(".fila-linea-id")?.value.trim();
+        const input = importes[i]?.querySelector(".fila-importe");
+        const importe = parsearImporte(input?.value);
+        const filaValida = Boolean(lineaId) && importe !== null && importe > 0;
+        if (input) input.classList.toggle("error", !filaValida);
+        if (!filaValida) valido = false;
+      });
+
+      return valido;
+    }
   
     function calcularTotalAsignado() {
       let total = 0;
@@ -364,14 +382,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // ─── TOTAL Y VALIDACIÓN ───────────────────────────────────────────────────
     function actualizarTotal() {
       const totalAsignado = calcularTotalAsignado();
-      const importeTotal  = parsearImporte(mImporteTotal.value) ?? 0;
+      const importeTotal  = parsearImporte(mImporteTotal.value);
   
       document.getElementById("total-asignado-refuerzo").textContent = formatearImporte(totalAsignado);
   
       const errorSpan    = document.getElementById("error-importe-refuerzo");
       const totalEl      = document.getElementById("total-asignado-refuerzo");
   
-      if (importeTotal > 0 && totalAsignado > importeTotal) {
+      if (importeTotal !== null && totalAsignado > importeTotal) {
         errorSpan.style.display = "inline";
         totalEl.classList.add("error-total");
       } else {
@@ -390,6 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ─── VALIDAR ──────────────────────────────────────────────────────────────
     function limpiarErrores() {
       [mFecha, mImporteTotal, mExpediente, mUsuario].forEach(inp => inp && inp.classList.remove("error"));
+      document.querySelectorAll(".fila-importe").forEach(inp => inp.classList.remove("error"));
       document.getElementById("error-importe-refuerzo").style.display = "none";
       document.getElementById("total-asignado-refuerzo").classList.remove("error-total");
     }
@@ -401,10 +420,24 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!mImporteTotal.value.trim()) { mImporteTotal.classList.add("error"); ok = false; }
       if (!mExpediente.value.trim())   { mExpediente.classList.add("error");   ok = false; }
       if (!mUsuario.value.trim())      { mUsuario.classList.add("error");      ok = false; }
-      if (obtenerFilas().length === 0) { ok = false; }
+      const importeTotal = parsearImporte(mImporteTotal.value);
       const totalAsignado = calcularTotalAsignado();
-      const importeTotal  = parsearImporte(mImporteTotal.value) ?? 0;
-      if (importeTotal > 0 && totalAsignado > importeTotal) { ok = false; }
+      if (importeTotal === null || importeTotal <= 0) {
+        mImporteTotal.classList.add("error");
+        ok = false;
+      }
+      if (!validarFilas()) {
+        alert("Cada línea debe tener una unidad presupuestaria y un importe numérico mayor que cero.");
+        ok = false;
+      }
+      if (importeTotal !== null && totalAsignado > importeTotal) {
+        alert("El total asignado no puede superar el importe total del refuerzo.");
+        ok = false;
+      }
+      if (MODO !== "editar" && !mDecreto.files[0]) {
+        alert("Seleccioná el decreto o la resolución antes de guardar.");
+        ok = false;
+      }
       return ok;
     }
   

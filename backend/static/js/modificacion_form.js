@@ -154,6 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const inputImporte = document.createElement("input");
       inputImporte.type        = "text";
       inputImporte.className   = "fila-importe";
+      inputImporte.required    = true;
       inputImporte.placeholder = "Ingrese importe";
       if (datos.importe) inputImporte.value = formatearImporte(parseFloat(datos.importe));
   
@@ -353,6 +354,23 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       return result;
     }
+
+    function validarFilas(contenedorId, bloqueImporteId) {
+      const filas = document.querySelectorAll(`#${contenedorId} .fila-receptora-refuerzo`);
+      const importes = document.querySelectorAll(`#${bloqueImporteId} .mf-importe-fila`);
+      let valido = filas.length > 0;
+
+      filas.forEach((fila, i) => {
+        const lineaId = fila.querySelector(".fila-linea-id")?.value.trim();
+        const input = importes[i]?.querySelector(".fila-importe");
+        const importe = parsearImporte(input?.value);
+        const filaValida = Boolean(lineaId) && importe !== null && importe > 0;
+        if (input) input.classList.toggle("error", !filaValida);
+        if (!filaValida) valido = false;
+      });
+
+      return valido;
+    }
   
     function calcularTotal(bloqueImporteId) {
       let total = 0;
@@ -396,6 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ─── VALIDAR ──────────────────────────────────────────────────────────────
     function limpiarErrores() {
       [mFecha, mExpediente, mUsuario].forEach(inp => inp && inp.classList.remove("error"));
+      document.querySelectorAll(".fila-importe").forEach(inp => inp.classList.remove("error"));
       document.getElementById("error-receptora-supera").style.display = "none";
       document.getElementById("total-asignado-receptora").classList.remove("error-total");
     }
@@ -406,11 +425,19 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!mFecha.value)             { mFecha.classList.add("error");      ok = false; }
       if (!mExpediente.value.trim()) { mExpediente.classList.add("error"); ok = false; }
       if (!mUsuario.value.trim())    { mUsuario.classList.add("error");    ok = false; }
-      if (obtenerFilas("contenedor-transferentes", "bloque-importes-transferentes").length === 0) { ok = false; }
-      if (obtenerFilas("contenedor-receptoras",    "bloque-importes-receptoras").length === 0)    { ok = false; }
+      const transferentesValidos = validarFilas("contenedor-transferentes", "bloque-importes-transferentes");
+      const receptorasValidas = validarFilas("contenedor-receptoras", "bloque-importes-receptoras");
+      if (!transferentesValidos || !receptorasValidas) {
+        alert("Cada línea debe tener una unidad presupuestaria y un importe numérico mayor que cero.");
+        ok = false;
+      }
       const totalTransf = calcularTotal("bloque-importes-transferentes");
       const totalRecep  = calcularTotal("bloque-importes-receptoras");
       if (totalTransf > 0 && totalRecep > totalTransf) { ok = false; }
+      if (MODO !== "editar" && !mDecreto.files[0]) {
+        alert("Seleccioná el decreto o la resolución antes de guardar.");
+        ok = false;
+      }
       return ok;
     }
   

@@ -245,19 +245,24 @@ function ejecutarReactivar(usuarioId, nombreUsuario) {
 // ===== ROL → ÁREA AUTOMÁTICO =====
 const selectRol  = document.getElementById('nuevo-rol');
 const selectArea = document.getElementById('select-area');
+const areaHidden = document.getElementById('area-hidden');
 
-if (selectRol && selectArea) {
+if (selectRol && selectArea && areaHidden) {
   selectRol.addEventListener('change', function() {
       const rolesAdmin = ['admin', 'adminprincipal', 'usuariovip'];
       
       if (rolesAdmin.includes(this.value)) {
         selectArea.value = 'todas';
         selectArea.disabled = true;
-        document.getElementById('area-hidden').value = 'todas';
+        areaHidden.value = 'todas';
     } else {
         selectArea.disabled = false;
         selectArea.value = '';
-        document.getElementById('area-hidden').value = '';
+        areaHidden.value = '';
     }
+  });
+
+  selectArea.addEventListener('change', function() {
+    areaHidden.value = this.value;
   });
 }

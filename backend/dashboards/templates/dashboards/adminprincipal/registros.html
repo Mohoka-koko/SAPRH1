@@ -48,7 +48,7 @@
     <div class="actions">
       <button class="btn btn-yellow">Crear Imputación</button>
       <button class="btn btn-outline">Crear Orden de Pago</button>
-      <a href="{% url 'refuerzomodificacion' %}"><button class="btn btn-orange">Modificación o Refuerzo</button></a>
+      <a href="{% url 'refuerzomodificacion' %}" class="btn btn-orange">Modificación o Refuerzo</a>
     </div>
   </div>
 
@@ -91,9 +91,8 @@
 </div>
 
 
-<script src="js/script.js"></script>
+<script src="{% static 'js/script.js' %}"></script>
 {% endblock %}
 
 {% block extra_js %}
-  <script src="{% static 'js/registros.js' %}"></script>
 {% endblock %}
