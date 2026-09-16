@@ -1,0 +1,164 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/crear_partida.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{% csrf_token %}
+
+<div class="contenedor">
+
+    <div class="layout-principal">
+
+        <div class="panel-lateral">
+
+            <div class="panel-jurisdiccion">
+                <strong>Jurisdicción:</strong> 51
+                <br>
+                Administración Provincial de Recursos Hídricos
+            </div>
+
+            <div class="panel-acciones">
+                <button type="button" onclick="abrirModalPartida()">
+                    Crear Partida
+                </button>
+
+                <button type="button" id="btnCrearUP" onclick="abrirModalUP()">
+                    + Crear UP
+                </button>
+            </div>
+
+            <div class="panel-buscador">
+                <label for="buscador">Buscar</label>
+                <input
+                    type="text"
+                    id="buscador"
+                    placeholder="Buscar partida..."
+                    onkeyup="buscarPartida()">
+            </div>
+
+        </div>
+
+        <div class="panel-tabla">
+            <div class="tabla-wrapper">
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>PROG</th>
+                            <th>SUBP</th>
+                            <th>PY</th>
+                            <th>A/O</th>
+                            <th>PART.</th>
+                            <th>DENOMINACIÓN</th>
+                            <th>FUNC.</th>
+                            <th>FUENTE</th>
+                            <th>PRESUPUESTO INICIAL</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tablaPartidas"></tbody>
+
+                    <tfoot>
+                        <tr>
+                            <td colspan="8"><strong>TOTAL GENERAL</strong></td>
+                            <td id="totalGeneral"></td>
+                        </tr>
+                    </tfoot>
+
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ===== MODAL: CREAR PARTIDA ===== -->
+<div class="modal-overlay" id="modalOverlayPartida">
+  <div class="modal-box">
+    <h3>Crear Partida</h3>
+    <p class="modal-desc">Completá el código y la denominación. Se guardará en el catálogo de Partidas.</p>
+
+    <div class="form-group">
+      <label for="inputCodigoPartida">Código</label>
+      <input type="text" id="inputCodigoPartida" placeholder="Ej: 05">
+    </div>
+
+    <div class="form-group">
+      <label for="inputDenominacionPartida">Denominación</label>
+      <input type="text" id="inputDenominacionPartida" placeholder="Ej: Recursos Hídricos">
+    </div>
+
+    <div class="modal-acciones">
+      <button type="button" class="btn btn-cancelar" onclick="cerrarModalPartida()">Cancelar</button>
+      <button type="button" class="btn btn-guardar" onclick="guardarPartida()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: CREAR UP (Unidad Presupuestaria) ===== -->
+<div id="modalUP" class="modal">
+    <div class="modal-content">
+
+        <div class="modal-header">
+            <h2>Crear Unidad Presupuestaria</h2>
+            <span class="cerrar" onclick="cerrarModalUP()">&times;</span>
+        </div>
+
+        <div class="modal-body">
+
+            <label>Programa</label>
+            <select id="prog">
+                <option value="">Seleccionar programa...</option>
+            </select>
+
+            <label>Subprograma</label>
+            <input type="text" id="subp" value="00" readonly>
+
+            <label>Proyecto</label>
+            <select id="py" disabled>
+                <option value="">Seleccionar proyecto...</option>
+            </select>
+
+            <label>Actividad / Obra</label>
+            <select id="ao" disabled>
+                <option value="">Seleccionar actividad...</option>
+            </select>
+
+            <label>Partida</label>
+            <select id="partida">
+                <option value="">Seleccionar partida...</option>
+            </select>
+
+            <label>Denominación</label>
+            <input type="text" id="nombre" readonly>
+
+            <label>Fuente de Financiamiento</label>
+            <select id="fuente">
+                <option value="">Seleccionar fuente...</option>
+            </select>
+
+            <label>Presupuesto Inicial</label>
+            <input type="number" id="presupuesto" min="1" placeholder="Ej: 1000000">
+
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" onclick="cerrarModalUP()">Cancelar</button>
+            <button type="button" onclick="guardarUP()">Guardar UP</button>
+        </div>
+
+    </div>
+</div>
+
+<div class="toast" id="toast">✓ Guardado correctamente</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/crear_partida.js' %}"></script>
+{% endblock %}

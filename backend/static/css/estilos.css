@@ -535,11 +535,20 @@ button:hover {
 }
 
 .table-container {
+    padding: 0 2rem 2rem;
+}
+
+.table-container .history-table-wrapper {
     overflow-x: auto;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
 }
- 
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+}
 table {
     width: 100%;
     border-collapse: collapse;
@@ -1029,7 +1038,7 @@ tbody td {
 }
 
 .history-table thead tr {
-    background: #fafafa;
+    background: #1e3a8a;
     border-bottom: 1.5px solid var(--border);
 }
 
@@ -1037,12 +1046,11 @@ tbody td {
     padding: 0.85rem 1rem;
     text-align: left;
     font-weight: 600;
-    color: var(--text);
+    color: #ffffff;
     font-size: 0.82rem;
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
-
 .history-table td {
     padding: 0.85rem 1rem;
     color: var(--text);
@@ -1072,6 +1080,39 @@ tbody td {
 .badge-listo { background: var(--primary); }
 .badge-revisar { background: #ef4444; }
 
+/* Badges de tipo (subrayado, no relleno) */
+.badge-tipo {
+    display: inline-block;
+    min-width: 160px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.badge-tipo-imputacion {
+    background: #ffdf4e;
+    color: #1e1e2e;
+}
+
+.badge-tipo-op,
+.badge-tipo-op-personal {
+    background: #e8ebee;
+    color: #1e1e2e;
+}
+
+.badge-tipo-modificacion {
+    background: #00d1c0;
+    color: #1e1e2e;
+}
+
+.badge-tipo-refuerzo {
+    background: #fdcf6c;
+    color: #1e1e2e;
+}
 /* Botón de edición */
 .edit-btn {
     border: none;
@@ -1086,6 +1127,7 @@ tbody td {
     color: var(--primary);
     transform: translateY(-1px);
 }
+
 /* AQUÍ TERMINA EL CONTENIDO DE REGISTROS*/
 
 /* ========================================

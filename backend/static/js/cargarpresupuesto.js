@@ -280,3 +280,195 @@ function buscarPartida() {
 // ── Inicializar ──────────────────────────────────────────────────────────
 restaurarPresupuestoGeneral();
 cargarTabla();
+// ── Catálogos ──────────────────────────────────────────────────────────
+const PADRE_LABEL = {
+    'Programa': 'Jurisdicción',
+    'Subprograma': 'Programa',
+    'Proyecto': 'Programa',
+    'Actividad / Obra': 'Proyecto',
+};
+
+let datosCatalogos = {
+    'Programa': [], 'Subprograma': [], 'Proyecto': [],
+    'Actividad / Obra': [], 'Partida': [], 'Fuente de Financiamiento': [],
+};
+
+let catalogoActual = 'Programa';
+let editandoId = null;
+
+
+
+function abrirModalCatalogos() {
+    document.getElementById('modalCatalogosPanel').style.display = 'block';
+    cargarCatalogo(catalogoActual);
+}
+
+function cerrarModalCatalogos() {
+    document.getElementById('modalCatalogosPanel').style.display = 'none';
+}
+
+async function cargarCatalogo(tipo) {
+    const tbody = document.getElementById('tbodyCatalogo');
+    tbody.innerHTML = `<tr><td colspan="3" class="sin-datos">Cargando...</td></tr>`;
+    try {
+        const resp = await fetch(`/api/catalogos/listar/?tipo=${encodeURIComponent(tipo)}`);
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Error al cargar');
+        datosCatalogos[tipo] = data.items;
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" class="sin-datos">Error al cargar: ${err.message}</td></tr>`;
+        return;
+    }
+    renderTablaCatalogo();
+}
+
+function cambiarCatalogo() {
+    catalogoActual = document.getElementById('selectCatalogo').value;
+    document.getElementById('buscadorTabla').value = '';
+    cargarCatalogo(catalogoActual);
+}
+
+function renderTablaCatalogo() {
+    const tbody = document.getElementById('tbodyCatalogo');
+    const filtro = document.getElementById('buscadorTabla').value.trim().toLowerCase();
+    const items = (datosCatalogos[catalogoActual] || []).filter(item =>
+        item.codigo.toLowerCase().includes(filtro) ||
+        item.denominacion.toLowerCase().includes(filtro)
+    );
+
+    if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="sin-datos">No hay ${catalogoActual.toLowerCase()}s cargados que coincidan.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = items.map(item => `
+        <tr>
+            <td>${item.codigo}</td>
+            <td>${item.denominacion}${item.padre_nombre ? ` <span style="color:#9ca3af;font-size:.78rem;">(${item.padre_nombre})</span>` : ''}</td>
+            <td class="col-acciones">
+                <button class="btn-icon-tabla" title="Editar" onclick="editarItemCatalogo(${item.id})">✎</button>
+                <button class="btn-icon-tabla eliminar" title="Eliminar" onclick="eliminarItemCatalogo(${item.id})">✕</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function abrirModalItem(nombre, itemParaEditar = null) {
+    editandoId = itemParaEditar ? itemParaEditar.id : null;
+
+    document.getElementById('modalTituloItem').textContent = (editandoId ? 'Editar ' : 'Cargar ') + nombre;
+    document.getElementById('inputCodigo').value = itemParaEditar ? itemParaEditar.codigo : '';
+    document.getElementById('inputDenominacion').value = itemParaEditar ? itemParaEditar.denominacion : '';
+    document.getElementById('modalOverlayItem').classList.add('open');
+
+    document.getElementById('selectCatalogo').value = nombre;
+    catalogoActual = nombre;
+
+    const grupoPadre = document.getElementById('grupoPadre');
+    const selectPadre = document.getElementById('selectPadre');
+
+    if (PADRE_LABEL[nombre]) {
+        document.getElementById('labelPadre').textContent = PADRE_LABEL[nombre];
+        grupoPadre.style.display = '';
+        selectPadre.innerHTML = '<option value="">Cargando...</option>';
+        try {
+            const resp = await fetch(`/api/catalogos/padres/?tipo=${encodeURIComponent(nombre)}`);
+            const data = await resp.json();
+            if (data.padres.length === 0) {
+                selectPadre.innerHTML = `<option value="">No hay ${PADRE_LABEL[nombre].toLowerCase()}s cargados</option>`;
+            } else {
+                selectPadre.innerHTML = data.padres.map(p => `<option value="${p.id}">${p.label}</option>`).join('');
+                if (itemParaEditar && itemParaEditar.padre_id) {
+                    selectPadre.value = itemParaEditar.padre_id;
+                }
+            }
+        } catch (err) {
+            selectPadre.innerHTML = '<option value="">Error al cargar</option>';
+        }
+    } else {
+        grupoPadre.style.display = 'none';
+        selectPadre.innerHTML = '';
+    }
+
+    setTimeout(() => document.getElementById('inputCodigo').focus(), 50);
+}
+
+function cerrarModalItem() {
+    document.getElementById('modalOverlayItem').classList.remove('open');
+    editandoId = null;
+}
+
+async function guardarCatalogoItem() {
+    const codigo = document.getElementById('inputCodigo').value.trim();
+    const denom = document.getElementById('inputDenominacion').value.trim();
+    const requierePadre = !!PADRE_LABEL[catalogoActual];
+    const padreId = requierePadre ? document.getElementById('selectPadre').value : null;
+
+    if (!codigo || !denom) {
+        alert('Completá código y denominación.');
+        return;
+    }
+    if (requierePadre && !padreId) {
+        alert(`Seleccioná ${PADRE_LABEL[catalogoActual]}.`);
+        return;
+    }
+
+    const payload = { tipo: catalogoActual, codigo, denominacion: denom };
+    if (requierePadre) payload.padre_id = padreId;
+
+    const url = editandoId
+        ? `/api/catalogos/editar/${editandoId}/`
+        : `/api/catalogos/crear/`;
+
+    try {
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken,
+            },
+            body: JSON.stringify(payload),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Error al guardar');
+
+        cerrarModalItem();
+        await cargarCatalogo(catalogoActual);
+       
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+function editarItemCatalogo(id) {
+    const item = (datosCatalogos[catalogoActual] || []).find(i => i.id === id);
+    if (!item) return;
+    abrirModalItem(catalogoActual, item);
+}
+
+async function eliminarItemCatalogo(id) {
+    const item = (datosCatalogos[catalogoActual] || []).find(i => i.id === id);
+    if (!item) return;
+    const confirmar = confirm(`¿Eliminar "${item.denominacion}"?`);
+    if (!confirmar) return;
+
+    try {
+        const resp = await fetch(`/api/catalogos/eliminar/${id}/?tipo=${encodeURIComponent(catalogoActual)}`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken },
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Error al eliminar');
+
+        await cargarCatalogo(catalogoActual);
+        
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('modalOverlayItem').addEventListener('click', (e) => {
+        if (e.target.id === 'modalOverlayItem') cerrarModalItem();
+    });
+});
