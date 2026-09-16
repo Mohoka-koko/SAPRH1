@@ -327,7 +327,7 @@ body {
   padding: 10px 12px;
   font-weight: 700;
   color: #ffffff;
-  background: #1e3a8a;
+  background: var(--color-primary);
   border-bottom: 2px solid var(--color-border);
   white-space: nowrap;
   cursor: pointer;
@@ -470,8 +470,16 @@ body {
 }
 
 .detail-item .detail-value {
+  display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
   font-weight: 600;
   color: var(--color-text);
+}
+
+.detail-item .detail-value.detail-badge {
+  display: inline-flex;
 }
 
 .detail-placeholder-text {
