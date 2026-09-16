@@ -21,13 +21,13 @@ document.addEventListener("DOMContentLoaded", function () {
         const btnMinimizar = document.getElementById('btnMinimizar');
 
         // Al presionar la 'X': Encoje el cuadro ocultando la tabla
-        btnMinimizar?.addEventListener('click', (e) => {
+        btnMinimizar.addEventListener('click', (e) => {
             e.stopPropagation(); // Evita interferir con clics del contenedor
             panel.classList.add('minimizado');
         });
 
         // Al hacer clic sobre el botón minimizado: Vuelve a desplegar la tabla
-        panel?.addEventListener('click', () => {
+        panel.addEventListener('click', () => {
             if (panel.classList.contains('minimizado')) {
             panel.classList.remove('minimizado');
             }
@@ -494,12 +494,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const fecha         = document.getElementById("fecha-actual")?.value;
             const nroExpediente = `${expedienteVariable}${SUFIJO_EXPEDIENTE}`;
 
-            const fechaSeleccionada = fecha ? new Date(`${fecha}T00:00:00`) : null;
-            const fechaValida = fechaSeleccionada && !Number.isNaN(fechaSeleccionada.getTime());
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-
-            if (!expedienteVariable || !fechaValida || fechaSeleccionada > hoy) {
+            if (!nroExpediente || !fecha) {
                 alert("Completá el N° de expediente y la fecha antes de guardar.");
                 return;
             }
