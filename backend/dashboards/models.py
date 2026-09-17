@@ -325,14 +325,24 @@ class RefuerzoDetalle(models.Model):
 # MODIFICACIÓN
 # ─────────────────────────────────────────────
 class Modificacion(models.Model):
-    fecha           = models.DateField()
-    nro_expediente  = models.CharField(max_length=50)
-    nro_decreto     = models.CharField(max_length=255)
-    importe_total   = models.DecimalField(max_digits=18, decimal_places=2)
-    usuario         = models.ForeignKey(UsuarioPersonalizado, on_delete=models.PROTECT, related_name='modificaciones')
-    fecha_creacion  = models.DateTimeField(auto_now_add=True)
-    anulada         = models.BooleanField(default=False)
-    fecha_anulacion = models.DateTimeField(null=True, blank=True)
+    TIPO_TRANSFERENTE_CHOICES = [
+        ('general',    'UP Presupuesto General'),
+        ('imputacion', 'UP de una Imputación'),
+    ]
+
+    fecha                = models.DateField()
+    nro_expediente       = models.CharField(max_length=50)
+    nro_decreto          = models.CharField(max_length=255)
+    importe_total        = models.DecimalField(max_digits=18, decimal_places=2)
+    tipo_transferente    = models.CharField(          # ← NUEVO
+        max_length=20,
+        choices=TIPO_TRANSFERENTE_CHOICES,
+        default='general',
+    )
+    usuario              = models.ForeignKey(UsuarioPersonalizado, on_delete=models.PROTECT, related_name='modificaciones')
+    fecha_creacion       = models.DateTimeField(auto_now_add=True)
+    anulada              = models.BooleanField(default=False)
+    fecha_anulacion      = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table     = 'modificacion'
@@ -344,14 +354,20 @@ class Modificacion(models.Model):
 
 
 class ModificacionTransferente(models.Model):
-    modificacion = models.ForeignKey(Modificacion, on_delete=models.CASCADE, related_name='transferentes')
-    linea_origen = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, related_name='modificaciones_origen')
-    importe      = models.DecimalField(max_digits=18, decimal_places=2)
+    modificacion        = models.ForeignKey(Modificacion, on_delete=models.CASCADE, related_name='transferentes')
+    linea_origen        = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, related_name='modificaciones_origen')
+    imputacion_detalle  = models.ForeignKey(          # ← NUEVO
+        ImputacionDetalle,
+        on_delete=models.PROTECT,
+        related_name='modificaciones_transferente',
+        null=True,
+        blank=True,
+    )
+    importe             = models.DecimalField(max_digits=18, decimal_places=2)
 
     class Meta:
         db_table     = 'modificacion_transferente'
         verbose_name = 'Transferente de Modificación'
-
 
 class ModificacionReceptora(models.Model):
     modificacion  = models.ForeignKey(Modificacion, on_delete=models.CASCADE, related_name='receptoras')

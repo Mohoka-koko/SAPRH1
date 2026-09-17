@@ -52,6 +52,7 @@ urlpatterns = [
     path('api/actividades/',    views.api_actividades,    name='api_actividades'),
     path('api/partidas/',       views.api_partidas,       name='api_partidas'),
     path('api/fuentes/',        views.api_fuentes,        name='api_fuentes'),
+    path('api/imputaciones-por-linea/', views.api_imputaciones_por_linea, name='api_imputaciones_por_linea'),
 
     # ── Carga de catálogos (CRUD genérico) ─────────────────────────────────
     path('api/catalogos/listar/', views.api_catalogos_listar, name='api_catalogos_listar'),

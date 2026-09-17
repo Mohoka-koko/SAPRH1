@@ -666,3 +666,67 @@ span.mf-total-input.error-total {
 @media (max-width: 480px) {
     .mf-info-grid { grid-template-columns: 1fr; }
 }
+
+
+/* ── Tipos de UP (Radio Buttons - Agregado) ────────────────── */
+/* Contenedor principal de los radios */
+.mf-tipo-up-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    /* Aumentamos el margen inferior para despegarlo de la combinación presupuestaria */
+    margin-bottom: 24px; 
+    padding: 0 4px;
+  }
+  
+  /* Etiqueta "Tipo de UP:" */
+  .mf-tipo-up-label {
+    font-size: 0.82rem; /* Achicamos la letra para que coincida con las cabeceras (JUR, PRG) */
+    font-weight: 700;
+    color: var(--mf-header-text);
+    text-transform: uppercase; /* Opcional: lo hace ver más formal */
+    letter-spacing: 0.3px;
+  }
+  
+  /* Opciones (UP Presupuesto General / UP de una Imputación) */
+  .mf-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 0.82rem; /* Achicamos la letra para que no se vea tosca */
+    color: var(--mf-label-text);
+    margin: 0;
+  }
+  
+  /* Ajuste del tamaño del circulito para que vaya acorde a la nueva letra */
+  .mf-radio-label input[type="radio"] {
+    width: 14px;  /* Un poco más pequeños y elegantes */
+    height: 14px;
+    margin: 0;
+    cursor: pointer;
+  }
+  
+  .mf-radio-text {
+    line-height: 1; 
+    margin-top: 1px; /* Centrado vertical fino con el circulito */
+  }
+  
+  /* 🔵 Si el valor es "general", se pinta AZUL */
+  .mf-radio-label input[value="general"] {
+    accent-color: var(--mf-btn-primary); 
+  }
+  
+  /* 🟡 Si el valor es "imputacion", se pinta AMARILLO */
+  .mf-radio-label input[value="imputacion"] {
+    accent-color: #fbff00; 
+  }
+  
+  /* Ajuste responsivo extra si se achica mucho la pantalla */
+  @media (max-width: 768px) {
+    .mf-tipo-up-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+  }

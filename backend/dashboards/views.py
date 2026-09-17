@@ -753,8 +753,15 @@ def api_listar_refuerzos(request):
 
 
 
+import json
+from decimal import Decimal
+from datetime import date
+from django.db import transaction
+from django.db.models import Sum
+from django.http import JsonResponse
+
 # ==========================================
-#  API — CREAR MODIFICACIÓN
+#  API — CREAR MODIFICACIÓN (UNIFICADA)
 # ==========================================
 @rol_requerido('admin', 'adminprincipal')
 @require_POST
@@ -764,98 +771,180 @@ def api_crear_modificacion(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'JSON inválido'}, status=400)
 
-    fecha          = body.get('fecha')
-    nro_expediente = body.get('nro_expediente', '').strip()
-    nro_decreto    = body.get('nro_decreto', '').strip()
-    transferentes  = body.get('transferentes', [])
-    receptoras     = body.get('receptoras', [])
+    fecha             = body.get('fecha')
+    nro_expediente    = body.get('nro_expediente', '').strip()
+    nro_decreto       = body.get('nro_decreto', '').strip()
+    tipo_transferente = body.get('tipo_transferente', 'general')
+    transferentes     = body.get('transferentes', [])
+    receptoras        = body.get('receptoras', [])
 
+    # ── Validaciones de presencia y formato ───────────────────────────────
     if not fecha or not nro_expediente or not nro_decreto:
-        return JsonResponse({'error': 'Faltan campos obligatorios'}, status=400)
+        return JsonResponse({'error': 'Faltan campos obligatorios (fecha, nro_expediente, nro_decreto)'}, status=400)
+
+    if tipo_transferente not in ('general', 'imputacion'):
+        return JsonResponse({'error': 'tipo_transferente inválido'}, status=400)
 
     if not transferentes:
-        return JsonResponse({'error': 'Debe incluir al menos una línea transferente'}, status=400)
+        return JsonResponse({'error': 'Debe incluir al menos una unidad transferente'}, status=400)
 
     if not receptoras:
-        return JsonResponse({'error': 'Debe incluir al menos una línea receptora'}, status=400)
+        return JsonResponse({'error': 'Debe incluir al menos una unidad receptora'}, status=400)
+
+    try:
+        fecha_obj = date.fromisoformat(fecha)
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Fecha inválida (debe ser formato YYYY-MM-DD)'}, status=400)
 
     try:
         with transaction.atomic():
-            total_transferente = Decimal('0')
-            total_receptora    = Decimal('0')
 
-            lineas_transferentes = []
+            # ── 1. Validar y procesar transferentes ─────────────────────
+            transferentes_validos = []
+            total_transferente    = Decimal('0')
+
             for t in transferentes:
                 linea_id = t.get('linea_id')
                 importe  = t.get('importe')
+
                 if not linea_id or not importe:
                     raise ValueError('Cada transferente debe tener linea_id e importe')
+
                 try:
-                    linea   = LineaPresupuestaria.objects.select_for_update().get(id=linea_id)
                     importe = Decimal(str(importe))
-                    if importe <= 0:
-                        raise ValueError('El importe debe ser mayor a cero')
-                    if linea.saldo_actual < importe:
-                        raise ValueError(f'Saldo insuficiente en línea {linea_id}. Disponible: {linea.saldo_actual}')
+                except Exception:
+                    raise ValueError('Importe inválido en transferente')
+
+                if importe <= 0:
+                    raise ValueError('El importe de cada transferente debe ser mayor a cero')
+
+                try:
+                    linea = LineaPresupuestaria.objects.select_for_update().get(id=linea_id)
                 except LineaPresupuestaria.DoesNotExist:
                     raise ValueError(f'Línea transferente {linea_id} no encontrada')
-                lineas_transferentes.append((linea, importe))
+
+                if tipo_transferente == 'general':
+                    # Modo A: Validar contra saldo_actual de la línea
+                    if importe > linea.saldo_actual:
+                        raise ValueError(
+                            f'Saldo insuficiente en línea {linea_id}. '
+                            f'Disponible: ${linea.saldo_actual}, solicitado: ${importe}'
+                        )
+                    transferentes_validos.append({
+                        'linea':               linea,
+                        'imputacion_detalle': None,
+                        'importe':            importe,
+                    })
+
+                else:
+                    # Modo B: Validar contra saldo disponible del ImputacionDetalle
+                    det_id = t.get('imputacion_detalle_id')
+                    if not det_id:
+                        raise ValueError('En Modo B cada transferente debe incluir imputacion_detalle_id')
+
+                    try:
+                        detalle = ImputacionDetalle.objects.select_for_update().get(
+                            id=det_id,
+                            linea_presupuestaria=linea,
+                            imputacion__anulada=False,
+                        )
+                    except ImputacionDetalle.DoesNotExist:
+                        raise ValueError(
+                            f'ImputacionDetalle {det_id} no encontrado o no pertenece a la línea {linea_id}'
+                        )
+
+                    ya_pagado_op = OrdenPagoUnidadPresupuestaria.objects.filter(
+                        imputacion_detalle=detalle
+                    ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
+
+                    ya_trasladado_mod = ModificacionTransferente.objects.filter(
+                        imputacion_detalle=detalle
+                    ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
+
+                    saldo_disponible = detalle.importe - ya_pagado_op - ya_trasladado_mod
+
+                    if importe > saldo_disponible:
+                        raise ValueError(
+                            f'Saldo insuficiente en UP+Imputación {det_id}. '
+                            f'Disponible: ${saldo_disponible}, solicitado: ${importe}'
+                        )
+
+                    transferentes_validos.append({
+                        'linea':               linea,
+                        'imputacion_detalle': detalle,
+                        'importe':            importe,
+                    })
+
                 total_transferente += importe
 
-            lineas_receptoras = []
+            # ── 2. Validar y procesar receptoras ────────────────────────
+            receptoras_validas = []
+            total_receptora    = Decimal('0')
+
             for r in receptoras:
                 linea_id = r.get('linea_id')
                 importe  = r.get('importe')
+
                 if not linea_id or not importe:
                     raise ValueError('Cada receptora debe tener linea_id e importe')
+
                 try:
-                    linea   = LineaPresupuestaria.objects.select_for_update().get(id=linea_id)
                     importe = Decimal(str(importe))
-                    if importe <= 0:
-                        raise ValueError('El importe debe ser mayor a cero')
+                except Exception:
+                    raise ValueError('Importe inválido en receptora')
+
+                if importe <= 0:
+                    raise ValueError('El importe de cada receptora debe ser mayor a cero')
+
+                try:
+                    linea = LineaPresupuestaria.objects.select_for_update().get(id=linea_id)
                 except LineaPresupuestaria.DoesNotExist:
                     raise ValueError(f'Línea receptora {linea_id} no encontrada')
-                lineas_receptoras.append((linea, importe))
+
+                receptoras_validas.append({'linea': linea, 'importe': importe})
                 total_receptora += importe
 
-            if total_receptora > total_transferente:
-                raise ValueError('El total receptora no puede superar el total transferente')
+            # ── 3. Balance de montos ────────────────────────────────────
+            if total_transferente != total_receptora:
+                raise ValueError(
+                    f'El total transferente (${total_transferente}) '
+                    f'no coincide con el total receptora (${total_receptora})'
+                )
 
-            # Crear cabecera
+            # ── 4. Cabecera de la modificación ──────────────────────────
             modificacion = Modificacion.objects.create(
-                fecha          = fecha,
-                nro_expediente = nro_expediente,
-                nro_decreto    = nro_decreto,
-                importe_total  = total_transferente,
-                usuario        = request.user,
+                fecha             = fecha_obj,
+                nro_expediente    = nro_expediente,
+                nro_decreto       = nro_decreto,
+                importe_total     = total_transferente,
+                tipo_transferente = tipo_transferente,
+                usuario           = request.user,
             )
 
-            # Crear detalles y actualizar saldos transferentes
-            for linea, importe in lineas_transferentes:
+            # ── 5. Guardar transferentes y ajustar saldo (si aplica) ────
+            for t in transferentes_validos:
                 ModificacionTransferente.objects.create(
-                    modificacion = modificacion,
-                    linea_origen = linea,
-                    importe      = importe,
+                    modificacion       = modificacion,
+                    linea_origen       = t['linea'],
+                    imputacion_detalle = t['imputacion_detalle'],
+                    importe            = t['importe'],
                 )
-                linea.saldo_actual -= importe
-                linea.save()
 
-            # Crear detalles y actualizar saldos receptoras
-            for linea, importe in lineas_receptoras:
+                if tipo_transferente == 'general':
+                    t['linea'].saldo_actual -= t['importe']
+                    t['linea'].save()
+
+            # ── 6. Guardar receptoras y sumar saldo ─────────────────────
+            for r in receptoras_validas:
                 ModificacionReceptora.objects.create(
                     modificacion  = modificacion,
-                    linea_destino = linea,
-                    importe       = importe,
+                    linea_destino = r['linea'],
+                    importe       = r['importe'],
                 )
-                linea.saldo_actual += importe
-                linea.save()
+                r['linea'].saldo_actual += r['importe']
+                r['linea'].save()
 
-            # ── Un único registro de historial para TODA la Modificación ──
-            # (antes se creaba uno por cada línea transferente/receptora,
-            # dentro de los loops de arriba, lo que hacía que la misma
-            # Modificación apareciera duplicada en el Home). El detalle por
-            # línea sigue disponible en ModificacionTransferente /
-            # ModificacionReceptora, que es de ahí de donde lo lee el Home.
+            # ── 7. Historial global unificado (de API 2) ─────────────────
             MovimientoHistorial.objects.create(
                 linea_presupuestaria = None,
                 tipo                 = 'MODIFICACION',
@@ -964,6 +1053,7 @@ def modificacion_editar(request, modificacion_id):
         'nro_expediente': modificacion.nro_expediente,
         'nro_decreto':    modificacion.nro_decreto,
         'importe_total':  str(modificacion.importe_total),
+        'tipo_transferente': modificacion.tipo_transferente,
         'transferentes': [
             {
                 'linea_id':     t.linea_origen.id,
@@ -973,6 +1063,7 @@ def modificacion_editar(request, modificacion_id):
                 'actividad_id': t.linea_origen.actividad_obra.id,
                 'partida_id':   t.linea_origen.partida.id,
                 'fuente_id':    t.linea_origen.fuente_financiamiento.id,
+                'imputacion_detalle_id': t.imputacion_detalle.id if t.imputacion_detalle else None,
             }
             for t in transferentes
         ],
@@ -1932,6 +2023,64 @@ def api_crear_orden_pago(request):
         'orden_pago_id':    orden_pago.id,
         'importe_total':    str(importe_total),
     })
+
+# ==========================================
+#  API — IMPUTACIONES CON SALDO POR LÍNEA
+#  Para Modo B: dado un linea_id devuelve los
+#  ImputacionDetalle con saldo disponible
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+def api_imputaciones_por_linea(request):
+    from django.db.models import Sum
+
+    linea_id = request.GET.get('linea_id')
+    if not linea_id:
+        return JsonResponse({'error': 'Falta linea_id'}, status=400)
+
+    try:
+        linea = LineaPresupuestaria.objects.get(id=linea_id)
+    except LineaPresupuestaria.DoesNotExist:
+        return JsonResponse({'error': 'Línea no encontrada'}, status=404)
+
+    detalles = ImputacionDetalle.objects.filter(
+        linea_presupuestaria=linea,
+        imputacion__anulada=False,
+    ).select_related('imputacion')
+
+    resultado = []
+    for d in detalles:
+        # Ya pagado en OPs
+        ya_pagado_op = OrdenPagoUnidadPresupuestaria.objects.filter(
+            imputacion_detalle=d
+        ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
+
+        # Ya trasladado en modificaciones anteriores
+        ya_trasladado_mod = ModificacionTransferente.objects.filter(
+            imputacion_detalle=d
+        ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
+
+        saldo_disponible = d.importe - ya_pagado_op - ya_trasladado_mod
+
+        if saldo_disponible <= 0:
+            continue
+
+        resultado.append({
+            'imputacion_detalle_id': d.id,
+            'imputacion_id':         d.imputacion.id,
+            'nro_expediente':        d.imputacion.nro_expediente,
+            'asiento_nro':           d.imputacion.asiento_nro,
+            'fecha':                 d.imputacion.fecha.strftime('%d/%m/%Y'),
+            'importe_original':      str(d.importe),
+            'ya_pagado':             str(ya_pagado_op),
+            'ya_trasladado':         str(ya_trasladado_mod),
+            'saldo_disponible':      str(saldo_disponible),
+        })
+
+    return JsonResponse({
+        'linea_id': linea_id,
+        'detalles': resultado,
+    })
+
 
 from .models import CodigoPago  # agregá al bloque de imports
 

@@ -30,6 +30,20 @@
                     <!-- TRANSFERENTE -->
                     <div class="mf-col-header">UNIDAD PRESUPUESTARIA TRANSFERENTE</div>
                     <div class="mf-section-block">
+
+                        <!-- NUEVO: TIPO DE UP TRANSFERENTE -->
+                        <div class="mf-tipo-up-container">
+                            <span class="mf-tipo-up-label">Tipo de UP:</span>
+                            <label class="mf-radio-label">
+                                <input type="radio" name="tipoUpTransferente" value="general" checked>
+                                <span class="mf-radio-text">UP Presupuesto General</span>
+                            </label>
+                            <label class="mf-radio-label">
+                                <input type="radio" name="tipoUpTransferente" value="imputacion">
+                                <span class="mf-radio-text">UP de una Imputación</span>
+                            </label>
+                        </div>
+                        
                         <div id="contenedor-transferentes"></div>
                         <div class="mf-btn-agregar-fila-wrap">
                             <button type="button" id="btn-agregar-transferente" class="mf-btn-agregar-fila">+</button>
