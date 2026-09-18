@@ -16,69 +16,143 @@
     font-size: 1.35rem; /* Tamaño de título unificado */
     font-weight: 700; /* Bien negrita */
     color: var(--text); /* Color unificado */
-    margin-bottom: 1.25rem;
+    margin-bottom: 2.5rem;
 }
 
 .actions-container-xl {
     display: flex;
-    gap: 20px;
+    column-gap: 30px; /* Espacio horizontal entre botones */
+    row-gap: 40px;    /* Aumentado para dar espacio al brillo/sombra al hacer hover */
     padding: 0 2rem 2rem;
     justify-content: center;
     flex-wrap: wrap;
     align-items: center;
 }
 
-.btn-registro-xl {
-    display: inline-block !important;
-    width: auto !important;
-    min-width: 220px !important;
-    padding: 16px 32px !important;
-    font-size: 1.35rem !important;
-    font-weight: 700 !important;
-    text-decoration: none !important;
-    text-align: center !important;
-    border-radius: var(--radius-sm) !important;
-    cursor: pointer !important;
-    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+
+/* ===================================================
+ESTILO BASE: CYBER-KEY LIGHT
+=================================================== */
+.cyber-key {
+    position: relative;
+    appearance: none;
+    border: 1px solid #cbd5e1;
+    padding: 18px 34px;
+    font-size: 0.9rem;
+    font-weight: 900;
+    border-radius: 12px;
+    cursor: pointer;
+    outline: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    /* Base 3D gris en reposo */
+    box-shadow: 
+    0 7px 0 #94a3b8,
+    0 10px 20px rgba(0, 0, 0, 0.06),
+    inset 0 1px 2px rgba(255, 255, 255, 1);
 }
 
-.btn-registro-xl:hover {
-    transform: translateY(-3px) !important;
+/* Tira superior permanente */
+.cyber-key::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 15%;
+    right: 15%;
+    height: 3px;
+    background: var(--key-bright-color);
+    box-shadow: 0 0 6px var(--key-bright-color);
+    border-radius: 2px;
+    transition: box-shadow 0.2s ease;
 }
 
-.btn-xl-yellow {
-    background-color: #ffdf4e !important;
-    color: #1e1e2e !important;
-}
-.btn-xl-yellow:hover {
-    box-shadow: 0 6px 20px rgba(255, 223, 78, 0.4) !important;
-}
-
-.btn-xl-orange {
-    background-color: #fdcf6c !important;
-    color: #1e1e2e !important;
-}
-.btn-xl-orange:hover {
-    box-shadow: 0 6px 20px rgba(253, 207, 108, 0.4) !important;
+/* Bisel interno */
+.cyber-key::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 9px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(0,0,0,0.02) 100%);
+    pointer-events: none;
 }
 
-.btn-xl-green {
-    background-color: #00d1c0;
-    color: #000000;
-}
-.btn-xl-green:hover {
-    box-shadow: 0 6px 20px rgba(23, 122, 81, 0.5);
+/* Texto neutro base */
+.cyber-key .label {
+    position: relative;
+    z-index: 2;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+    color: #64748b;
+    transition: color 0.2s ease;
 }
 
-.btn-xl-outline {
-    background-color: transparent !important;
-    border: 2px solid var(--border) !important;
-    color: var(--text-muted) !important;
+/* ===================================================
+    HOVER: LA BASE 3D SE VUELVE DEL COLOR NEÓN
+=================================================== */
+.cyber-key:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(180deg, #ffffff 0%, #dbe2ef 100%);
+    
+    /* La sombra del relieve toma el color del botón */
+    box-shadow: 
+    0 9px 0 var(--key-bright-color),
+    0 12px 20px rgba(0, 0, 0, 0.08),
+    0 18px 30px -2px var(--key-bright-color),
+    inset 0 1px 3px rgba(255, 255, 255, 1);
 }
-.btn-xl-outline:hover {
-    background-color: var(--secondary) !important;
-    color: var(--text) !important;
-    border-color: var(--text-muted) !important;
+
+/* Intensifica la tira superior al hacer hover */
+.cyber-key:hover::before {
+    box-shadow: 0 0 12px var(--key-bright-color), 0 0 4px var(--key-bright-color);
+}
+
+/* El texto toma el color brillante */
+.cyber-key:hover .label {
+    color: var(--key-bright-color);
+}
+
+/* Recorrido de pulsación */
+.cyber-key:active {
+    transform: translateY(5px);
+    box-shadow: 
+    0 2px 0 var(--key-bright-color),
+    0 6px 15px -2px var(--key-bright-color),
+    0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* ===================================================
+    NUEVA PALETA DE COLORES
+=================================================== */
+
+/* 1. AMARILLO NEÓN (Crear Imputación) */
+.key-yellow {
+    --key-bright-color: #ffea00;
+}
+
+/* 2. CELESTE VIBRANTE (Orden de Pago y Orden de Pago Personal) */
+.key-light-blue {
+    --key-bright-color: #00bfff;
+}
+
+/* 3. CIAN TURQUESA NEÓN (Modificación) */
+.key-turquoise {
+    --key-bright-color: #00be93;
+}
+
+/* 4. NARANJA VIBRANTE (Refuerzo) */
+.key-orange {
+    --key-bright-color: #ff8800;
+}
+
+/* Alineación personalizada: Desplaza 'Modificación' y 'Refuerzo' a la izquierda */
+.actions-container-xl > .cyber-key:nth-child(4) {
+    margin-left: -35px;
 }
 
 /* Filtros */
