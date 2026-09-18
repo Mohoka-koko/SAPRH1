@@ -1,0 +1,203 @@
+/* ============================================
+   REGISTROS — estilos exclusivos
+   Requiere: estilos.css cargado antes
+============================================ */
+
+/* ===== CARDS ===== */
+.card {
+    background: #ffffff;
+    border-radius: var(--radius); /* Unificado a 12px */
+    padding: 2rem; /* Aire unificado de las tarjetas principales */
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-md); /* Sombra suave unificada */
+}
+
+.card h2 {
+    font-size: 1.35rem; /* Tamaño de título unificado */
+    font-weight: 700; /* Bien negrita */
+    color: var(--text); /* Color unificado */
+    margin-bottom: 1.25rem;
+}
+
+.actions-container-xl {
+    display: flex;
+    gap: 20px;
+    padding: 0 2rem 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.btn-registro-xl {
+    display: inline-block !important;
+    width: auto !important;
+    min-width: 220px !important;
+    padding: 16px 32px !important;
+    font-size: 1.35rem !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    text-align: center !important;
+    border-radius: var(--radius-sm) !important;
+    cursor: pointer !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.btn-registro-xl:hover {
+    transform: translateY(-3px) !important;
+}
+
+.btn-xl-yellow {
+    background-color: #ffdf4e !important;
+    color: #1e1e2e !important;
+}
+.btn-xl-yellow:hover {
+    box-shadow: 0 6px 20px rgba(255, 223, 78, 0.4) !important;
+}
+
+.btn-xl-orange {
+    background-color: #fdcf6c !important;
+    color: #1e1e2e !important;
+}
+.btn-xl-orange:hover {
+    box-shadow: 0 6px 20px rgba(253, 207, 108, 0.4) !important;
+}
+
+.btn-xl-green {
+    background-color: #00d1c0;
+    color: #000000;
+}
+.btn-xl-green:hover {
+    box-shadow: 0 6px 20px rgba(23, 122, 81, 0.5);
+}
+
+.btn-xl-outline {
+    background-color: transparent !important;
+    border: 2px solid var(--border) !important;
+    color: var(--text-muted) !important;
+}
+.btn-xl-outline:hover {
+    background-color: var(--secondary) !important;
+    color: var(--text) !important;
+    border-color: var(--text-muted) !important;
+}
+
+/* Filtros */
+.filter-container {
+    padding: 0 2rem 1.5rem;
+}
+
+.filter-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    font-size: 0.875rem;
+    border: 1px solid var(--border);
+}
+
+.filter-bar input,
+.filter-label {
+    background: var(--white);
+    padding: 0 0.9rem;
+    height: 40px;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: inherit;
+}
+
+.filter-label {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fafafa;
+    border-right: 1px solid var(--border);
+}
+
+/* Tabla de historial */
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1rem;
+}
+
+.history-table thead tr {
+    background: #1e3a8a;
+    border-bottom: 1.5px solid var(--border);
+}
+
+.history-table th {
+    padding: 0.85rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.history-table td {
+    padding: 0.85rem 1rem;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+}
+
+.history-table tbody tr:hover {
+    background: #f9f9ff;
+}
+
+.ts {
+    font-family: monospace;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+/* Badges de estado */
+.badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.badge-listo   { background: var(--primary); }
+.badge-revisar { background: #ef4444; }
+
+/* Badges de tipo */
+.badge-tipo {
+    display: inline-block;
+    min-width: 160px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.badge-tipo-imputacion          { background: #ffdf4e; color: #1e1e2e; }
+.badge-tipo-op,
+.badge-tipo-op-personal         { background: #e8ebee; color: #1e1e2e; }
+.badge-tipo-modificacion        { background: #00d1c0; color: #1e1e2e; }
+.badge-tipo-refuerzo            { background: #fdcf6c; color: #1e1e2e; }
+
+/* Botón de edición */
+.edit-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.edit-btn:hover {
+    color: var(--primary);
+    transform: translateY(-1px);
+}

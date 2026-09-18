@@ -1,0 +1,242 @@
+/* ============================================
+   USUARIOS — estilos exclusivos
+   Requiere: estilos.css cargado antes
+============================================ */
+
+/* ===== CARDS ===== */
+.card {
+    background: #ffffff;
+    border-radius: var(--radius);
+    padding: 2rem;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-md);
+}
+
+.card h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 1.25rem;
+}
+
+/* ===== FORM ===== */
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group select {
+    height: 40px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0 0.9rem;
+    font-size: 0.875rem;
+    color: var(--text);
+    background: var(--white);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+}
+
+/* ===== BOTÓN CREAR USUARIO ===== */
+.form-actions {
+    text-align: right;
+}
+
+.form-actions .btn {
+    display: inline-block !important;
+    height: 40px !important;
+    padding: 0 1.5rem !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    background: #4338ca !important;
+    color: #ffffff !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.form-actions .btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(67, 56, 202, 0.25) !important;
+    background: #312e81 !important;
+}
+
+/* ── Tabla de usuarios ── */
+.tabla {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: 1rem;
+}
+
+.tabla thead tr {
+    background: #fafafa;
+    border-bottom: 1.5px solid var(--border);
+}
+
+.tabla th {
+    padding: 0.85rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.tabla td {
+    padding: 0.85rem 1rem;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    font-size: 1rem !important;
+}
+
+.tabla tbody tr:hover {
+    background: #f9f9ff;
+}
+
+/* Fila de usuario inactivo */
+.usuario-inactivo td {
+    color: var(--text-muted) !important;
+    text-decoration: line-through;
+    background: #fafafa;
+}
+
+/* ── Indicadores de estado ── */
+.estado {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.estado.verde { background: #22c55e; }
+.estado.rojo  { background: #ef4444; }
+
+/* ── Botones de acción en tabla ── */
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.btn-icon:hover {
+    transform: translateY(-1px);
+}
+
+.btn-baja       { color: #ef4444; }
+.btn-baja:hover { background: #fee2e2; }
+
+.btn-reactivar       { color: #22c55e; }
+.btn-reactivar:hover { background: #dcfce7; }
+
+/* ── Modal de confirmación ── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-box {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 2.5rem;
+    width: 420px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    text-align: center;
+}
+
+.modal-box h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text);
+}
+
+.modal-box p {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.modal-acciones {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.modal-acciones .btn {
+    height: 38px;
+    padding: 0 20px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.modal-acciones .btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-confirmar       { background: #ef4444 !important; color: white !important; }
+.btn-confirmar:hover { background: #dc2626 !important; }
+
+.btn-cancelar       { background: #e5e7eb !important; color: #374151 !important; }
+.btn-cancelar:hover { background: #d1d5db !important; }
+
+/* ── Toast ── */
+.toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    padding: 14px 22px;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: white;
+    z-index: 2000;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s ease;
+}
+
+.toast-exito { background: #16a34a; }
+.toast-error { background: #dc2626; }
+
+@keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}

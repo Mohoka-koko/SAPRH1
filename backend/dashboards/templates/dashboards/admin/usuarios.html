@@ -1,6 +1,10 @@
 {% extends 'dashboards/admin/admin_dashboard.html' %}
 {% load static %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/usuarios.css' %}">
+{% endblock %}
+
 {% block content %}
 
 <div class="main-wrapper">
@@ -152,5 +156,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/script.js' %}"></script>
+<script src="{% static 'js/usuarios.js' %}"></script>
 {% endblock %}

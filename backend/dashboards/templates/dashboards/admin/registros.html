@@ -1,6 +1,10 @@
 {% extends 'dashboards/admin/admin_dashboard.html' %}
 {% load static %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/registros.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="main-wrapper">
 
@@ -101,32 +105,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/script.js' %}"></script>
 <script src="{% static 'js/registros.js' %}"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const filtroTipo = document.getElementById('filtro-tipo');
-        const filtroFecha = document.getElementById('filtro-fecha');
-        const filtroUsuario = document.getElementById('filtro-usuario');
-        const filas = document.querySelectorAll('#tabla-registros-body tr');
-
-        function aplicarFiltros() {
-            const tipo = filtroTipo.value;
-            const fecha = filtroFecha.value; // formato YYYY-MM-DD
-            const usuario = filtroUsuario.value.trim().toLowerCase();
-
-            filas.forEach(function (fila) {
-                const coincideTipo = !tipo || fila.dataset.tipo === tipo;
-                const coincideFecha = !fecha || fila.dataset.fecha === fecha;
-                const coincideUsuario = !usuario || fila.dataset.usuario.toLowerCase().includes(usuario);
-
-                fila.style.display = (coincideTipo && coincideFecha && coincideUsuario) ? '' : 'none';
-            });
-        }
-
-        filtroTipo.addEventListener('change', aplicarFiltros);
-        filtroFecha.addEventListener('change', aplicarFiltros);
-        filtroUsuario.addEventListener('input', aplicarFiltros);
-    });
-</script>
 {% endblock %}
