@@ -181,7 +181,7 @@
 <script>
     const USUARIO_ACTUAL = "{{ usuario.nombre }}";
     const MODO           = "{{ modo }}";
-    const MODIFICACION   = {{ modificacion|safe }};
+    const MODIFICACION = {{ modificacion|default:"null"|safe }};
 </script>
 <script src="{% static 'js/modificacion_form.js' %}"></script>
 {% endblock %}

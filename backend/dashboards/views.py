@@ -921,7 +921,7 @@ def api_crear_modificacion(request):
                 usuario           = request.user,
             )
 
-            # ── 5. Guardar transferentes y ajustar saldo (si aplica) ────
+            # ── 5. Guardar transferentes ──────────────────────────────────────────────
             for t in transferentes_validos:
                 ModificacionTransferente.objects.create(
                     modificacion       = modificacion,
@@ -929,30 +929,16 @@ def api_crear_modificacion(request):
                     imputacion_detalle = t['imputacion_detalle'],
                     importe            = t['importe'],
                 )
+                # El trigger de PostgreSQL maneja saldo_actual y MovimientoHistorial
 
-                if tipo_transferente == 'general':
-                    t['linea'].saldo_actual -= t['importe']
-                    t['linea'].save()
-
-            # ── 6. Guardar receptoras y sumar saldo ─────────────────────
+            # ── 6. Guardar receptoras ─────────────────────────────────────────────────
             for r in receptoras_validas:
                 ModificacionReceptora.objects.create(
                     modificacion  = modificacion,
                     linea_destino = r['linea'],
                     importe       = r['importe'],
                 )
-                r['linea'].saldo_actual += r['importe']
-                r['linea'].save()
-
-            # ── 7. Historial global unificado (de API 2) ─────────────────
-            MovimientoHistorial.objects.create(
-                linea_presupuestaria = None,
-                tipo                 = 'MODIFICACION',
-                referencia_id        = modificacion.id,
-                usuario              = request.user,
-                monto                = total_transferente,
-                descripcion          = f'Modificación — decreto {nro_decreto} — expediente {nro_expediente}',
-            )
+                # El trigger de PostgreSQL maneja saldo_actual y MovimientoHistorial
 
     except ValueError as e:
         return JsonResponse({'error': str(e)}, status=400)

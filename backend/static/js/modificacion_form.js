@@ -96,9 +96,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // ─── CREAR FILA TRANSFERENTE ──────────────────────────────────────────────
   let _filaCounter = 0;
 
-  function crearFilaTransferente(contenedorId, bloqueSaldoId, bloqueImporteId, datos = {}, onCambio) {
-      const filaId = `fila-${++_filaCounter}`;
-      const modo   = getModo();
+  function crearFilaTransferente(contenedorId, bloqueSaldoId, bloqueImporteId, datos = {}, onCambio, modoForzado = null) {
+    const filaId = `fila-${++_filaCounter}`;
+    const modo   = modoForzado || getModo();
 
       // ── Parte cascada (columna izquierda) ─────────────────────────────────
       const wrapper = document.createElement("div");
@@ -401,21 +401,10 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // ─── CREAR FILA RECEPTORA (siempre Modo A) ────────────────────────────────
-  function crearFilaReceptora(contenedorId, bloqueSaldoId, bloqueImporteId, datos = {}, onCambio) {
-      // La receptora es siempre presupuesto general — reutiliza la misma
-      // estructura pero sin selector de imputación
-      const modoBak = document.querySelector('input[name="tipoUpTransferente"]:checked');
-      // Forzamos temporalmente modo general para que crearFilaTransferente
-      // no agregue el selector de imputaciones
-      const radioGeneral = document.querySelector('input[name="tipoUpTransferente"][value="general"]');
-      if (radioGeneral) radioGeneral.checked = true;
-
-      crearFilaTransferente(contenedorId, bloqueSaldoId, bloqueImporteId, datos, onCambio);
-
-      // Restaurar selección original
-      if (modoBak) modoBak.checked = true;
-  }
+    // ─── CREAR FILA RECEPTORA (siempre Modo A) ────────────────────────────────
+    function crearFilaReceptora(contenedorId, bloqueSaldoId, bloqueImporteId, datos = {}, onCambio) {
+        crearFilaTransferente(contenedorId, bloqueSaldoId, bloqueImporteId, datos, onCambio, 'general');
+    }
 
   // ─── HELPERS ──────────────────────────────────────────────────────────────
   function limpiarContenedor(id) {
