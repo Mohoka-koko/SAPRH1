@@ -562,63 +562,71 @@ body {
   font-size: 13.5px;
 }
 
-/* ===== PAGINACION ===== */
-.table-pagination {
+/* ===== PAGINACION (mismo estilo que la tabla de Modificación) ===== */
+.table-footer {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 4px 10px;
+  align-items: center;
+  padding: 16px 20px;
+  background-color: #ffffff;
+  border-top: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.pagination-info {
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: 0.875rem;
 }
 
-.pagination-summary {
-  min-width: 0;
-}
-
-.pagination-controls {
+.pagination-buttons {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.pagination-page {
-  min-width: 98px;
-  color: var(--color-text);
-  font-weight: 600;
-  text-align: center;
+.page-number-text {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  margin-right: 4px;
 }
 
-.pagination-btn {
-  width: 32px;
-  height: 32px;
+.btn-page {
+  appearance: none;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  padding: 6px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: #ffffff;
-  color: var(--color-primary);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: all 0.15s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.pagination-btn:hover:not(:disabled) {
+.btn-page:hover:not(:disabled) {
+  background-color: #f0f7fa;
   border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
-.pagination-btn:focus-visible {
+.btn-page:focus-visible {
   outline: 2px solid var(--color-primary-light);
   outline-offset: 2px;
 }
 
-.pagination-btn:disabled {
-  background: #f3f6f8;
-  color: #aab6bc;
+.btn-page:disabled {
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  background-color: #ffffff;
   cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.7;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -651,15 +659,15 @@ body {
   .filter-group {
     justify-content: flex-start;
   }
-  .table-pagination {
+  .table-footer {
     align-items: stretch;
     flex-direction: column;
     gap: 10px;
   }
-  .pagination-summary {
+  .pagination-info {
     text-align: center;
   }
-  .pagination-controls {
+  .pagination-buttons {
     justify-content: center;
   }
 }

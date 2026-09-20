@@ -17,7 +17,7 @@ let movementsData = [];
 let currentSort = { key: null, direction: "asc" };
 let currentSearch = "";
 let currentPrograma = "todos";
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 4;
 let currentPage = 1;
 
 // =========================================================
@@ -487,7 +487,7 @@ function updatePagination(firstRecord, lastRecord, totalRecords, totalPages) {
   pagination.hidden = !hasResults;
   if (!hasResults) return;
 
-  summary.textContent = `Mostrando ${firstRecord}-${lastRecord} de ${totalRecords} registros`;
+  summary.textContent = `Total de ${totalRecords} registro${totalRecords !== 1 ? "s" : ""} que coinciden con el filtrado`;
   pageLabel.textContent = `Página ${currentPage} de ${totalPages}`;
   previousButton.disabled = currentPage === 1;
   nextButton.disabled = currentPage === totalPages;
