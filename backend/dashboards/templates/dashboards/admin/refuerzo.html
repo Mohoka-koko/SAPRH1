@@ -53,14 +53,22 @@
             </svg>
             <p>No se encontraron registros que coincidan con la búsqueda.</p>
         </div>
+
+        <!-- FOOTER / PAGINACIÓN (Estilo Modificación) -->
+        <div class="table-footer">
+            <div class="pagination-info"></div>
+            <div class="pagination-buttons">
+                <span class="page-number-text"></span>
+                <button class="btn-page btn-prev">&lt; Prev</button>
+                <button class="btn-page btn-next">Next &gt;</button>
+            </div>
+        </div>
     </div>
-    <div id="paginacion-modificaciones" style="display:flex; align-items:center; justify-content:center; gap:16px; padding:12px 0;"></div>
 
     <!-- BOTÓN AGREGAR -->
-    <a href="{% url 'refuerzo_crear' %}">
+    <a href="{% url 'refuerzo_crear' %}" class="btn-agregar-wrapper">
         <button class="btn-agregar" id="btn-agregar" title="Agregar registro">+</button>
     </a>
-
 </div>
 
 {% endblock %}
