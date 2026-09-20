@@ -200,37 +200,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ─── PAGINACIÓN ───────────────────────────────────────────────────────────
   function renderPaginacion(totalRegistros) {
-    // Info de registros
+    // Info general de registros
     const infoEl = document.querySelector(".pagination-info");
     if (infoEl) {
-      const termino = inputBusqueda.value.trim();
-      infoEl.textContent = termino
-        ? `Total de ${totalRegistros} registro${totalRegistros !== 1 ? "s" : ""} que coinciden con el filtrado`
-        : `Total de ${totalRegistros} registro${totalRegistros !== 1 ? "s" : ""} que coinciden con el filtrado`;
+      infoEl.textContent = `Total de ${totalRegistros} registro${totalRegistros !== 1 ? "s" : ""} que coinciden con el filtrado`;
     }
-  
-    const totalPaginas = Math.ceil(totalRegistros / REGISTROS_POR_PAGINA);
-  
-    // Botones
-    const btnPrev     = document.querySelector(".pagination-buttons .btn-page:first-child");
-    const btnPageNum  = document.querySelector(".btn-page.page-number");
-    const btnNext     = document.querySelector(".pagination-buttons .btn-page:last-child");
-  
-    if (!btnPrev || !btnPageNum || !btnNext) return;
-  
-    // Actualizar número de página
-    btnPageNum.textContent = `${paginaActual}-${totalPaginas || 1}`;
-  
-    // Anterior
+
+    const totalPaginas = Math.ceil(totalRegistros / REGISTROS_POR_PAGINA) || 1;
+
+    // Selección de elementos
+    const pageText = document.querySelector(".page-number-text");
+    const btnPrev  = document.querySelector(".btn-prev") || document.querySelector(".pagination-buttons .btn-page:first-of-type");
+    const btnNext  = document.querySelector(".btn-next") || document.querySelector(".pagination-buttons .btn-page:last-of-type");
+
+    if (!btnPrev || !btnNext) return;
+
+    // Actualizar texto "Página X de Y"
+    if (pageText) {
+      pageText.textContent = `Página ${paginaActual} de ${totalPaginas}`;
+    }
+
+    // Estado y evento del botón Anterior
     btnPrev.disabled = paginaActual === 1;
-    btnPrev.onclick  = () => {
-      if (paginaActual > 1) { paginaActual--; renderTabla(renderTabla._listaActual); }
+    btnPrev.onclick = () => {
+      if (paginaActual > 1) {
+        paginaActual--;
+        renderTabla(renderTabla._listaActual);
+      }
     };
-  
-    // Siguiente
-    btnNext.disabled = paginaActual >= totalPaginas || totalPaginas === 0;
-    btnNext.onclick  = () => {
-      if (paginaActual < totalPaginas) { paginaActual++; renderTabla(renderTabla._listaActual); }
+
+    // Estado y evento del botón Siguiente
+    btnNext.disabled = paginaActual >= totalPaginas;
+    btnNext.onclick = () => {
+      if (paginaActual < totalPaginas) {
+        paginaActual++;
+        renderTabla(renderTabla._listaActual);
+      }
     };
   }
 

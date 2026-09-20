@@ -546,6 +546,7 @@ def api_movimientos_linea(request, linea_id):
             'importe':           str(-det.importe),
             'decretoResolucion': '',
             'ordenesPago':       [],
+            'modificacionesModoB': [],
         }
         imputacion_items[imp.id] = item
         items_ordenables.append((imp.fecha_creacion, item))
@@ -597,30 +598,49 @@ def api_movimientos_linea(request, linea_id):
     # ── Modificaciones: se leen directamente de ModificacionTransferente
     #    (líneas de origen, importe negativo) y ModificacionReceptora
     #    (líneas de destino, importe positivo), NO de MovimientoHistorial.
+    # ── Modificaciones Transferentes ──────────────────────────────────────────
     transferentes = ModificacionTransferente.objects.filter(
         linea_origen=linea
-    ).select_related('modificacion', 'modificacion__usuario')
+    ).select_related(
+        'modificacion', 'modificacion__usuario',
+        'imputacion_detalle__imputacion'
+    )
 
     for det in transferentes:
-        mod = det.modificacion
+        mod  = det.modificacion
         item = {
-            'tipo':              'Modificación',
-            'fechaCreacion':     mod.fecha_creacion.strftime('%d/%m/%Y'),
-            'numeroExpediente':  mod.nro_expediente,
-            'usuario':           mod.usuario.nombre if mod.usuario else '',
-            'importe':           str(-det.importe),
-            'decretoResolucion': mod.nro_decreto,
+            'tipo':                  'Modificación Transferente',
+            'fechaCreacion':         mod.fecha_creacion.strftime('%d/%m/%Y'),
+            'numeroExpediente':      mod.nro_expediente,
+            'usuario':               mod.usuario.nombre if mod.usuario else '',
+            'importe':               str(-det.importe),
+            'decretoResolucion':     mod.nro_decreto,
+            'tipo_transferente':     mod.tipo_transferente,
+            'imputacion_detalle_id': det.imputacion_detalle_id,
+            'imputacion_id':         det.imputacion_detalle.imputacion_id if det.imputacion_detalle else None,
         }
-        items_ordenables.append((mod.fecha_creacion, item))
 
+        if mod.tipo_transferente == 'imputacion' and det.imputacion_detalle_id:
+            # Modo B: anidar dentro de la imputación correspondiente
+            padre = imputacion_items.get(det.imputacion_detalle.imputacion_id)
+            if padre is not None:
+                padre.setdefault('modificacionesModoB', []).append(item)
+            else:
+                # La imputación no es de esta línea pero la mod sí — caso borde
+                items_ordenables.append((mod.fecha_creacion, item))
+        else:
+            # Modo A: nivel principal de la UP
+            items_ordenables.append((mod.fecha_creacion, item))
+
+    # ── Modificaciones Receptoras ─────────────────────────────────────────────
     receptoras = ModificacionReceptora.objects.filter(
         linea_destino=linea
     ).select_related('modificacion', 'modificacion__usuario')
 
     for det in receptoras:
-        mod = det.modificacion
+        mod  = det.modificacion
         item = {
-            'tipo':              'Modificación',
+            'tipo':              'Modificación Receptora',
             'fechaCreacion':     mod.fecha_creacion.strftime('%d/%m/%Y'),
             'numeroExpediente':  mod.nro_expediente,
             'usuario':           mod.usuario.nombre if mod.usuario else '',

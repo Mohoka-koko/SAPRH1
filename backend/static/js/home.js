@@ -307,6 +307,9 @@ function getTipoConfig(tipo) {
     case "Refuerzo":
       return { className: "tipo-refuerzo", badgeClass: "tipo-badge-refuerzo" };
     case "Modificación":
+    case "Modificación Transferente":
+    case "Modificación Transferente Modo B":
+    case "Modificación Receptora":
       return { className: "tipo-modificacion", badgeClass: "tipo-badge-modificacion" };
     default:
       return { className: "tipo-imputacion", badgeClass: "tipo-badge-imputacion" };
@@ -355,24 +358,23 @@ function renderMovimientoDetalle(item, numeroLabel) {
 }
 
 function renderMovimientoItem(mov) {
-  const tipoConfig = getTipoConfig(mov.tipo);
+  const tipoConfig   = getTipoConfig(mov.tipo);
   const esImputacion = mov.tipo.startsWith("Imputación");
-  const ordenesPago = mov.ordenesPago || [];
+  const ordenesPago  = mov.ordenesPago || [];
+  const modsModoB    = mov.modificacionesModoB || [];
+
+  const subMovimientos = [...ordenesPago, ...modsModoB];
 
   return `
     <div class="detail-movimiento ${tipoConfig.className}">
-      ${renderMovimientoDetalle(mov, esImputacion ? "N° de Expediente" : "N° de Orden de Pago")}
-      ${ordenesPago.length > 0 ? `
+      ${renderMovimientoDetalle(mov, esImputacion ? "N° de Expediente" : "N° de Expediente / Orden")}
+      ${subMovimientos.length > 0 ? `
         <div class="detail-ordenes-pago">
-          ${ordenesPago
-            .map(
-              (op) => `
-                <div class="detail-movimiento detail-movimiento-op ${getTipoConfig(op.tipo).className}">
-                  ${renderMovimientoDetalle(op, "N° de Orden de Pago")}
-                </div>
-              `
-            )
-            .join("")}
+          ${subMovimientos.map((sub) => `
+            <div class="detail-movimiento detail-movimiento-op ${getTipoConfig(sub.tipo).className}">
+              ${renderMovimientoDetalle(sub, sub.tipo.startsWith("O.") ? "N° de Orden de Pago" : "N° de Expediente")}
+            </div>
+          `).join("")}
         </div>
       ` : ""}
     </div>
