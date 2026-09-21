@@ -3,7 +3,54 @@ from django.db import models
 from accounts.models import UsuarioPersonalizado
 
 
-class Jurisdiccion(models.Model):
+# ─────────────────────────────────────────────
+# MIXINS DE AUDITORÍA
+# Se usan como clases base abstractas (no crean tabla propia) para no
+# repetir estos campos en cada modelo. IMPORTANTE: Django no completa
+# solo los campos "usuario_creacion" / "usuario_modificacion": hay que
+# asignarlos en la vista/serializer con el usuario logueado antes de
+# guardar (ej: instancia.usuario_modificacion = request.user).
+# ─────────────────────────────────────────────
+class ControlCreacion(models.Model):
+    """Fecha y usuario de creación del registro."""
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    usuario_creacion = models.ForeignKey(
+        UsuarioPersonalizado,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='%(class)s_creados',
+    )
+
+    class Meta:
+        abstract = True
+
+
+class ControlModificacion(models.Model):
+    """Fecha y usuario de la última modificación del registro."""
+    fecha_modificacion = models.DateTimeField(auto_now=True)
+    usuario_modificacion = models.ForeignKey(
+        UsuarioPersonalizado,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='%(class)s_modificados',
+    )
+
+    class Meta:
+        abstract = True
+
+
+class RegistroAuditable(ControlCreacion, ControlModificacion):
+    """
+    Combina creación + modificación. Usar en los modelos que todavía no
+    tienen ningún campo de auditoría (catálogos y tablas de detalle).
+    """
+    class Meta:
+        abstract = True
+
+
+class Jurisdiccion(RegistroAuditable):
     codigo_jurisd = models.IntegerField(default=0)
     nombre        = models.CharField(max_length=200)
     # Se eliminan 'ejercicio' y 'presupuesto_total': el catálogo ya no tiene
@@ -18,7 +65,7 @@ class Jurisdiccion(models.Model):
         return self.nombre
 
 
-class Programa(models.Model):
+class Programa(RegistroAuditable):
     jurisdiccion    = models.ForeignKey(Jurisdiccion, on_delete=models.CASCADE, related_name='programas')
     codigo_programa = models.IntegerField(default=0)
     nombre          = models.CharField(max_length=200)
@@ -33,7 +80,7 @@ class Programa(models.Model):
         return self.nombre
 
 
-class Subprograma(models.Model):
+class Subprograma(RegistroAuditable):
     programa            = models.ForeignKey(Programa, on_delete=models.CASCADE, related_name='subprogramas')
     codigo_subprograma  = models.IntegerField(default=0)
     nombre              = models.CharField(max_length=200)
@@ -47,7 +94,7 @@ class Subprograma(models.Model):
         return self.nombre
 
 
-class Proyecto(models.Model):
+class Proyecto(RegistroAuditable):
     programa        = models.ForeignKey(Programa, on_delete=models.CASCADE, related_name='proyectos')
     codigo_proyecto = models.IntegerField()
     nombre          = models.CharField(max_length=200)
@@ -62,7 +109,7 @@ class Proyecto(models.Model):
         return self.nombre
 
 
-class ActividadObra(models.Model):
+class ActividadObra(RegistroAuditable):
     proyecto        = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='actividades')
     codigo_act_obra = models.IntegerField()
     nombre          = models.CharField(max_length=300)
@@ -77,7 +124,7 @@ class ActividadObra(models.Model):
         return self.nombre
 
 
-class Partida(models.Model):
+class Partida(RegistroAuditable):
     codigo       = models.IntegerField()
     denominacion = models.CharField(max_length=200)
 
@@ -89,7 +136,7 @@ class Partida(models.Model):
         return f'{self.codigo} - {self.denominacion}'
 
 
-class FuenteFinanciamiento(models.Model):
+class FuenteFinanciamiento(RegistroAuditable):
     codigo = models.IntegerField()
     nombre = models.CharField(max_length=200)
     # Se elimina 'monto_total': se calcula sumando LineaPresupuestaria.
@@ -105,7 +152,7 @@ class FuenteFinanciamiento(models.Model):
 # ─────────────────────────────────────────────
 # LÍNEA PRESUPUESTARIA (núcleo del sistema - sin cambios)
 # ─────────────────────────────────────────────
-class LineaPresupuestaria(models.Model):
+class LineaPresupuestaria(RegistroAuditable):
     jurisdiccion          = models.ForeignKey(Jurisdiccion, on_delete=models.PROTECT, related_name='lineas')
     programa              = models.ForeignKey(Programa, on_delete=models.PROTECT, related_name='lineas')
     proyecto              = models.ForeignKey(Proyecto, on_delete=models.PROTECT, related_name='lineas')
@@ -115,7 +162,6 @@ class LineaPresupuestaria(models.Model):
     ejercicio      = models.IntegerField()
     saldo_inicial  = models.DecimalField(max_digits=18, decimal_places=2)
     saldo_actual   = models.DecimalField(max_digits=18, decimal_places=2)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table        = 'linea_presupuestaria'
@@ -129,10 +175,16 @@ class LineaPresupuestaria(models.Model):
 # ─────────────────────────────────────────────
 # IMPUTACIÓN
 # ─────────────────────────────────────────────
-class Imputacion(models.Model):
+class Imputacion(ControlModificacion):
     ORIGEN_CHOICES = [
         ('MANUAL',     'Manual'),
         ('AUTOMATICA', 'Automática'),
+    ]
+    # NOTA: ajustar estos 3 estados si en el sistema real se llaman distinto.
+    ESTADO_CHOICES = [
+        ('PENDIENTE', 'Pendiente'),
+        ('PARCIAL',   'Pagado parcial'),
+        ('TOTAL',     'Pagado total'),
     ]
 
     nro_expediente  = models.CharField(max_length=50)
@@ -140,8 +192,11 @@ class Imputacion(models.Model):
     fecha           = models.DateField()
     origen          = models.CharField(max_length=20, choices=ORIGEN_CHOICES, default='MANUAL')
     observacion     = models.TextField(blank=True)
+    # usuario = quien creó la imputación (se mantiene el nombre para no romper
+    # el resto del código que ya usa "usuario"/related_name="imputaciones").
     usuario         = models.ForeignKey(UsuarioPersonalizado, on_delete=models.PROTECT, related_name='imputaciones')
     fecha_creacion  = models.DateTimeField(auto_now_add=True)
+    estado          = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
     anulada         = models.BooleanField(default=False)
     fecha_anulacion = models.DateTimeField(null=True, blank=True)
 
@@ -154,7 +209,7 @@ class Imputacion(models.Model):
         return f'Imputación {self.nro_expediente} - {self.fecha}'
 
 
-class ImputacionDetalle(models.Model):
+class ImputacionDetalle(RegistroAuditable):
     imputacion           = models.ForeignKey(Imputacion, on_delete=models.CASCADE, related_name='detalles')
     linea_presupuestaria = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, related_name='imputaciones_detalle')
     proveedor_concepto   = models.CharField(max_length=300)
@@ -173,7 +228,7 @@ class ImputacionDetalle(models.Model):
 # Reemplazar la clase OrdenPago existente por esto,
 # y agregar la clase OrdenPagoDetalle a continuación.
 # ─────────────────────────────────────────────
-class OrdenPago(models.Model):
+class OrdenPago(ControlModificacion):
     imputacion                = models.ForeignKey('Imputacion', on_delete=models.PROTECT, related_name='ordenes_pago', null=True, blank=True) 
     nro_orden_pago            = models.CharField(max_length=50)
     fecha                     = models.DateField()
@@ -200,7 +255,7 @@ class OrdenPago(models.Model):
     def __str__(self):
         return f'OP {self.nro_orden_pago} - {self.importe_total}'
 
-class OrdenPagoBeneficiario(models.Model):
+class OrdenPagoBeneficiario(RegistroAuditable):
     orden_pago          = models.ForeignKey(OrdenPago, on_delete=models.CASCADE, related_name='beneficiarios')
     codigo_beneficiario = models.CharField(max_length=20, blank=True)
     beneficiario        = models.CharField(max_length=200)
@@ -213,7 +268,7 @@ class OrdenPagoBeneficiario(models.Model):
     def __str__(self):
         return f'{self.orden_pago} - {self.beneficiario} - {self.importe}'
     
-class OrdenPagoUnidadPresupuestaria(models.Model):
+class OrdenPagoUnidadPresupuestaria(RegistroAuditable):
     orden_pago         = models.ForeignKey(OrdenPago, on_delete=models.CASCADE, related_name='unidades_presupuestarias')
     imputacion_detalle = models.ForeignKey(ImputacionDetalle, on_delete=models.PROTECT, related_name='ordenes_pago_up')
     importe            = models.DecimalField(max_digits=18, decimal_places=2)
@@ -233,7 +288,7 @@ class OrdenPagoUnidadPresupuestaria(models.Model):
 # una vez creadas.
 # Pegar esta sección DESPUÉS de OrdenPagoDetalle y ANTES de "# REFUERZO"
 # ─────────────────────────────────────────────
-class OrdenPagoPersonal(models.Model):
+class OrdenPagoPersonal(ControlModificacion):
     nro_orden_pago  = models.CharField(max_length=50)
     nro_expediente  = models.CharField(max_length=50)
     importe_total   = models.DecimalField(max_digits=18, decimal_places=2)
@@ -256,7 +311,7 @@ class OrdenPagoPersonal(models.Model):
         return f'OP Personal {self.nro_orden_pago} - {self.importe_total}'
 
 
-class OrdenPagoPersonalBeneficiario(models.Model):
+class OrdenPagoPersonalBeneficiario(RegistroAuditable):
     orden_pago_personal    = models.ForeignKey(OrdenPagoPersonal, on_delete=models.CASCADE, related_name='beneficiarios')
     codigo                 = models.CharField(max_length=20)
     nomina_beneficiarios   = models.TextField()
@@ -271,7 +326,7 @@ class OrdenPagoPersonalBeneficiario(models.Model):
         return f'{self.orden_pago_personal} - {self.nomina_beneficiarios}'
 
 
-class OrdenPagoPersonalPartida(models.Model):
+class OrdenPagoPersonalPartida(RegistroAuditable):
     orden_pago_personal   = models.ForeignKey(OrdenPagoPersonal, on_delete=models.CASCADE, related_name='partidas')
     linea_presupuestaria  = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, related_name='ordenes_pago_personal_partida')
     descripcion           = models.CharField(max_length=300)
@@ -289,7 +344,7 @@ class OrdenPagoPersonalPartida(models.Model):
 # ─────────────────────────────────────────────
 # REFUERZO
 # ─────────────────────────────────────────────
-class Refuerzo(models.Model):
+class Refuerzo(ControlModificacion):
     fecha                  = models.DateField()
     nro_expediente         = models.CharField(max_length=50)
     nro_decreto_resolucion = models.CharField(max_length=255)
@@ -308,7 +363,7 @@ class Refuerzo(models.Model):
         return f'Refuerzo {self.nro_expediente} - {self.fecha}'
 
 
-class RefuerzoDetalle(models.Model):
+class RefuerzoDetalle(RegistroAuditable):
     refuerzo      = models.ForeignKey(Refuerzo, on_delete=models.CASCADE, related_name='detalles')
     linea_destino = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, related_name='refuerzos_recibidos')
     importe       = models.DecimalField(max_digits=18, decimal_places=2)
@@ -324,7 +379,7 @@ class RefuerzoDetalle(models.Model):
 # ─────────────────────────────────────────────
 # MODIFICACIÓN
 # ─────────────────────────────────────────────
-class Modificacion(models.Model):
+class Modificacion(ControlModificacion):
     TIPO_TRANSFERENTE_CHOICES = [
         ('general',    'UP Presupuesto General'),
         ('imputacion', 'UP de una Imputación'),
@@ -353,7 +408,7 @@ class Modificacion(models.Model):
         return f'Modificación {self.nro_expediente} - {self.fecha}'
 
 
-class ModificacionTransferente(models.Model):
+class ModificacionTransferente(RegistroAuditable):
     modificacion        = models.ForeignKey(Modificacion, on_delete=models.CASCADE, related_name='transferentes')
     linea_origen        = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, related_name='modificaciones_origen')
     imputacion_detalle  = models.ForeignKey(          # ← NUEVO
@@ -369,7 +424,7 @@ class ModificacionTransferente(models.Model):
         db_table     = 'modificacion_transferente'
         verbose_name = 'Transferente de Modificación'
 
-class ModificacionReceptora(models.Model):
+class ModificacionReceptora(RegistroAuditable):
     modificacion  = models.ForeignKey(Modificacion, on_delete=models.CASCADE, related_name='receptoras')
     linea_destino = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, related_name='modificaciones_destino')
     importe       = models.DecimalField(max_digits=18, decimal_places=2)
@@ -383,6 +438,9 @@ class ModificacionReceptora(models.Model):
 # HISTORIAL DE MOVIMIENTOS
 # ─────────────────────────────────────────────
 class MovimientoHistorial(models.Model):
+    # Nota: esta tabla es un log de solo-lectura (no se edita un movimiento
+    # ya registrado), por eso NO lleva usuario_modificacion/fecha_modificacion:
+    # "usuario" + "fecha" ya cumplen el rol de autor y momento del evento.
     TIPO_CHOICES = [
         ('IMPUTACION',          'Imputación'),
         ('IMPUTACION_EDICION',  'Imputación - Edición'),
@@ -428,7 +486,7 @@ class MovimientoHistorial(models.Model):
 # ─────────────────────────────────────────────
 # CÓDIGO DE PAGO
 # ─────────────────────────────────────────────
-class CodigoPago(models.Model):
+class CodigoPago(RegistroAuditable):
     codigo      = models.IntegerField(unique=True)
     descripcion = models.CharField(max_length=200)
     activo      = models.BooleanField(default=True)
