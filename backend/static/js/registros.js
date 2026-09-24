@@ -27,3 +27,28 @@ document.addEventListener('DOMContentLoaded', function () {
     filtroFecha.addEventListener('change', aplicarFiltros);
     filtroUsuario.addEventListener('input', aplicarFiltros);
 });
+document.addEventListener("DOMContentLoaded", function () {
+
+    const filas = document.querySelectorAll(".registro-row");
+
+    filas.forEach(function (fila) {
+
+        fila.addEventListener("click", function () {
+
+            const detalle = fila.nextElementSibling;
+
+            // Cerrar si ya estaba abierto
+            if (detalle.classList.contains("mostrar")) {
+                detalle.classList.remove("mostrar");
+                fila.classList.remove("abierto");
+                return;
+            }
+
+            // Abrir
+            detalle.classList.add("mostrar");
+            fila.classList.add("abierto");
+        });
+
+    });
+
+});

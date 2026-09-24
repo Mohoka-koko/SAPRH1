@@ -255,11 +255,16 @@ ESTILO BASE: CYBER-KEY LIGHT
     text-align: center;
 }
 
-.badge-tipo-imputacion          { background: #ffdf4e; color: #1e1e2e; }
+.badge-tipo-imputacion          { background: #fad52f; color: #1e1e2e; }
 .badge-tipo-op,
+.badge-tipo-op-personal {
+    background: #e8ebee;
+    color: #1e1e2e;
+    border: 1px solid #48ccf5;
+}
 .badge-tipo-op-personal         { background: #e8ebee; color: #1e1e2e; }
-.badge-tipo-modificacion        { background: #00d1c0; color: #1e1e2e; }
-.badge-tipo-refuerzo            { background: #fdcf6c; color: #1e1e2e; }
+.badge-tipo-modificacion        { background: #68ddbd; color: #1e1e2e; }
+.badge-tipo-refuerzo            { background: #ffae00; color: #1e1e2e; }
 
 /* Botón de edición */
 .edit-btn {
@@ -274,4 +279,92 @@ ESTILO BASE: CYBER-KEY LIGHT
 .edit-btn:hover {
     color: var(--primary);
     transform: translateY(-1px);
+}
+/* Filas principales */
+.registro-row {
+    cursor: pointer;
+}
+
+/* Botón para desplegar */
+.btn-expandir {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    transition: transform 0.2s ease;
+}
+
+/* Cuando está abierto */
+.registro-row.abierto .btn-expandir {
+    transform: rotate(180deg);
+}
+
+/* Detalle oculto */
+.detalle-row {
+    display: none;
+}
+
+.detalle-row.mostrar {
+    display: table-row;
+}
+
+/* Contenido del desplegable */
+.detalle-contenido {
+    display: flex;
+    gap: 40px;
+    padding: 15px 20px;
+    background: #f7f8fa;
+    border-top: 1px solid #e5e5e5;
+}
+
+.detalle-contenido div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detalle-contenido strong {
+    font-size: 12px;
+    color: #666;
+}
+
+.detalle-contenido span {
+    font-size: 14px;
+    color: #222;
+}
+/* Fila desplegable de detalles */
+.history-table .detalle-row {
+    background: #eef8fa;
+    border-left: 4px solid #5bc0be;
+}
+
+.history-table .detalle-row td {
+    padding: 18px 24px;
+}
+
+.detalle-contenido {
+    background: #ffffff;
+    border: 1px solid #d7ecef;
+    border-radius: 10px;
+    padding: 15px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 35px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.detalle-contenido div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detalle-contenido strong {
+    color: #3b6f73;
+    font-size: 13px;
+}
+
+.detalle-contenido span {
+    color: #333;
+    font-size: 14px;
 }
