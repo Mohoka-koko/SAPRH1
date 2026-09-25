@@ -92,8 +92,8 @@
 
                 <thead>
                     <tr>
-                        <th>N.º de expediente</th>
                         <th>Tipo</th>
+                        <th>N.º de expediente</th>
                         <th>Fecha de creación</th>
                         <th>Creado por</th>
                         <th>Estado</th>
@@ -102,361 +102,32 @@
                 </thead>
 
 
-                <tbody id="tabla-registros-body">
-
-
-                    <!-- ========================= -->
-                    <!-- IMPUTACIÓN -->
-                    <!-- ========================= -->
-
-                    <tr
-                        class="registro-row"
-                        data-tipo="imputacion"
-                        data-usuario="Usuario1"
-                        data-fecha="2026-09-13"
-                    >
-
-                        <td>
-                            EXP-2026-0001
-                        </td>
-
-                        <td>
-                            <span class="badge-tipo badge-tipo-imputacion">
-                                Imputación
-                            </span>
-                        </td>
-
-                        <td>
-                            13/09/2026 – 14:52
-                        </td>
-
-                        <td>
-                            Usuario1
-                        </td>
-
-                        <td>
-                            <span class="badge badge-listo">
-                                Listo
-                            </span>
-                        </td>
-
-                        <td class="expandir">
-
-                            <button
-                                type="button"
-                                class="btn-expandir"
-                            >
-                                <i class="fa-solid fa-chevron-down"></i>
-                            </button>
-
-                        </td>
-
-                    </tr>
-
-
-                    <tr class="detalle-row">
-
-                        <td colspan="6">
-
-                            <div class="detalle-contenido">
-
-                                <div>
-                                    <strong>Fecha de modificación:</strong>
-                                    <span>
-                                        13/09/2026 – 14:52
-                                    </span>
-                                </div>
-
-                                <div>
-                                    <strong>Modificado por:</strong>
-                                    <span>
-                                        Usuario1
-                                    </span>
-                                </div>
-
-                            </div>
-
-                        </td>
-
-                    </tr>
-
-
-
-                    <!-- ========================= -->
-                    <!-- ORDEN DE PAGO -->
-                    <!-- ========================= -->
-
-                    <tr
-                        class="registro-row"
-                        data-tipo="op"
-                        data-usuario="Usuario2"
-                        data-fecha="2026-09-13"
-                    >
-
-                        <td>
-                            EXP-2026-0002
-                        </td>
-
-                        <td>
-                            <span class="badge-tipo badge-tipo-op">
-                                Orden de Pago
-                            </span>
-                        </td>
-
-                        <td>
-                            13/09/2026 – 16:02
-                        </td>
-
-                        <td>
-                            Usuario2
-                        </td>
-
-                        <td>
-                            <span class="badge badge-revisar">
-                                Revisar
-                            </span>
-                        </td>
-
-                        <td class="expandir">
-
-                            <button
-                                type="button"
-                                class="btn-expandir"
-                            >
-                                <i class="fa-solid fa-chevron-down"></i>
-                            </button>
-
-                        </td>
-
-                    </tr>
-
-
-                    <tr class="detalle-row">
-
-                        <td colspan="6">
-
-                            <div class="detalle-contenido">
-
-                                <div>
-                                    <strong>Fecha de modificación:</strong>
-                                    <span>
-                                        13/09/2026 – 16:02
-                                    </span>
-                                </div>
-
-                                <div>
-                                    <strong>Modificado por:</strong>
-                                    <span>
-                                        Usuario2
-                                    </span>
-                                </div>
-
-                            </div>
-
-                        </td>
-
-                    </tr>
-
-
-
-                    <!-- ========================= -->
-                    <!-- MODIFICACIÓN -->
-                    <!-- ========================= -->
-
-                    <tr
-                        class="registro-row"
-                        data-tipo="modificacion"
-                        data-usuario="Usuario4"
-                        data-fecha="2026-09-14"
-                    >
-
-                        <td>
-                            EXP-2026-0003
-                        </td>
-
-                        <td>
-                            <span class="badge-tipo badge-tipo-modificacion">
-                                Modificación
-                            </span>
-                        </td>
-
-                        <td>
-                            14/09/2026 – 10:30
-                        </td>
-
-                        <td>
-                            Usuario4
-                        </td>
-
-                        <td>
-                            <span class="badge badge-listo">
-                                Listo
-                            </span>
-                        </td>
-
-                        <td class="expandir">
-
-                            <button
-                                type="button"
-                                class="btn-expandir"
-                            >
-                                <i class="fa-solid fa-chevron-down"></i>
-                            </button>
-
-                        </td>
-
-                    </tr>
-
-
-                    <tr class="detalle-row">
-
-                        <td colspan="6">
-
-                            <div class="detalle-contenido">
-
-                                <div>
-                                    <strong>Fecha de modificación:</strong>
-                                    <span>
-                                        14/09/2026 – 11:05
-                                    </span>
-                                </div>
-
-                                <div>
-                                    <strong>Modificado por:</strong>
-                                    <span>
-                                        Usuario3
-                                    </span>
-                                </div>
-
-                            </div>
-
-                        </td>
-
-                    </tr>
-
-
-
-                    <!-- ========================= -->
-                    <!-- REFUERZO -->
-                    <!-- ========================= -->
-
-                    <tr
-                        class="registro-row"
-                        data-tipo="refuerzo"
-                        data-usuario="Usuario5"
-                        data-fecha="2026-09-15"
-                    >
-
-                        <td>
-                            EXP-2026-0004
-                        </td>
-
-                        <td>
-                            <span class="badge-tipo badge-tipo-refuerzo">
-                                Refuerzo
-                            </span>
-                        </td>
-
-                        <td>
-                            15/09/2026 – 13:20
-                        </td>
-
-                        <td>
-                            Usuario5
-                        </td>
-
-                        <td>
-                            <span class="badge badge-listo">
-                                Listo
-                            </span>
-                        </td>
-
-                        <td class="expandir">
-
-                            <button
-                                type="button"
-                                class="btn-expandir"
-                            >
-                                <i class="fa-solid fa-chevron-down"></i>
-                            </button>
-
-                        </td>
-
-                    </tr>
-
-
-                    <tr class="detalle-row">
-
-                        <td colspan="6">
-
-                            <div class="detalle-contenido">
-
-                                <div>
-                                    <strong>Fecha de modificación:</strong>
-                                    <span>
-                                        15/09/2026 – 13:20
-                                    </span>
-                                </div>
-
-                                <div>
-                                    <strong>Modificado por:</strong>
-                                    <span>
-                                        Usuario5
-                                    </span>
-                                </div>
-
-                            </div>
-
-                        </td>
-
-                    </tr>
-
-
+                <!-- En tu archivo registros.html -->
+                <tbody id="tabla-registros-body" data-api-url="{% url 'api_historial_registros' %}">
+                    <!-- El contenido se cargará dinámicamente mediante JS -->
                 </tbody>
-
             </table>
 
         </div>
 
 
         <!-- PAGINACIÓN -->
-        <div class="pagination-bar">
-
-            <span class="pagination-info">
-                Mostrando 1–4 de 4 registros
-            </span>
-
-            <div class="pagination">
-
-                <button
-                    class="page-btn arrow"
-                    id="pag-prev"
-                >
-                    <i class="fa-solid fa-chevron-left"></i>
+        <div class="pagination-bar" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+            <span class="pagination-info"></span>
+            
+            <div class="pagination-buttons">
+                <span class="page-number-text"></span>
+                <button class="btn-page btn-prev">
+                    <i class="fa-solid fa-chevron-left"></i> Prev
                 </button>
-
-                <button
-                    class="page-btn active"
-                >
-                    1
+                <button class="btn-page btn-next">
+                    Next <i class="fa-solid fa-chevron-right"></i>
                 </button>
-
-                <button
-                    class="page-btn arrow"
-                    id="pag-next"
-                >
-                    <i class="fa-solid fa-chevron-right"></i>
-                </button>
-
             </div>
-
         </div>
 
 
     </div>
-
-</div>
-```
 
 </div>
 

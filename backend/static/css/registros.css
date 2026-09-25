@@ -155,6 +155,12 @@ ESTILO BASE: CYBER-KEY LIGHT
     margin-left: -35px;
 }
 
+/*
+====================================
+    TABLA DE REGISTROS (AUDITORIA)
+====================================
+*/
+
 /* Filtros */
 .filter-container {
     padding: 0 2rem 1.5rem;
@@ -199,7 +205,7 @@ ESTILO BASE: CYBER-KEY LIGHT
 }
 
 .history-table thead tr {
-    background: #1e3a8a;
+    background: #2b6f8e;
     border-bottom: 1.5px solid var(--border);
 }
 
@@ -220,7 +226,7 @@ ESTILO BASE: CYBER-KEY LIGHT
 }
 
 .history-table tbody tr:hover {
-    background: #f9f9ff;
+    background: #e3fcfa;
 }
 
 .ts {
@@ -255,7 +261,7 @@ ESTILO BASE: CYBER-KEY LIGHT
     text-align: center;
 }
 
-.badge-tipo-imputacion          { background: #fad52f; color: #1e1e2e; }
+.badge-tipo-imputacion          { background: #ffea00; color: #1e1e2e; }
 .badge-tipo-op,
 .badge-tipo-op-personal {
     background: #e8ebee;
@@ -264,7 +270,7 @@ ESTILO BASE: CYBER-KEY LIGHT
 }
 .badge-tipo-op-personal         { background: #e8ebee; color: #1e1e2e; }
 .badge-tipo-modificacion        { background: #68ddbd; color: #1e1e2e; }
-.badge-tipo-refuerzo            { background: #ffae00; color: #1e1e2e; }
+.badge-tipo-refuerzo            { background: #fcba2c; color: #1e1e2e; }
 
 /* Botón de edición */
 .edit-btn {
@@ -368,3 +374,60 @@ ESTILO BASE: CYBER-KEY LIGHT
     color: #333;
     font-size: 14px;
 }
+
+
+/* Texto de total de registros en gris */
+.pagination-info {
+    color: #64748b;
+    font-size: 0.875rem;
+  }
+  
+  .pagination-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  /* Texto "Página X de Y" en gris */
+  .page-number-text {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-right: 4px;
+  }
+  
+  /* Estilo limpio para los botones Prev / Next */
+  .btn-page {
+    appearance: none;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #374151;
+    padding: 6px 14px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease-in-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Hover Opción B con font-weight: 600 */
+  .btn-page:hover:not(:disabled) {
+    background-color: #f0f7fa;
+    border-color: #2b6f8e;
+    color: #2b6f8e;
+    font-weight: 600;
+  }
+  
+  /* Estado deshabilitado (gris atenuado) */
+  .btn-page:disabled {
+    color: #9ca3af;
+    border-color: #e5e7eb;
+    background-color: #ffffff;
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.7;
+  }

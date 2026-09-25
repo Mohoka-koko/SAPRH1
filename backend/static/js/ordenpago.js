@@ -256,17 +256,26 @@
       BLOQUE CONCEPTO: LÍNEAS DE DESCRIPCIÓN LIBRE
       ------------------------------------------------------------------------ */
    
-   function agregarLineaDescripcionConcepto() {
-     contadorLineasDescripcion++;
-   
-     const linea = document.createElement("div");
-     linea.className = "concepto-linea-desc";
-     linea.innerHTML = `
-       <input type="text" class="input-linea full" placeholder="Línea de descripción del concepto">
-     `;
-   
-     document.getElementById("conceptoDescripcionContainer").appendChild(linea);
-   }
+  function agregarLineaDescripcionConcepto() {
+    contadorLineasDescripcion++;
+  
+    const linea = document.createElement("div");
+    linea.className = "concepto-linea-desc";
+  
+    const textarea = document.createElement("textarea");
+    textarea.className   = "input-desc-libre";
+    textarea.placeholder = "Línea de descripción del concepto";
+    textarea.rows        = 1;
+  
+    // Auto-resize: crece con el contenido, nunca achica por debajo de 1 línea
+    textarea.addEventListener("input", () => {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    });
+  
+    linea.appendChild(textarea);
+    document.getElementById("conceptoDescripcionContainer").appendChild(linea);
+  }
    
    /* ------------------------------------------------------------------------
       SELECCIÓN Y ELIMINACIÓN GENÉRICA DE FILAS
@@ -561,26 +570,20 @@
           fila.dataset.saldoDisponible = up.saldo_disponible;
 
           fila.innerHTML = `
-              <td><input type="text" class="input-cod-partida" value="${jur}"      readonly></td>
-              <td><input type="text" class="input-cod-partida" value="${up.prog}"  readonly></td>
-              <td><input type="text" class="input-cod-partida" value="00"          readonly></td>
-              <td><input type="text" class="input-cod-partida" value="${up.pry}"   readonly></td>
-              <td><input type="text" class="input-cod-partida" value="${up.ao}"    readonly></td>
-              <td><input type="text" class="input-cod-partida" value="${up.part}"  readonly></td>
-              <td><input type="text" class="input-cod-partida" value="${up.fuente_codigo}" readonly></td>
-              <td>
-                  <input type="text" class="input-desc-partida full"
-                          value="${up.denominacion}" readonly>
-                  <small class="saldo-label">
-                      Disponible: $${formatearImporte(parseFloat(up.saldo_disponible))}
-                  </small>
-              </td>
-              <td>
-                  <input type="text"
-                          class="input-importe-partida input-importe-up"
-                          placeholder="0,00"
-                          value="">
-              </td>
+            <td><input type="text" class="input-cod-partida" value="${jur}"               readonly></td>
+            <td><input type="text" class="input-cod-partida" value="${up.prog}"           readonly></td>
+            <td><input type="text" class="input-cod-partida" value="00"                   readonly></td>
+            <td><input type="text" class="input-cod-partida" value="${up.pry}"            readonly></td>
+            <td><input type="text" class="input-cod-partida" value="${up.ao}"             readonly></td>
+            <td><input type="text" class="input-cod-partida" value="${up.part}"           readonly></td>
+            <td><input type="text" class="input-cod-partida" value="${up.fuente_codigo}"  readonly></td>
+            <td><input type="text" class="input-cod-partida col-partida-desc" value="${up.denominacion || ''}" readonly></td>
+            <td>
+                <input type="text"
+                        class="input-importe-partida input-importe-up"
+                        placeholder="0,00"
+                        value="">
+            </td>
           `;
 
           fila.addEventListener('click', () => seleccionarFila(fila, 'partidasBody'));
@@ -731,6 +734,56 @@
   
     const numero = parsearImporte(importeTotal.value);
     importeLetras.value = numero > 0 ? numeroALetras(numero) : '';
+  }
+
+  const fechaRentas = document.getElementById('fechaRentas');
+  if (fechaRentas) {
+    fechaRentas.addEventListener('change', () => {
+      const valor = fechaRentas.value; // viene como yyyy-mm-dd
+      if (!valor) return;
+
+      const [anio, mes, dia] = valor.split('-').map(Number);
+      const MESES = [
+        'enero','febrero','marzo','abril','mayo','junio',
+        'julio','agosto','septiembre','octubre','noviembre','diciembre'
+      ];
+
+      const formateada = `${dia} de ${MESES[mes - 1]} de ${anio}`;
+
+      // Reemplazar el input date por un input text con el valor formateado
+      const inputTexto       = document.createElement('input');
+      inputTexto.type        = 'text';
+      inputTexto.id          = 'fechaRentas';
+      inputTexto.className   = fechaRentas.className;
+      inputTexto.value       = formateada;
+      inputTexto.readOnly    = true;
+
+      // Botón para volver a cambiar la fecha
+      const btnCambiar       = document.createElement('button');
+      btnCambiar.type        = 'button';
+      btnCambiar.textContent = '✎';
+      btnCambiar.title       = 'Cambiar fecha';
+      btnCambiar.className   = 'btn-cambiar-fecha no-print';
+      btnCambiar.addEventListener('click', () => {
+        inputTexto.replaceWith(fechaRentasOriginal());
+      });
+
+      fechaRentas.replaceWith(inputTexto);
+      inputTexto.insertAdjacentElement('afterend', btnCambiar);
+    });
+  }
+
+  // Función para restaurar el input date original
+  function fechaRentasOriginal() {
+    const input       = document.createElement('input');
+    input.type        = 'date';
+    input.id          = 'fechaRentas';
+    input.className   = 'input-linea centrado';
+    input.addEventListener('change', () => {
+      // reasignar el mismo listener
+      document.getElementById('fechaRentas')?.dispatchEvent(new Event('change'));
+    });
+    return input;
   }
 
   /* ------------------------------------------------------------------------

@@ -66,13 +66,13 @@
                 <tr>
                     <td class="etiqueta">EXPEDIENTE Nº:</td>
                     <td class="valor">
-                        <input type="text" id="expediente" class="input-linea full" placeholder="EX-AAAA-XXXXXXX">
+                        <input type="text" id="expediente" class="input-linea full" placeholder="EX-AAAA-XXXXXXX" readonly>
                     </td>
                 </tr>
                 <tr>
                     <td class="etiqueta">JURISDICCIÓN:</td>
                     <td class="valor">
-                        <input type="text" id="jurisdiccion" class="input-linea full" placeholder="Jurisdicción">
+                        <input type="text" id="jurisdiccion" class="input-linea full" placeholder="Jurisdicción" readonly>
                     </td>
                 </tr>
             </table>
@@ -128,7 +128,6 @@
                     <input type="text" id="numeroFactura" class="input-linea larga" placeholder="0000-00000000">
                 </div>
                 <div id="conceptoDescripcionContainer" class="concepto-descripcion">
-                    <input type="text" class="input-linea full" placeholder="Descripción del concepto...">
                 </div>
             </div>
 
@@ -174,7 +173,7 @@
 
             <div class="rentas-generales">
                 <div class="rentas-titulo">RENTAS GENERALES</div>
-                <input type="text" id="fechaRentas" class="input-linea centrado" placeholder="dd de mes de aaaa">
+                <input type="date" id="fechaRentas" class="input-linea centrado">
                 <div class="error-msg" id="err-fechaRentas"></div>
             </div>
 
@@ -183,10 +182,6 @@
                     <input type="text" id="codigoNG" class="input-linea chico" 
                            value="{{ request.user.get_full_name|default:request.user.nombre }}" 
                            readonly>
-                </div>
-                
-                <div class="pie-der">
-                    <input type="text" id="codigoDocumental" class="input-linea chico" placeholder="DOCFI-AAAA-XXXXXXX">
                 </div>
             </div>
 

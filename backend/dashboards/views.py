@@ -1835,11 +1835,15 @@ def api_ups_imputacion(request, imputacion_id):
 
     resultado = []
     for d in detalles:
-        ya_pagado = OrdenPagoUnidadPresupuestaria.objects.filter(
+        ya_pagado_op = OrdenPagoUnidadPresupuestaria.objects.filter(
             imputacion_detalle=d
         ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
 
-        saldo_disponible = d.importe - ya_pagado
+        ya_trasladado_mod = ModificacionTransferente.objects.filter(
+            imputacion_detalle=d
+        ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
+
+        saldo_disponible = d.importe - ya_pagado_op - ya_trasladado_mod
         if saldo_disponible <= 0:
             continue
 
@@ -1851,11 +1855,12 @@ def api_ups_imputacion(request, imputacion_id):
             'pry':                   linea.proyecto.codigo_proyecto,
             'ao':                    linea.actividad_obra.codigo_act_obra,
             'part':                  linea.partida.codigo,
-            'fuente_codigo':         linea.fuente_financiamiento.codigo,  # ← nuevo
+            'fuente_codigo':         linea.fuente_financiamiento.codigo,
             'denominacion':          linea.partida.denominacion,
             'fuente':                linea.fuente_financiamiento.nombre,
             'importe_imputado':      str(d.importe),
-            'ya_pagado':             str(ya_pagado),
+            'ya_pagado_op':          str(ya_pagado_op),          # ← renombrado
+            'ya_trasladado_mod':     str(ya_trasladado_mod),     # ← nuevo
             'saldo_disponible':      str(saldo_disponible),
         })
 
@@ -2094,3 +2099,77 @@ from .models import CodigoPago  # agregá al bloque de imports
 def api_codigos_pago(request):
     codigos = CodigoPago.objects.filter(activo=True).values('codigo', 'descripcion')
     return JsonResponse(list(codigos), safe=False)
+
+# ==========================================
+#  API — HISTORIAL DE REGISTROS (auditoría)
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+def api_historial_registros(request):
+    from django.db.models import Q
+
+    registros = []
+
+    # ── Imputaciones ──────────────────────────────────────────────────────
+    imputaciones = Imputacion.objects.select_related('usuario').order_by('-fecha_creacion')
+    for imp in imputaciones:
+        registros.append({
+            'id':                    f'imp-{imp.id}',
+            'tipo':                  'Imputación',
+            'fecha_creacion':        imp.fecha_creacion.strftime('%d/%m/%Y - %H:%M') if imp.fecha_creacion else '',
+            'creado_por':            imp.usuario.nombre if imp.usuario else 'S/N',
+            'fecha_modificacion':    imp.fecha_creacion.strftime('%d/%m/%Y - %H:%M') if imp.fecha_creacion else '',
+            'modificado_por':        imp.usuario.nombre if imp.usuario else 'S/N',
+            'estado':                'Listo',
+            'referencia_id':         imp.id,
+            'nro_expediente':        imp.nro_expediente,
+        })
+
+    # ── Órdenes de Pago ───────────────────────────────────────────────────
+    ordenes = OrdenPago.objects.select_related('usuario').order_by('-fecha_creacion')
+    for op in ordenes:
+        registros.append({
+            'id':                    f'op-{op.id}',
+            'tipo':                  'Orden de Pago',
+            'fecha_creacion':        op.fecha_creacion.strftime('%d/%m/%Y - %H:%M') if op.fecha_creacion else '',
+            'creado_por':            op.usuario.nombre if op.usuario else 'S/N',
+            'fecha_modificacion':    op.fecha_creacion.strftime('%d/%m/%Y - %H:%M') if op.fecha_creacion else '',
+            'modificado_por':        op.usuario.nombre if op.usuario else 'S/N',
+            'estado':                'Revisar',
+            'referencia_id':         op.id,
+            'nro_expediente':        op.nro_orden_pago,
+        })
+
+    # ── Modificaciones ────────────────────────────────────────────────────
+    modificaciones = Modificacion.objects.select_related('usuario').order_by('-fecha_creacion')
+    for mod in modificaciones:
+        registros.append({
+            'id':                    f'mod-{mod.id}',
+            'tipo':                  'Modificación',
+            'fecha_creacion':        mod.fecha_creacion.strftime('%d/%m/%Y - %H:%M') if mod.fecha_creacion else '',
+            'creado_por':            mod.usuario.nombre if mod.usuario else 'S/N',
+            'fecha_modificacion':    mod.fecha_creacion.strftime('%d/%m/%Y - %H:%M') if mod.fecha_creacion else '',
+            'modificado_por':        mod.usuario.nombre if mod.usuario else 'S/N',
+            'estado':                'Listo',
+            'referencia_id':         mod.id,
+            'nro_expediente':        mod.nro_expediente,
+        })
+
+    # ── Refuerzos ─────────────────────────────────────────────────────────
+    refuerzos = Refuerzo.objects.select_related('usuario').order_by('-fecha_creacion')
+    for ref in refuerzos:
+        registros.append({
+            'id':                    f'ref-{ref.id}',
+            'tipo':                  'Refuerzo',
+            'fecha_creacion':        ref.fecha_creacion.strftime('%d/%m/%Y - %H:%M') if ref.fecha_creacion else '',
+            'creado_por':            ref.usuario.nombre if ref.usuario else 'S/N',
+            'fecha_modificacion':    ref.fecha_creacion.strftime('%d/%m/%Y - %H:%M') if ref.fecha_creacion else '',
+            'modificado_por':        ref.usuario.nombre if ref.usuario else 'S/N',
+            'estado':                'Listo',
+            'referencia_id':         ref.id,
+            'nro_expediente':        ref.nro_expediente,
+        })
+
+    # Ordenar por fecha de creación más reciente
+    registros.sort(key=lambda x: x['fecha_creacion'], reverse=True)
+
+    return JsonResponse({'registros': registros})
