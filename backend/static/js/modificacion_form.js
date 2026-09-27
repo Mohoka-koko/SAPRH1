@@ -93,118 +93,112 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // ─── CREAR FILA TRANSFERENTE ──────────────────────────────────────────────
-  let _filaCounter = 0;
+    // ─── CREAR FILA TRANSFERENTE ──────────────────────────────────────────────
+    let _filaCounter = 0;
 
-  function crearFilaTransferente(contenedorId, bloqueSaldoId, bloqueImporteId, datos = {}, onCambio, modoForzado = null) {
-    const filaId = `fila-${++_filaCounter}`;
-    const modo   = modoForzado || getModo();
+    function crearFilaTransferente(contenedorId, bloqueSaldoId, bloqueImporteId, datos = {}, onCambio, modoForzado = null) {
+        const filaId = `fila-${++_filaCounter}`;
+        const modo   = modoForzado || getModo();
+        const esImputacion = (modo === 'imputacion');
 
-      // ── Parte cascada (columna izquierda) ─────────────────────────────────
-      const wrapper = document.createElement("div");
-      wrapper.dataset.filaId = filaId;
-      wrapper.style.marginBottom = "8px";
+        // ── Parte cascada (columna izquierda) ─────────────────────────────────
+        const wrapper = document.createElement("div");
+        wrapper.dataset.filaId = filaId;
+        wrapper.style.marginBottom = "8px";
 
-      const cabecera = document.createElement("div");
-      cabecera.className = "mf-cabecera-cascada";
-      cabecera.innerHTML = `
-          <span>JUR</span><span>PRG</span><span>SPRG</span>
-          <span>PRY</span><span>A/O</span><span>PAR</span><span>FF</span>
-      `;
+        // Cabecera dinámica
+        const cabecera = document.createElement("div");
+        cabecera.className = `mf-cabecera-cascada ${esImputacion ? 'modo-imputacion' : ''}`;
+        cabecera.innerHTML = `
+            <span>JUR</span><span>PRG</span><span>SPRG</span>
+            <span>PRY</span><span>A/O</span><span>PAR</span><span>FF</span>
+            ${esImputacion ? '<span>IMPUTACIÓN</span>' : ''}
+        `;
 
-      const fila = document.createElement("div");
-      fila.className   = "fila-receptora-refuerzo";
-      fila.dataset.filaId = filaId;
-      fila.innerHTML = `
-          <input type="text" value="51" readonly title="Jurisdicción (fijo)" />
-          <select class="fila-prg"><option value="">Seleccione</option></select>
-          <input type="text" value="00" readonly title="Subprograma (fijo)" />
-          <select class="fila-pry"><option value="">Seleccione</option></select>
-          <select class="fila-ao"><option value="">Seleccione</option></select>
-          <select class="fila-par"><option value="">Seleccione</option></select>
-          <select class="fila-fuente" disabled><option value="">FF...</option></select>
-          <input type="hidden" class="fila-linea-id" value="" />
-      `;
+        // Fila de controles alineados
+        const fila = document.createElement("div");
+        fila.className   = `fila-receptora-refuerzo ${esImputacion ? 'modo-imputacion' : ''}`;
+        fila.dataset.filaId = filaId;
+        fila.innerHTML = `
+            <input type="text" value="51" readonly title="Jurisdicción (fijo)" />
+            <select class="fila-prg"><option value="">Seleccione</option></select>
+            <input type="text" value="00" readonly title="Subprograma (fijo)" />
+            <select class="fila-pry"><option value="">Seleccione</option></select>
+            <select class="fila-ao"><option value="">Seleccione</option></select>
+            <select class="fila-par"><option value="">Seleccione</option></select>
+            <select class="fila-fuente" disabled><option value="">FF...</option></select>
+            ${esImputacion ? `
+                <select class="fila-imputacion" disabled>
+                    <option value="">Seleccione</option>
+                </select>
+            ` : ''}
+            <input type="hidden" class="fila-linea-id" value="" />
+            <input type="hidden" class="fila-detalle-id" value="" />
+        `;
 
-      // En Modo B: selector de imputaciones (oculto hasta resolver línea)
-      let selectImputacion = null;
-      let inputDetalleId   = null;
+        // Referencias internas en Modo B (conectadas al selector de la grilla)
+        const selectImputacion = esImputacion ? fila.querySelector(".fila-imputacion") : null;
+        const inputDetalleId   = esImputacion ? fila.querySelector(".fila-detalle-id") : null;
 
-      if (modo === 'imputacion') {
-          const wrapImp = document.createElement("div");
-          wrapImp.className = "mf-imputacion-selector";
-          wrapImp.style.marginTop = "6px";
-          wrapImp.innerHTML = `
-              <label style="font-size:11px;color:#4b5563;">Imputación:</label>
-              <select class="fila-imputacion" disabled style="width:100%;margin-top:2px;">
-                  <option value="">— Buscar línea primero —</option>
-              </select>
-              <input type="hidden" class="fila-detalle-id" value="" />
-              <div class="fila-saldo-imp" style="font-size:11px;color:#16a34a;margin-top:3px;"></div>
-          `;
-          fila.appendChild(wrapImp);
-          selectImputacion = wrapImp.querySelector(".fila-imputacion");
-          inputDetalleId   = wrapImp.querySelector(".fila-detalle-id");
-      }
+        // ── Saldo (columna central) ────────────────────────────────────────────
+        const saldoEl = document.createElement("div");
+        saldoEl.className      = "mf-importe-fila";
+        saldoEl.dataset.filaId = filaId;
 
-      // ── Saldo (columna central) ────────────────────────────────────────────
-      const saldoEl = document.createElement("div");
-      saldoEl.className      = "mf-importe-fila";
-      saldoEl.dataset.filaId = filaId;
+        const saldoInput    = document.createElement("input");
+        saldoInput.type     = "text";
+        saldoInput.className = "fila-saldo-display";
+        saldoInput.readOnly  = true;
+        saldoInput.value     = "";
+        saldoEl.appendChild(saldoInput);
+        document.getElementById(bloqueSaldoId).appendChild(saldoEl);
 
-      const saldoInput    = document.createElement("input");
-      saldoInput.type     = "text";
-      saldoInput.className = "fila-saldo-display";
-      saldoInput.readOnly  = true;
-      saldoInput.value     = "";
-      saldoEl.appendChild(saldoInput);
-      document.getElementById(bloqueSaldoId).appendChild(saldoEl);
+        wrapper.appendChild(cabecera);
+        wrapper.appendChild(fila);
+        document.getElementById(contenedorId).appendChild(wrapper);
 
-      wrapper.appendChild(cabecera);
-      wrapper.appendChild(fila);
-      document.getElementById(contenedorId).appendChild(wrapper);
+        // ── Importe (columna derecha) ──────────────────────────────────────────
+        const importeWrapper       = document.createElement("div");
+        importeWrapper.className   = "mf-importe-fila";
+        importeWrapper.dataset.filaId = filaId;
 
-      // ── Importe (columna derecha) ──────────────────────────────────────────
-      const importeWrapper       = document.createElement("div");
-      importeWrapper.className   = "mf-importe-fila";
-      importeWrapper.dataset.filaId = filaId;
+        const inputImporte       = document.createElement("input");
+        inputImporte.type        = "text";
+        inputImporte.className   = "fila-importe";
+        inputImporte.placeholder = "Ingrese importe";
+        if (datos.importe) inputImporte.value = formatearImporte(parseFloat(datos.importe));
 
-      const inputImporte       = document.createElement("input");
-      inputImporte.type        = "text";
-      inputImporte.className   = "fila-importe";
-      inputImporte.placeholder = "Ingrese importe";
-      if (datos.importe) inputImporte.value = formatearImporte(parseFloat(datos.importe));
+        const btnEliminar         = document.createElement("button");
+        btnEliminar.type          = "button";
+        btnEliminar.className     = "btn-eliminar-fila";
+        btnEliminar.textContent   = "✕";
 
-      const btnEliminar         = document.createElement("button");
-      btnEliminar.type          = "button";
-      btnEliminar.className     = "btn-eliminar-fila";
-      btnEliminar.textContent   = "✕";
+        importeWrapper.appendChild(inputImporte);
+        importeWrapper.appendChild(btnEliminar);
+        document.getElementById(bloqueImporteId).appendChild(importeWrapper);
 
-      importeWrapper.appendChild(inputImporte);
-      importeWrapper.appendChild(btnEliminar);
-      document.getElementById(bloqueImporteId).appendChild(importeWrapper);
+        // ── Referencias internas ───────────────────────────────────────────────
+        const selectPrg    = fila.querySelector(".fila-prg");
+        const selectPry    = fila.querySelector(".fila-pry");
+        const selectAo     = fila.querySelector(".fila-ao");
+        const selectPar    = fila.querySelector(".fila-par");
+        const selectFuente = fila.querySelector(".fila-fuente");
+        const inputLineaId = fila.querySelector(".fila-linea-id");
 
-      // ── Referencias internas ───────────────────────────────────────────────
-      const selectPrg    = fila.querySelector(".fila-prg");
-      const selectPry    = fila.querySelector(".fila-pry");
-      const selectAo     = fila.querySelector(".fila-ao");
-      const selectPar    = fila.querySelector(".fila-par");
-      const selectFuente = fila.querySelector(".fila-fuente");
-      const inputLineaId = fila.querySelector(".fila-linea-id");
-
-      function resetLinea() {
-          inputLineaId.value     = "";
-          saldoInput.value       = "";
-          saldoInput.placeholder = "—";
-          selectFuente.innerHTML = `<option value="">FF...</option>`;
-          selectFuente.disabled  = true;
-          if (selectImputacion) {
-              selectImputacion.innerHTML = `<option value="">— Buscar línea primero —</option>`;
-              selectImputacion.disabled  = true;
-              inputDetalleId.value       = "";
-              fila.querySelector(".fila-saldo-imp").textContent = "";
-          }
-      }
+        function resetLinea() {
+            inputLineaId.value     = "";
+            saldoInput.value       = "";
+            saldoInput.placeholder = "—";
+            selectFuente.innerHTML = `<option value="">FF...</option>`;
+            selectFuente.disabled  = true;
+            if (selectImputacion) {
+                selectImputacion.innerHTML = `<option value="">Seleccione</option>`;
+                selectImputacion.disabled  = true;
+                inputDetalleId.value       = "";
+                const saldoImp = fila.querySelector(".fila-saldo-imp");
+                if (saldoImp) saldoImp.textContent = "";
+            }
+        }
 
       // ── Resolver línea ─────────────────────────────────────────────────────
       async function resolverLineas() {
@@ -277,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   opt.dataset.saldo       = d.saldo_disponible;
                   opt.dataset.expediente  = d.nro_expediente;
                   opt.dataset.asiento     = d.asiento_nro;
-                  opt.textContent         = `Exp. ${d.nro_expediente} — Asiento ${d.asiento_nro} — Saldo: $${formatearImporte(parseFloat(d.saldo_disponible))}`;
+                  opt.textContent         = `Asiento ${d.asiento_nro} — Exp. ${d.nro_expediente}`;
                   selectImputacion.appendChild(opt);
               });
               selectImputacion.disabled = false;
@@ -325,8 +319,6 @@ document.addEventListener("DOMContentLoaded", () => {
               const saldo          = parseFloat(opt.dataset.saldo || 0);
               saldoInput.value       = `$${formatearImporte(saldo)}`;
               saldoInput.style.color = "#2e7d32";
-              fila.querySelector(".fila-saldo-imp").textContent =
-                  `Disponible: $${formatearImporte(saldo)}`;
           });
       }
 

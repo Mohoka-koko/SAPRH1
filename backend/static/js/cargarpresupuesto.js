@@ -118,7 +118,7 @@ async function cargarTabla() {
 // ── Cargar selects del modal ─────────────────────────────────────────────
 async function cargarSelectsModal() {
     // Programas
-    const respPrg = await fetch("/api/programas/");
+    const respPrg = await fetch("/api/programas-catalogo/");
     const dataPrg = await respPrg.json();
     llenarSelect(
         document.getElementById("prog"),
@@ -156,7 +156,7 @@ document.getElementById("prog").addEventListener("change", async function () {
     llenarSelect(selectAo, [], "id", () => "", "Seleccionar actividad...", true);
     if (!this.value) return;
 
-    const resp = await fetch(`/api/proyectos/?programa_id=${this.value}`);
+    const resp = await fetch(`/api/proyectos-catalogo/?programa_id=${this.value}`);
     const data = await resp.json();
     llenarSelect(
         selectPy, data.proyectos, "id",
@@ -171,7 +171,7 @@ document.getElementById("py").addEventListener("change", async function () {
     llenarSelect(selectAo, [], "id", () => "", "Seleccionar actividad...", true);
     if (!this.value) return;
 
-    const resp = await fetch(`/api/actividades/?proyecto_id=${this.value}`);
+    const resp = await fetch(`/api/actividades-catalogo/?proyecto_id=${this.value}`);
     const data = await resp.json();
     llenarSelect(
         selectAo, data.actividades, "id",

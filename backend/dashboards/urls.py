@@ -55,6 +55,7 @@ urlpatterns = [
     path('api/imputaciones-por-linea/', views.api_imputaciones_por_linea, name='api_imputaciones_por_linea'),
     path('api/historial-registros/', views.api_historial_registros, name='api_historial_registros'),
 
+
     # ── Carga de catálogos (CRUD genérico) ─────────────────────────────────
     path('api/catalogos/listar/', views.api_catalogos_listar, name='api_catalogos_listar'),
     path('api/catalogos/padres/', views.api_catalogos_padres, name='api_catalogos_padres'),
@@ -73,6 +74,9 @@ urlpatterns = [
     path('api/imputacion/<int:imputacion_id>/ups/', views.api_ups_imputacion, name='api_ups_imputacion'),
     path('api/orden-pago/crear/',                   views.api_crear_orden_pago, name='api_crear_orden_pago'),
     path('api/codigos-pago/', views.api_codigos_pago, name='api_codigos_pago'),
+    path('api/programas-catalogo/', views.api_programas_catalogo, name='api_programas_catalogo'),
+    path('api/proyectos-catalogo/', views.api_proyectos_catalogo, name='api_proyectos_catalogo'),
+    path('api/actividades-catalogo/', views.api_actividades_catalogo, name='api_actividades_catalogo'),
 
     # ── Otros dashboards ───────────────────────────────────────────────────
     path('usuariovip-dashboard/', views.usuariovip_dashboard, name='usuariovip_dashboard'),

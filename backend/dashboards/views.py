@@ -1422,6 +1422,42 @@ def api_programas(request):
     ).values('id', 'codigo_programa', 'nombre').order_by('codigo_programa')
     return JsonResponse({'programas': list(programas)})
 
+# ── Variantes SIN filtrar por líneas ya cargadas ──────────────────────────
+# Las de arriba (api_programas / api_proyectos / api_actividades) sólo
+# muestran lo que YA tiene una UP cargada — están pensadas para la cascada
+# de Imputación, donde hace falta que exista una línea previa para poder
+# imputar contra ella.
+# Estas devuelven el catálogo completo, para usarse en formularios donde
+# se está creando una UP nueva (ej: Cargar Presupuesto).
+@rol_requerido('admin', 'adminprincipal')
+def api_programas_catalogo(request):
+    programas = Programa.objects.all().values(
+        'id', 'codigo_programa', 'nombre'
+    ).order_by('codigo_programa')
+    return JsonResponse({'programas': list(programas)})
+
+@rol_requerido('admin', 'adminprincipal')
+def api_proyectos_catalogo(request):
+    programa_id = request.GET.get('programa_id')
+    if not programa_id:
+        return JsonResponse({'error': 'Falta programa_id'}, status=400)
+
+    proyectos = Proyecto.objects.filter(
+        programa_id=programa_id
+    ).values('id', 'nombre', 'codigo_proyecto').order_by('codigo_proyecto')
+    return JsonResponse({'proyectos': list(proyectos)})
+
+@rol_requerido('admin', 'adminprincipal')
+def api_actividades_catalogo(request):
+    proyecto_id = request.GET.get('proyecto_id')
+    if not proyecto_id:
+        return JsonResponse({'error': 'Falta proyecto_id'}, status=400)
+
+    actividades = ActividadObra.objects.filter(
+        proyecto_id=proyecto_id
+    ).values('id', 'nombre', 'codigo_act_obra').order_by('codigo_act_obra')
+    return JsonResponse({'actividades': list(actividades)})
+
 @rol_requerido('admin', 'adminprincipal')
 def api_proyectos(request):
     programa_id = request.GET.get('programa_id')

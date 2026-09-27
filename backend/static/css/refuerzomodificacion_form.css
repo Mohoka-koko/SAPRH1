@@ -159,13 +159,21 @@
 }
 
 /* ── Fila de selectores en cascada ─────────────────────────── */
+/* ── Grid de cabeceras y filas ─────────────────────────────── */
+.mf-cabecera-cascada,
 .fila-receptora-refuerzo {
     display: grid;
-    /* Agregamos la columna extra de 80px al final para FF */
-    grid-template-columns: 42px 80px 42px 80px 80px 100px 80px;
+    /* Modo General por defecto (7 columnas) */
+    grid-template-columns: 42px 80px 42px 80px 80px 100px 80px; 
     gap: 6px;
     align-items: center;
     margin-bottom: 8px;
+}
+
+/* ── Modo B / Imputación (8 columnas: suma el campo Imputación a la derecha de FF) ── */
+.mf-cabecera-cascada.modo-imputacion,
+.fila-receptora-refuerzo.modo-imputacion {
+    grid-template-columns: 42px 75px 42px 75px 75px 90px 75px minmax(150px, 1fr);
 }
 
 /* Todos los selectores e inputs dentro de la fila */

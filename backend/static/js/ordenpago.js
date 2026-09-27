@@ -101,33 +101,7 @@
      marcarValidacion(input, esValido, "Ingrese un importe numérico válido.");
      return esValido;
    }
-   
-   /**
-    * Valida que el campo tenga formato de fecha dd/mm/aaaa y sea una fecha real.
-    */
-   function validarFecha(input) {
-     const valor = input.value.trim();
-     const patron = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-     const coincidencia = valor.match(patron);
-   
-     if (!coincidencia) {
-       marcarValidacion(input, false, "Formato esperado: dd/mm/aaaa.");
-       return false;
-     }
-   
-     const dia = parseInt(coincidencia[1], 10);
-     const mes = parseInt(coincidencia[2], 10);
-     const anio = parseInt(coincidencia[3], 10);
-     const fecha = new Date(anio, mes - 1, dia);
-   
-     const esValida =
-       fecha.getFullYear() === anio &&
-       fecha.getMonth() === mes - 1 &&
-       fecha.getDate() === dia;
-   
-     marcarValidacion(input, esValida, "La fecha ingresada no es válida.");
-     return esValida;
-   }
+
    
    /**
     * Valida que un campo de texto obligatorio no esté vacío.
@@ -469,23 +443,16 @@
     
       const fechaVencimiento = document.getElementById("fechaVencimiento");
       fechaVencimiento.addEventListener("blur", () => validarFecha(fechaVencimiento));
-    
-      const fechaRentas = document.getElementById("fechaRentas");
-      fechaRentas.addEventListener("blur", () => {
-        if (fechaRentas.value.trim() !== "") {
-          validarFecha(fechaRentas);
-        }
-      });
    
-    const delegacionContable = document.getElementById("delegacionContable");
-    delegacionContable.addEventListener("blur", () => validarCampoObligatorio(delegacionContable));
-  
-    const expediente = document.getElementById("expediente");
-    expediente.addEventListener("blur", () => validarCampoObligatorio(expediente));
-  
-    const importeTotal = document.getElementById("importeTotal");
-    importeTotal.addEventListener("blur", () => validarImporte(importeTotal));
-  }
+      const delegacionContable = document.getElementById("delegacionContable");
+      delegacionContable.addEventListener("blur", () => validarCampoObligatorio(delegacionContable));
+    
+      const expediente = document.getElementById("expediente");
+      expediente.addEventListener("blur", () => validarCampoObligatorio(expediente));
+    
+      const importeTotal = document.getElementById("importeTotal");
+      importeTotal.addEventListener("blur", () => validarImporte(importeTotal));
+    }
    
   /* ------------------------------------------------------------------------
     INICIALIZACIÓN GENERAL DE EVENTOS
@@ -736,54 +703,67 @@
     importeLetras.value = numero > 0 ? numeroALetras(numero) : '';
   }
 
-  const fechaRentas = document.getElementById('fechaRentas');
-  if (fechaRentas) {
-    fechaRentas.addEventListener('change', () => {
-      const valor = fechaRentas.value; // viene como yyyy-mm-dd
-      if (!valor) return;
+  /* ------------------------------------------------------------------------
+    FECHA DE RENTAS GENERALES — selector con formato dd de mes de aaaa
+    ------------------------------------------------------------------------ */
+  const MESES_RENTAS = [
+    'enero','febrero','marzo','abril','mayo','junio',
+    'julio','agosto','septiembre','octubre','noviembre','diciembre'
+  ];
 
-      const [anio, mes, dia] = valor.split('-').map(Number);
-      const MESES = [
-        'enero','febrero','marzo','abril','mayo','junio',
-        'julio','agosto','septiembre','octubre','noviembre','diciembre'
-      ];
-
-      const formateada = `${dia} de ${MESES[mes - 1]} de ${anio}`;
-
-      // Reemplazar el input date por un input text con el valor formateado
-      const inputTexto       = document.createElement('input');
-      inputTexto.type        = 'text';
-      inputTexto.id          = 'fechaRentas';
-      inputTexto.className   = fechaRentas.className;
-      inputTexto.value       = formateada;
-      inputTexto.readOnly    = true;
-
-      // Botón para volver a cambiar la fecha
-      const btnCambiar       = document.createElement('button');
-      btnCambiar.type        = 'button';
-      btnCambiar.textContent = '✎';
-      btnCambiar.title       = 'Cambiar fecha';
-      btnCambiar.className   = 'btn-cambiar-fecha no-print';
-      btnCambiar.addEventListener('click', () => {
-        inputTexto.replaceWith(fechaRentasOriginal());
-      });
-
-      fechaRentas.replaceWith(inputTexto);
-      inputTexto.insertAdjacentElement('afterend', btnCambiar);
-    });
+  function formatearFechaRentas(valorISO) {
+    if (!valorISO) return '';
+    const [anio, mes, dia] = valorISO.split('-').map(Number);
+    return `${dia} de ${MESES_RENTAS[mes - 1]} de ${anio}`;
   }
 
-  // Función para restaurar el input date original
-  function fechaRentasOriginal() {
-    const input       = document.createElement('input');
-    input.type        = 'date';
-    input.id          = 'fechaRentas';
-    input.className   = 'input-linea centrado';
-    input.addEventListener('change', () => {
-      // reasignar el mismo listener
-      document.getElementById('fechaRentas')?.dispatchEvent(new Event('change'));
+  function mostrarFechaFormateada(contenedor, valorISO) {
+    contenedor.innerHTML = '';
+
+    const inputTexto     = document.createElement('input');
+    inputTexto.type      = 'text';
+    inputTexto.className = 'input-linea centrado';
+    inputTexto.value     = formatearFechaRentas(valorISO);
+    inputTexto.readOnly  = true;
+    inputTexto.dataset.valorIso = valorISO;
+
+    const btnCambiar       = document.createElement('button');
+    btnCambiar.type        = 'button';
+    btnCambiar.textContent = '✎';
+    btnCambiar.title       = 'Cambiar fecha';
+    btnCambiar.className   = 'btn-cambiar-fecha no-print';
+    btnCambiar.addEventListener('click', () => mostrarSelectorFecha(contenedor));
+
+    contenedor.appendChild(inputTexto);
+    contenedor.appendChild(btnCambiar);
+  }
+
+  function mostrarSelectorFecha(contenedor) {
+    // Leer valor previo ANTES de limpiar
+    const valorPrevio = contenedor.querySelector('[data-valor-iso]')?.dataset?.valorIso || '';
+
+    contenedor.innerHTML = '';
+
+    const inputDate     = document.createElement('input');
+    inputDate.type      = 'date';
+    inputDate.className = 'input-linea centrado';
+    inputDate.value     = valorPrevio;
+
+    inputDate.addEventListener('change', () => {
+      if (!inputDate.value) return;
+      mostrarFechaFormateada(contenedor, inputDate.value);
     });
-    return input;
+
+    contenedor.appendChild(inputDate);
+    inputDate.focus();
+  }
+
+  // Inicializar
+  const contenedorFechaRentas = document.getElementById('fechaRentasWrapper');
+  if (contenedorFechaRentas) {
+    const inputOriginal = document.getElementById('fechaRentas');
+    if (inputOriginal) inputOriginal.remove();
+    mostrarSelectorFecha(contenedorFechaRentas);
   }
 
   /* ------------------------------------------------------------------------
@@ -1135,6 +1115,14 @@
     recalcularImporteConcepto();
     autocompletarDesdeImputacion();
     cargarCodigosPago(); // ← agregar
+
+    // Inicializar: usar el wrapper, no el contenedor completo
+    const contenedorFechaRentas = document.getElementById('fechaRentasWrapper');
+    if (contenedorFechaRentas) {
+      const inputOriginal = document.getElementById('fechaRentas');
+      if (inputOriginal) inputOriginal.remove();
+      mostrarSelectorFecha(contenedorFechaRentas);
+    }
   
     const delegacion = document.getElementById("delegacionContable");
     if (delegacion) {
