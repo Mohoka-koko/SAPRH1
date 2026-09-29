@@ -565,7 +565,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const body = {
           fecha:             mFecha.value,
-          nro_expediente:    mExpediente.value.trim(),
+          nro_expediente:    mExpediente.value.trim() + "-GDESDE-APRH#MAMA",
           nro_decreto:       mDecreto.files[0] ? mDecreto.files[0].name : "",
           tipo_transferente: getModo(),
           transferentes,
@@ -617,68 +617,72 @@ document.addEventListener("DOMContentLoaded", () => {
   limpiarContenedor("bloque-importes-receptoras");
 
   if (MODO === "editar" && MODIFICACION) {
-      mFecha.value      = MODIFICACION.fecha || "";
-      mFecha.max        = new Date().toISOString().split("T")[0];
-      mExpediente.value = MODIFICACION.nro_expediente || "";
-      document.getElementById("m-decreto-nombre").textContent =
-          MODIFICACION.nro_decreto || "Sin archivos seleccionados";
+        mFecha.value      = MODIFICACION.fecha || "";
+        mFecha.max        = new Date().toISOString().split("T")[0];
+        const sufijo = "-GDESDE-APRH#MAMA";
+        const expCompleto = MODIFICACION.nro_expediente || "";
+        mExpediente.value = expCompleto.endsWith(sufijo)
+            ? expCompleto.slice(0, -sufijo.length)
+            : expCompleto;
+        document.getElementById("m-decreto-nombre").textContent =
+            MODIFICACION.nro_decreto || "Sin archivos seleccionados";
 
-      // Restaurar modo del radio button
-      const tipoGuardado = MODIFICACION.tipo_transferente || 'general';
-      const radioRestore = document.querySelector(`input[name="tipoUpTransferente"][value="${tipoGuardado}"]`);
-      if (radioRestore) radioRestore.checked = true;
+        // Restaurar modo del radio button
+        const tipoGuardado = MODIFICACION.tipo_transferente || 'general';
+        const radioRestore = document.querySelector(`input[name="tipoUpTransferente"][value="${tipoGuardado}"]`);
+        if (radioRestore) radioRestore.checked = true;
 
-      (MODIFICACION.transferentes || []).forEach(t =>
-          crearFilaTransferente(
-              "contenedor-transferentes",
-              "bloque-saldos-transferentes",
-              "bloque-importes-transferentes",
-              {
-                  programa_id:           t.programa_id,
-                  proyecto_id:           t.proyecto_id,
-                  actividad_id:          t.actividad_id,
-                  partida_id:            t.partida_id,
-                  fuente_id:             t.fuente_id,
-                  linea_id:              t.linea_id,
-                  importe:               t.importe,
-                  imputacion_detalle_id: t.imputacion_detalle_id || null,
-              },
-              actualizarTotales
-          )
-      );
+        (MODIFICACION.transferentes || []).forEach(t =>
+            crearFilaTransferente(
+                "contenedor-transferentes",
+                "bloque-saldos-transferentes",
+                "bloque-importes-transferentes",
+                {
+                    programa_id:           t.programa_id,
+                    proyecto_id:           t.proyecto_id,
+                    actividad_id:          t.actividad_id,
+                    partida_id:            t.partida_id,
+                    fuente_id:             t.fuente_id,
+                    linea_id:              t.linea_id,
+                    importe:               t.importe,
+                    imputacion_detalle_id: t.imputacion_detalle_id || null,
+                },
+                actualizarTotales
+            )
+        );
 
-      (MODIFICACION.receptoras || []).forEach(r =>
-          crearFilaReceptora(
-              "contenedor-receptoras",
-              "bloque-saldos-receptoras",
-              "bloque-importes-receptoras",
-              {
-                  programa_id:  r.programa_id,
-                  proyecto_id:  r.proyecto_id,
-                  actividad_id: r.actividad_id,
-                  partida_id:   r.partida_id,
-                  fuente_id:    r.fuente_id,
-                  linea_id:     r.linea_id,
-                  importe:      r.importe,
-              },
-              actualizarTotales
-          )
-      );
+        (MODIFICACION.receptoras || []).forEach(r =>
+            crearFilaReceptora(
+                "contenedor-receptoras",
+                "bloque-saldos-receptoras",
+                "bloque-importes-receptoras",
+                {
+                    programa_id:  r.programa_id,
+                    proyecto_id:  r.proyecto_id,
+                    actividad_id: r.actividad_id,
+                    partida_id:   r.partida_id,
+                    fuente_id:    r.fuente_id,
+                    linea_id:     r.linea_id,
+                    importe:      r.importe,
+                },
+                actualizarTotales
+            )
+        );
 
-  } else {
-      crearFilaTransferente(
-          "contenedor-transferentes",
-          "bloque-saldos-transferentes",
-          "bloque-importes-transferentes",
-          {}, actualizarTotales
-      );
-      crearFilaReceptora(
-          "contenedor-receptoras",
-          "bloque-saldos-receptoras",
-          "bloque-importes-receptoras",
-          {}, actualizarTotales
-      );
-  }
+    } else {
+        crearFilaTransferente(
+            "contenedor-transferentes",
+            "bloque-saldos-transferentes",
+            "bloque-importes-transferentes",
+            {}, actualizarTotales
+        );
+        crearFilaReceptora(
+            "contenedor-receptoras",
+            "bloque-saldos-receptoras",
+            "bloque-importes-receptoras",
+            {}, actualizarTotales
+        );
+    }
 
-  actualizarTotales();
+    actualizarTotales();
 });

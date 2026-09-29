@@ -52,16 +52,82 @@ body {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
+/* ========================================
+   EMBLEMA CIRCULAR PLATEADO Y NEÓN (LOGO S.A.P.R.H)
+======================================== */
 .logo {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
-.logo img {
-    width: 32px;
+/* Marco exterior metálico plateado con pulido circular */
+/* Marco exterior metálico plateado - Tamaño aumentado a 56px */
+.logo-emblem-container {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    padding: 3.5px;
+    background: conic-gradient(
+        from 180deg at 50% 50%,
+        #f3f4f6 0deg,
+        #9ca3af 45deg,
+        #ffffff 90deg,
+        #6b7280 135deg,
+        #f9fafb 180deg,
+        #9ca3af 225deg,
+        #ffffff 270deg,
+        #4b5563 315deg,
+        #f3f4f6 360deg
+    );
+    box-shadow: 
+        0 4px 10px rgba(0, 0, 0, 0.4),
+        inset 0 1px 1px rgba(255, 255, 255, 0.9),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Anillo interno con brillo neón azul futurista */
+.logo-emblem-outer {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    padding: 2.5px;
+    background: #ffffff;
+    box-shadow: 
+        inset 0 0 5px #00d2ff,
+        inset 0 0 10px rgba(0, 102, 255, 0.75),
+        0 0 4px rgba(0, 210, 255, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Fondo blanco limpio perfectamente centrado para la imagen */
+.logo-emblem-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 4px;
+}
+
+/* Estilo para la imagen del logo dentro del círculo */
+.logo-emblem-inner img {
+    max-width: 88%;
+    max-height: 88%;
+    width: auto;
     height: auto;
-    border-radius: 4px;
+    object-fit: contain;
+    border-radius: 0;
+    display: block;
 }
 
 .logo h1 {

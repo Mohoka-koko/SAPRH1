@@ -417,7 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
       const body = {
         fecha:          mFecha.value,
-        nro_expediente: mExpediente.value.trim(),
+        nro_expediente: mExpediente.value.trim() + "-GDESDE-APRH#MAMA",
         nro_decreto:    mDecreto.files[0] ? mDecreto.files[0].name : "",
         detalles:       filas.map(f => ({ linea_id: f.linea_id, importe: f.importe })),
       };
@@ -466,7 +466,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (MODO === "editar" && REFUERZO) {
       mFecha.value        = REFUERZO.fecha || "";
       mFecha.max = new Date().toISOString().split("T")[0];
-      mExpediente.value   = REFUERZO.nro_expediente || "";
+      const sufijo = "-GDESDE-APRH#MAMA";
+      const expCompleto = REFUERZO.nro_expediente || "";
+      mExpediente.value = expCompleto.endsWith(sufijo)
+          ? expCompleto.slice(0, -sufijo.length)
+          : expCompleto;
       mImporteTotal.value = REFUERZO.importe_total ? formatearImporte(parseFloat(REFUERZO.importe_total)) : "";
       document.getElementById("m-decreto-nombre").textContent =
         REFUERZO.nro_decreto || "Sin archivos seleccionados";

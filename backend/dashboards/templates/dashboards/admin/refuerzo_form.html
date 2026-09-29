@@ -13,6 +13,15 @@
         <div class="mf-titulo">
             {% if modo == 'crear' %}NUEVO REFUERZO{% else %}EDITAR REFUERZO{% endif %}
         </div>
+
+        <!-- ENCABEZADO INSTITUCIONAL -->
+        <div class="mf-encabezado-institucional">
+            <img src="{% static 'img/logo1.png' %}" alt="Logo Institucional" class="mf-encabezado-logo" />
+            <div class="mf-encabezado-texto">
+                <span class="mf-encabezado-titulo">ADM. PCIAL. DE RECURSOS HIDRICOS</span>
+                <span class="mf-encabezado-subtitulo">Santiago del Estero</span>
+            </div>
+        </div>
     
         <!-- SECCIÓN 1: DATOS DEL REFUERZO -->
         <div class="mf-card">
@@ -88,8 +97,15 @@
                 </div>
                 <div class="mf-campo">
                     <label>N° Expediente</label>
-                    <input type="text" id="m-expediente" placeholder="Ej: EXP-2023-001234" />
-                </div>            
+                    <div style="display:flex; align-items:center; border:1px solid #c8cdd6; border-radius:4px; overflow:hidden; background:#fff;">
+                        <input type="text" id="m-expediente" placeholder="Ej: EX-2026-00123"
+                               style="flex:1; border:none; outline:none; padding:8px 10px; font-size:0.88rem;" />
+                        <span style="padding:8px 10px; background:#f0f2f5; color:#3a4a5c; font-size:0.85rem;
+                                     font-weight:600; border-left:1px solid #c8cdd6; white-space:nowrap;">
+                            -GDESDE-APRH#MAMA
+                        </span>
+                    </div>
+                </div>          
                 <div class="mf-campo">
                     <label>Fecha</label>
                     <input type="date" id="m-fecha" />

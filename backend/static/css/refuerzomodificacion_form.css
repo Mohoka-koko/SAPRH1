@@ -86,6 +86,49 @@
 
 .mf-card-icon { font-size: 1rem; opacity: 0.7; }
 
+/* ── Encabezado Institucional ────────────────────────────────── */
+.mf-encabezado-institucional {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background-color: #ffffff;
+    border: 0.5px solid var(--mf-border);
+    border-radius: 12px;
+    padding: 16px 24px;
+    margin-bottom: 24px;
+    
+    /* Mismo sombreado reforzado en dos capas que utiliza .mf-card */
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16), 0 6px 10px rgba(0, 0, 0, 0.12);
+}
+
+.mf-encabezado-logo {
+    height: 55px;
+    width: auto;
+    object-fit: contain;
+}
+
+.mf-encabezado-texto {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+.mf-encabezado-titulo {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--mf-header-text);
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+
+.mf-encabezado-subtitulo {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--mf-label-text);
+    letter-spacing: 0.3px;
+}
+
 /* ── Layout principal de la sección de unidades ─────────────── */
 /* Grid de 2 columnas: unidades (izq) | importe (der) */
 .mf-transfer-grid {
