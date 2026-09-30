@@ -31,16 +31,16 @@ body{
 .layout-principal{
     display:flex;
     align-items:flex-start;
-    gap:22px;
+    gap:14px;
 }
 
 .panel-lateral{
-    flex:0 0 260px;
+    flex:0 0 190px;
     display:flex;
     flex-direction:column;
-    gap:18px;
+    gap:14px;
     background:white;
-    padding:22px;
+    padding:14px;
     border-radius:var(--radio-card);
     box-shadow:var(--sombra-card);
     position:sticky;
@@ -48,17 +48,17 @@ body{
 }
 
 .panel-jurisdiccion{
-    line-height:1.6;
+    line-height:1.5;
     color:var(--gris-texto);
-    font-size:14px;
-    padding-bottom:16px;
+    font-size:13px;
+    padding-bottom:12px;
     border-bottom:1px solid var(--gris-borde);
 }
 
 .panel-jurisdiccion strong{
     display:block;
     color:var(--azul-oscuro);
-    font-size:15px;
+    font-size:14px;
     margin-bottom:2px;
 }
 
@@ -71,6 +71,7 @@ body{
 .panel-acciones button{
     width:100%;
     text-align:center;
+    padding:10px 12px;
 }
 
 #btnCrearUP{
@@ -86,7 +87,7 @@ body{
 }
 
 .panel-buscador{
-    padding-top:16px;
+    padding-top:12px;
     border-top:1px solid var(--gris-borde);
 }
 
@@ -94,7 +95,7 @@ body{
     display:block;
     font-weight:600;
     color:var(--azul-oscuro);
-    font-size:13px;
+    font-size:12px;
     text-transform:uppercase;
     letter-spacing:.4px;
     margin-bottom:6px;
@@ -129,7 +130,7 @@ input:focus{
 #buscador{
     width:100%;
     margin:0;
-    padding:10px 14px;
+    padding:10px 12px;
 }
 
 /* ---------- Botones ---------- */
@@ -214,7 +215,7 @@ button:disabled:hover{
 /* ---------- Tabla ---------- */
 table {
     width: 100%;
-    min-width: 1080px;
+    min-width: 0;
     border-collapse: collapse;
     background: white;
     border-radius: var(--radio-card);
@@ -236,10 +237,10 @@ thead{
 }
 
 th{
-    padding:14px 12px;
-    font-size:13px;
+    padding:10px 6px;
+    font-size:11.5px;
     text-transform:uppercase;
-    letter-spacing:.5px;
+    letter-spacing:.3px;
     font-weight:600;
     border:none;
     border-right:1px solid rgba(255,255,255,.12);
@@ -250,10 +251,10 @@ th:last-child{
 }
 
 td{
-    padding:12px;
+    padding:9px 6px;
     border-bottom:1px solid var(--gris-borde);
     text-align:center;
-    font-size:14px;
+    font-size:13px;
     color:#2b2f36;
 }
 
@@ -269,31 +270,27 @@ tbody tr:last-child td{
     border-bottom:none;
 }
 
+/* Columna 6: Denominación */
 td:nth-child(6),
 th:nth-child(6){
     text-align:left;
     font-weight:500;
     white-space: normal;
-    line-height:1.45;
+    line-height:1.35;
     overflow-wrap: anywhere;
     word-break: break-word;
-    min-width: 260px;
-    max-width: 320px;
+    min-width: 150px;
+    max-width: 240px;
 }
 
+/* Columna 9: Presupuesto inicial */
 th:nth-child(9),
 td:nth-child(9){
-    min-width: 180px;
-    white-space: normal;
+    min-width: 120px;
+    white-space: nowrap;
 }
 
 td:nth-child(9){
-    text-align:right;
-    font-weight:700;
-    color:var(--verde);
-}
-
-td:last-child{
     text-align:right;
     font-weight:700;
     color:var(--verde);
@@ -305,10 +302,14 @@ tfoot{
 }
 
 tfoot td{
-    padding:16px;
-    font-size:15px;
+    padding:12px 8px;
+    font-size:14px;
     color:var(--azul-oscuro);
     border-bottom:none;
+}
+
+tfoot td#totalGeneral{
+    text-align:right;
 }
 
 tfoot td#totalGeneral.total-ok{
@@ -561,7 +562,7 @@ tfoot td#totalGeneral.total-descuadrado{
 
     th,
     td {
-        padding: 8px;
+        padding: 8px 6px;
     }
 
     .layout-principal{
