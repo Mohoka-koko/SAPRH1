@@ -35,6 +35,9 @@ function setupBudgetAlert() {
   const displayedExerciseYear = today.getFullYear();
   const requiredBudgetYear = displayedExerciseYear + 1;
   const storageKey = `budget-creation-started-${requiredBudgetYear}`;
+  const finalizedStorageKey = `budget-creation-finalized-${requiredBudgetYear}`;
+
+  if (localStorage.getItem(finalizedStorageKey) === "true") return;
 
   document.getElementById("displayedExerciseYear").textContent = displayedExerciseYear;
   document.getElementById("requiredBudgetYear").textContent = requiredBudgetYear;

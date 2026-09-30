@@ -77,6 +77,50 @@ function validarPresupuestoGeneral() {
     }
 }
 
+let mensajeCambiosTimeout;
+
+function mostrarMensajeCambiosActualizados() {
+    const mensaje = document.getElementById("mensajeCambiosActualizados");
+    mensaje.hidden = false;
+    window.clearTimeout(mensajeCambiosTimeout);
+    mensajeCambiosTimeout = window.setTimeout(() => {
+        mensaje.hidden = true;
+    }, 4000);
+}
+
+function guardarCambiosPresupuesto() {
+    validarPresupuestoGeneral();
+    mostrarMensajeCambiosActualizados();
+}
+
+function abrirConfirmacionFinalizacion() {
+    document.getElementById("anioFinalizacion").textContent = new Date().getFullYear();
+    document.getElementById("confirmacionFinalizacion").hidden = false;
+    document.getElementById("btnCancelarFinalizacion").focus();
+}
+
+function cancelarFinalizacion() {
+    document.getElementById("confirmacionFinalizacion").hidden = true;
+    document.getElementById("btnFinalizarCarga").focus();
+}
+
+function confirmarFinalizacion() {
+    const anioPresupuesto = new Date().getFullYear() + 1;
+    localStorage.setItem(`budget-creation-finalized-${anioPresupuesto}`, "true");
+    window.location.assign("/admin-dashboard/home/");
+}
+
+document.getElementById("btnGuardarCambios").addEventListener("click", guardarCambiosPresupuesto);
+document.getElementById("btnFinalizarCarga").addEventListener("click", abrirConfirmacionFinalizacion);
+document.getElementById("btnCancelarFinalizacion").addEventListener("click", cancelarFinalizacion);
+document.getElementById("btnConfirmarFinalizacion").addEventListener("click", confirmarFinalizacion);
+
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !document.getElementById("confirmacionFinalizacion").hidden) {
+        cancelarFinalizacion();
+    }
+});
+
 // ── Cargar tabla al iniciar ──────────────────────────────────────────────
 async function cargarTabla() {
     try {

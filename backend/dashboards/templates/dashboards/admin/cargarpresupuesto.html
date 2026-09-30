@@ -119,6 +119,45 @@
 
 </div>
 
+<div class="acciones-flotantes-presupuesto">
+    <button type="button" id="btnGuardarCambios" class="btn-accion-presupuesto btn-guardar-cambios">
+        Guardar cambios
+    </button>
+    <button type="button" id="btnFinalizarCarga" class="btn-accion-presupuesto btn-finalizar-carga">
+        Finalizar carga de presupuesto
+    </button>
+</div>
+
+<div
+    id="mensajeCambiosActualizados"
+    class="mensaje-flotante-presupuesto"
+    role="status"
+    aria-live="polite"
+    hidden>
+    CAMBIOS ACTUALIZADOS
+</div>
+
+<section
+    id="confirmacionFinalizacion"
+    class="confirmacion-finalizacion"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="textoConfirmacionFinalizacion"
+    hidden>
+    <p id="textoConfirmacionFinalizacion">
+        USTED ESTÁ POR FINALIZAR CON LA CARGA DE PRESUPUESTO
+        <span id="anioFinalizacion"></span>.
+        ¿ESTÁ SEGURO DE CONTINUAR?
+    </p>
+    <div class="acciones-confirmacion-finalizacion">
+        <button type="button" id="btnCancelarFinalizacion" class="btn-cancelar-finalizacion">
+            NO, AÚN NO FINALICE
+        </button>
+        <button type="button" id="btnConfirmarFinalizacion" class="btn-confirmar-finalizacion">
+            SÍ, ESTOY SEGURO
+        </button>
+    </div>
+</section>
 
 <!-- =========================================================
      MODAL: CREAR PRESUPUESTO
