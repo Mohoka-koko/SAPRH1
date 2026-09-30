@@ -26,8 +26,66 @@ function mostrarToast(mensaje) {
 
 
 /* ==========================================================================
-   TABLA DE PRESUPUESTO
+   CONTROL DE PRESUPUESTO GENERAL (Faltante)
    ========================================================================== */
+const CLAVE_STORAGE_PRESUPUESTO = "presupuestoGeneralInicial";
+let totalGeneralCalculado = 0;
+
+function restaurarPresupuestoGeneral() {
+    const guardado = localStorage.getItem(CLAVE_STORAGE_PRESUPUESTO);
+    if (guardado !== null) {
+        // Asegúrate de que el input exista en el HTML donde usas crear_partida.js
+        const input = document.getElementById("presupuestoGeneralInicial");
+        if(input) input.value = guardado;
+    }
+}
+
+function validarPresupuestoGeneral() {
+    const input = document.getElementById("presupuestoGeneralInicial");
+    const btnCrear = document.getElementById("btnCrearPresupuesto"); 
+    const alerta = document.getElementById("alertaDescuadre");
+    const celdaTotal = document.getElementById("totalGeneral");
+
+    // Si los elementos no existen en esta vista, evitamos errores
+    if (!input || !celdaTotal) return;
+
+    const valor = parseFloat(input.value);
+    const tieneValor = input.value.trim() !== "" && !isNaN(valor) && valor > 0;
+
+    // Persistimos el valor para no perderlo
+    if (tieneValor) {
+        localStorage.setItem(CLAVE_STORAGE_PRESUPUESTO, input.value);
+    } else {
+        localStorage.removeItem(CLAVE_STORAGE_PRESUPUESTO);
+    }
+
+    // Sin valor cargado: botón bloqueado, sin comparación todavía
+    if (!tieneValor) {
+        if(btnCrear) btnCrear.disabled = true;
+        if(alerta) alerta.style.display = "none";
+        celdaTotal.classList.remove("total-ok", "total-descuadrado");
+        return;
+    }
+
+    // El total cargado no debe superar el presupuesto general disponible
+    const excedido = totalGeneralCalculado - valor > 0.01;
+
+    if (!excedido) {
+        if(btnCrear) btnCrear.disabled = false;
+        if(alerta) alerta.style.display = "none";
+        celdaTotal.classList.remove("total-descuadrado");
+        celdaTotal.classList.add("total-ok");
+    } else {
+        if(btnCrear) btnCrear.disabled = true;
+        if(alerta) alerta.style.display = "inline-block";
+        celdaTotal.classList.remove("total-ok");
+        celdaTotal.classList.add("total-descuadrado");
+    }
+}
+
+/* ==========================================================================
+    TABLA DE PRESUPUESTO (Actualizada)
+    ========================================================================== */
 async function cargarTabla() {
     try {
         const resp = await fetch("/api/linea-presupuestaria/listar/");
@@ -52,12 +110,14 @@ async function cargarTabla() {
             total += parseFloat(l.saldo_inicial);
         });
 
-        
+        // Almacenar el total en la variable global para la validación
+        totalGeneralCalculado = total;
 
         document.getElementById("totalGeneral").textContent =
             "$" + total.toLocaleString("es-AR", { minimumFractionDigits: 2 });
 
-      
+        // Revalida contra lo que haya cargado en el campo de presupuesto general
+        validarPresupuestoGeneral();
 
     } catch (err) {
         console.error("Error cargando tabla:", err);
@@ -118,7 +178,7 @@ async function guardarPartida() {
 /* ==========================================================================
    MODAL: CREAR UP (Unidad Presupuestaria)
    ========================================================================== */
-async function cargarSelectsUP() {
+   async function cargarSelectsUP() {
     const respPrg = await fetch("/api/programas/");
     const dataPrg = await respPrg.json();
     llenarSelect(
@@ -192,6 +252,7 @@ document.getElementById("partida").addEventListener("change", function () {
 
 function abrirModalUP() {
     document.getElementById("modalUP").style.display = "block";
+    limpiarFormularioUP(); // Resetea el formulario y bloquea presupuesto en '00,00'
     cargarSelectsUP();
 }
 
@@ -207,20 +268,27 @@ function limpiarFormularioUP() {
     document.getElementById("partida").innerHTML = '<option value="">Seleccionar partida...</option>';
     document.getElementById("fuente").innerHTML  = '<option value="">Seleccionar fuente...</option>';
     document.getElementById("nombre").value      = "";
-    document.getElementById("presupuesto").value = "";
+    
+    // Fijar presupuesto en '00,00' y dejarlo no editable
+    const inputPresupuesto = document.getElementById("presupuesto");
+    if (inputPresupuesto) {
+        inputPresupuesto.value = "00,00";
+        inputPresupuesto.readOnly = true;
+    }
+
     document.getElementById("py").disabled       = true;
     document.getElementById("ao").disabled       = true;
 }
 
 async function guardarUP() {
-    const progId      = document.getElementById("prog").value;
-    const pyId        = document.getElementById("py").value;
-    const aoId        = document.getElementById("ao").value;
-    const partidaId   = document.getElementById("partida").value;
-    const fuenteId    = document.getElementById("fuente").value;
-    const presupuesto = document.getElementById("presupuesto").value;
+    const progId    = document.getElementById("prog").value;
+    const pyId      = document.getElementById("py").value;
+    const aoId      = document.getElementById("ao").value;
+    const partidaId = document.getElementById("partida").value;
+    const fuenteId  = document.getElementById("fuente").value;
 
-    if (!progId || !pyId || !aoId || !partidaId || !fuenteId || !presupuesto) {
+    // Se quitó la validación de presupuesto porque ya no es ingresado por el usuario
+    if (!progId || !pyId || !aoId || !partidaId || !fuenteId) {
         alert("Completá todos los campos antes de guardar.");
         return;
     }
@@ -231,7 +299,7 @@ async function guardarUP() {
         actividad_id:        aoId,
         partida_id:          partidaId,
         fuente_id:           fuenteId,
-        presupuesto_inicial: presupuesto,
+        presupuesto_inicial: "00,00", // Se guarda en 00,00
     };
 
     try {

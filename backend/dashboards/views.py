@@ -287,15 +287,21 @@ def api_crear_linea_presupuestaria(request):
     fuente_id    = body.get('fuente_id')
     presupuesto  = body.get('presupuesto_inicial')
 
-    if not all([programa_id, proyecto_id, actividad_id, partida_id, fuente_id, presupuesto]):
+    # 1. Verificar presencia sin que el número 0 sea considerado "vacio"
+    campos_requeridos = [programa_id, proyecto_id, actividad_id, partida_id, fuente_id]
+    if any(x is None or x == '' for x in campos_requeridos) or presupuesto is None or presupuesto == '':
         return JsonResponse({'error': 'Faltan campos obligatorios'}, status=400)
 
     try:
-        presupuesto = Decimal(str(presupuesto))
-        if presupuesto <= 0:
-            raise ValueError()
+        # 2. Formatear reemplazando coma por punto si viene como string
+        presupuesto_str = str(presupuesto).replace(',', '.')
+        presupuesto = Decimal(presupuesto_str)
+        
+        # 3. Permitir 0 y bloquear únicamente valores negativos
+        if presupuesto < 0:
+            return JsonResponse({'error': 'El presupuesto inicial no puede ser negativo'}, status=400)
     except Exception:
-        return JsonResponse({'error': 'El presupuesto inicial debe ser mayor a cero'}, status=400)
+        return JsonResponse({'error': 'El formato del presupuesto inicial es inválido'}, status=400)
 
     ejercicio = timezone.now().year
 
@@ -1035,7 +1041,6 @@ def modificacion_crear(request):
     return render(request, 'dashboards/admin/modificacion_form.html', context)
 
 @rol_requerido('admin', 'adminprincipal')
-@rol_requerido('admin', 'adminprincipal')
 def modificacion_editar(request, modificacion_id):
     import json as _json
     modificacion  = get_object_or_404(Modificacion, id=modificacion_id)
@@ -1089,6 +1094,64 @@ def modificacion_editar(request, modificacion_id):
     context = {
         'usuario':      request.user,
         'modo':         'editar',
+        'modificacion': _json.dumps(datos),
+    }
+    return render(request, 'dashboards/admin/modificacion_form.html', context)
+
+@rol_requerido('admin', 'adminprincipal')
+def modificacion_ver(request, modificacion_id):
+    import json as _json
+    modificacion  = get_object_or_404(Modificacion, id=modificacion_id)
+    transferentes = ModificacionTransferente.objects.filter(
+        modificacion=modificacion
+    ).select_related(
+        'linea_origen__programa', 'linea_origen__proyecto',
+        'linea_origen__actividad_obra', 'linea_origen__partida',
+        'linea_origen__fuente_financiamiento'
+    )
+    receptoras = ModificacionReceptora.objects.filter(
+        modificacion=modificacion
+    ).select_related(
+        'linea_destino__programa', 'linea_destino__proyecto',
+        'linea_destino__actividad_obra', 'linea_destino__partida',
+        'linea_destino__fuente_financiamiento'
+    )
+    datos = {
+        'id':               modificacion.id,
+        'fecha':            modificacion.fecha.strftime('%Y-%m-%d'),
+        'nro_expediente':   modificacion.nro_expediente,
+        'nro_decreto':      modificacion.nro_decreto,
+        'importe_total':    str(modificacion.importe_total),
+        'tipo_transferente': modificacion.tipo_transferente,
+        'transferentes': [
+            {
+                'linea_id':     t.linea_origen.id,
+                'importe':      str(t.importe),
+                'programa_id':  t.linea_origen.programa.id,
+                'proyecto_id':  t.linea_origen.proyecto.id,
+                'actividad_id': t.linea_origen.actividad_obra.id,
+                'partida_id':   t.linea_origen.partida.id,
+                'fuente_id':    t.linea_origen.fuente_financiamiento.id,
+                'imputacion_detalle_id': t.imputacion_detalle_id,
+            }
+            for t in transferentes
+        ],
+        'receptoras': [
+            {
+                'linea_id':     r.linea_destino.id,
+                'importe':      str(r.importe),
+                'programa_id':  r.linea_destino.programa.id,
+                'proyecto_id':  r.linea_destino.proyecto.id,
+                'actividad_id': r.linea_destino.actividad_obra.id,
+                'partida_id':   r.linea_destino.partida.id,
+                'fuente_id':    r.linea_destino.fuente_financiamiento.id,
+            }
+            for r in receptoras
+        ],
+    }
+    context = {
+        'usuario':      request.user,
+        'modo':         'ver',
         'modificacion': _json.dumps(datos),
     }
     return render(request, 'dashboards/admin/modificacion_form.html', context)

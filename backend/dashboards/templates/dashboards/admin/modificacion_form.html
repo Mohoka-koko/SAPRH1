@@ -11,7 +11,7 @@
 
         <!-- TÍTULO -->
         <div class="mf-titulo">
-            {% if modo == 'crear' %}NUEVA MODIFICACIÓN{% else %}EDITAR MODIFICACIÓN{% endif %}
+            {% if modo == 'crear' %}NUEVA MODIFICACIÓN{% elif modo == 'editar' %}EDITAR MODIFICACIÓN{% else %}VER MODIFICACIÓN{% endif %}
         </div>
 
         <!-- ENCABEZADO INSTITUCIONAL -->
@@ -172,7 +172,7 @@
         </div>
     
         <!-- ACCIONES FLOTANTES -->
-        <div class="mf-acciones">
+        <div class="mf-acciones" {% if modo == 'ver' %}style="display:none;"{% endif %}>
             <a href="{% url 'modificacion' %}" class="mf-btn mf-btn-cancelar">
                 <span class="mf-btn-icono"><i class="fa-solid fa-xmark"></i></span>
                 <span class="mf-btn-texto">Cancelar</span>

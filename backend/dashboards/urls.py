@@ -77,6 +77,7 @@ urlpatterns = [
     path('api/programas-catalogo/', views.api_programas_catalogo, name='api_programas_catalogo'),
     path('api/proyectos-catalogo/', views.api_proyectos_catalogo, name='api_proyectos_catalogo'),
     path('api/actividades-catalogo/', views.api_actividades_catalogo, name='api_actividades_catalogo'),
+    path('modificacion/ver/<int:modificacion_id>/', views.modificacion_ver, name='modificacion_ver'),
 
     # ── Otros dashboards ───────────────────────────────────────────────────
     path('usuariovip-dashboard/', views.usuariovip_dashboard, name='usuariovip_dashboard'),

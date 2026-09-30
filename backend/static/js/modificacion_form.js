@@ -6,6 +6,24 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
+    // ─── MODO VER: deshabilitar todos los controles ───────────────────────────
+    if (MODO === 'ver') {
+        // Deshabilitar radios de tipo UP
+        document.querySelectorAll('input[name="tipoUpTransferente"]').forEach(r => r.disabled = true);
+        // Deshabilitar botones +
+        const btnAgregarT = document.getElementById("btn-agregar-transferente");
+        const btnAgregarR = document.getElementById("btn-agregar-receptora");
+        if (btnAgregarT) btnAgregarT.style.display = "none";
+        if (btnAgregarR) btnAgregarR.style.display = "none";
+        // Deshabilitar campos de info adicional
+        ["m-expediente", "m-fecha", "m-usuario", "m-importe", "m-decreto"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = true;
+        });
+        document.getElementById("m-decreto-nombre") && 
+        (document.querySelector(".mf-file-btn").style.display = "none");
+    }
+
     // ─── UTILIDADES ───────────────────────────────────────────────────────────
     function formatearImporte(num) {
         if (num === null || num === undefined || num === "") return "";
@@ -400,6 +418,8 @@ document.addEventListener("DOMContentLoaded", () => {
             importeWrapper.remove();
             onCambio();
         });
+        // Después de crear btnEliminar:
+        if (MODO === 'ver') btnEliminar.style.display = "none";
     }
 
     // ─── CREAR FILA RECEPTORA (siempre Modo A) ────────────────────────────────
