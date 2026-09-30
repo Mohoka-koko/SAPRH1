@@ -94,7 +94,7 @@
     background-color: #ffffff;
     border: 0.5px solid var(--mf-border);
     border-radius: 12px;
-    padding: 16px 24px;
+    padding: 24px 24px; /* Aumentado el padding vertical (de 16px a 24px) para dar más alto al contenedor */
     margin-bottom: 24px;
     
     /* Mismo sombreado reforzado en dos capas que utiliza .mf-card */
@@ -102,9 +102,14 @@
 }
 
 .mf-encabezado-logo {
-    height: 55px;
+    height: 65px;
     width: auto;
     object-fit: contain;
+    
+    /* Borde negro fino y un ligero espacio interno (padding) alrededor de la imagen */
+    border: 1px solid #000000;
+    padding: 4px;
+    box-sizing: border-box; /* Asegura que el border y padding no deformen la imagen */
 }
 
 .mf-encabezado-texto {
@@ -623,9 +628,13 @@ span.mf-total-input.error-total {
         padding 0.3s ease;
 }
 
+/* Ajuste en el contenedor del ícono para Font Awesome */
 .mf-btn-icono {
-    font-size: 1.2rem;
-    display: inline-block;
+    font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
     transition: transform 0.3s ease;
 }
 
@@ -674,13 +683,9 @@ span.mf-total-input.error-total {
     box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
 }
 .mf-btn-exportar:hover { background: #1e293b; box-shadow: 0 0 16px rgba(15, 23, 42, 0.6); }
-
-.mf-btn-limpiar {
-    background: #e2e8f0;
-    color: #334155;
-    border: 1px solid #cbd5e1;
+.mf-btn-exportar:hover .mf-btn-icono {
+    color: #ef4444; /* Rojo moderno (o usa #ff0000 si prefieres rojo puro) */
 }
-.mf-btn-limpiar:hover { background: #cbd5e1; color: #0f172a; box-shadow: 0 0 14px rgba(100, 116, 139, 0.5); }
 
 .mf-btn-cancelar {
     background: #ffffff;

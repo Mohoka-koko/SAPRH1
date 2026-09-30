@@ -119,6 +119,13 @@
   color: #2563eb;
 }
 
+/* Celda de expediente */
+.expediente-cell{
+  white-space: normal; /* Sobrescribe el 'nowrap' general de la tabla */
+  overflow-wrap: anywhere; /* Fuerza el corte de palabras largas sin espacios (ej: nombres de PDF) */
+  max-width: 260px; /* Define un tope máximo de ancho. Ajusta este valor si lo deseas */
+}
+
 /* Celda usuario con ícono */
 .usuario-cell {
   display: flex;

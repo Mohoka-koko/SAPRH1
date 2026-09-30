@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ─── COLUMNAS PRINCIPALES ─────────────────────────────────────────────────
   const columnas = [
     { key: "fecha", label: "FECHA", valor: (r) => `<span class="font-medium text-slate-800">${formatearFecha(r.fecha)}</span>` },
-    { key: "expediente", label: "EXPEDIENTE", valor: (r) => r.expediente },
+    { key: "expediente", label: "EXPEDIENTE", valor: (r) => `<span class="expediente-cell">${r.expediente}</span>` },
     { key: "usuario", label: "USUARIO", valor: (r) => `
         <div class="usuario-cell">
           <div class="usuario-avatar">
