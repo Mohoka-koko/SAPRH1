@@ -20,6 +20,40 @@ let currentPrograma = "todos";
 const PAGE_SIZE = 4;
 let currentPage = 1;
 
+// Cambiar esta fecha a 1 de enero para activar el aviso desde el inicio del ejercicio.
+const BUDGET_ALERT_START_DATE = new Date(2026, 8, 30);
+
+function setupBudgetAlert() {
+  const alert = document.getElementById("budgetAlert");
+  const button = document.getElementById("loadBudgetButton");
+  if (!alert || !button) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (today < BUDGET_ALERT_START_DATE) return;
+
+  const displayedExerciseYear = today.getFullYear();
+  const requiredBudgetYear = displayedExerciseYear + 1;
+  const storageKey = `budget-creation-started-${requiredBudgetYear}`;
+
+  document.getElementById("displayedExerciseYear").textContent = displayedExerciseYear;
+  document.getElementById("requiredBudgetYear").textContent = requiredBudgetYear;
+  alert.hidden = false;
+
+  const updateButtonLabel = () => {
+    const hasStarted = localStorage.getItem(storageKey) === "true";
+    button.textContent = hasStarted
+      ? `CONTINUAR CARGANDO PRESUPUESTO ${requiredBudgetYear}`
+      : `CREAR PRESUPUESTO ${requiredBudgetYear}`;
+  };
+
+  updateButtonLabel();
+  button.addEventListener("click", () => {
+    localStorage.setItem(storageKey, "true");
+    updateButtonLabel();
+  });
+}
+
 // =========================================================
 // CARGA DE DATOS DESDE LA BD
 // =========================================================
@@ -669,6 +703,7 @@ function setupToggleProgramsBtn() {
 // =========================================================
 
 async function init() {
+  setupBudgetAlert();
   setupFilterEvents();
   setupSortEvents();
   setupPaginationEvents();

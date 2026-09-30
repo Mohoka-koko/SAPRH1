@@ -480,11 +480,30 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const SUFIJO_EXPEDIENTE = "-GDESDE-APRH#MAMA";
+    const mensajeValidacion = document.getElementById("mensaje-validacion");
+
+    function mostrarMensajeValidacion(mensaje) {
+        if (!mensajeValidacion) return;
+        mensajeValidacion.classList.remove("mensaje-exito");
+        mensajeValidacion.textContent = mensaje;
+        mensajeValidacion.hidden = false;
+    }
+
+    function mostrarMensajeExito(mensaje) {
+        if (!mensajeValidacion) return;
+        mensajeValidacion.classList.add("mensaje-exito");
+        mensajeValidacion.textContent = mensaje;
+        mensajeValidacion.hidden = false;
+    }
 
     let guardando = false;
 
     async function guardarImputacion() {
         if (guardando) return;
+        if (mensajeValidacion) {
+            mensajeValidacion.hidden = true;
+            mensajeValidacion.classList.remove("mensaje-exito");
+        }
         guardando = true;
         guardarBtn.disabled    = true;
         guardarBtn.textContent = "Guardando...";
@@ -494,8 +513,11 @@ document.addEventListener("DOMContentLoaded", function () {
             const fecha         = document.getElementById("fecha-actual")?.value;
             const nroExpediente = `${expedienteVariable}${SUFIJO_EXPEDIENTE}`;
 
-            if (!nroExpediente || !fecha) {
-                alert("Completá el N° de expediente y la fecha antes de guardar.");
+            const camposEncabezadoFaltantes = [];
+            if (!expedienteVariable) camposEncabezadoFaltantes.push("N° de expediente");
+            if (!fecha) camposEncabezadoFaltantes.push("fecha");
+            if (camposEncabezadoFaltantes.length > 0) {
+                mostrarMensajeValidacion(`Te falta completar: ${camposEncabezadoFaltantes.join(" y ")}.`);
                 return;
             }
 
@@ -517,9 +539,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     continue;
                 }
 
-                if (!selectPrg?.value || !selectPry?.value || !selectAo?.value
-                    || !selectPar?.value || !selectFf?.value || !proveedor || !importeRaw) {
-                    alert("Hay una fila incompleta. Revisá PRG, PRY, A/O, PAR, FF, concepto e importe.");
+                const camposFilaFaltantes = [];
+                if (!selectPrg?.value) camposFilaFaltantes.push("PRG");
+                if (!selectPry?.value) camposFilaFaltantes.push("PRY");
+                if (!selectAo?.value) camposFilaFaltantes.push("A/O");
+                if (!selectPar?.value) camposFilaFaltantes.push("PAR");
+                if (!selectFf?.value) camposFilaFaltantes.push("FF");
+                if (!proveedor) camposFilaFaltantes.push("concepto");
+                if (!importeRaw) camposFilaFaltantes.push("importe");
+                if (camposFilaFaltantes.length > 0) {
+                    mostrarMensajeValidacion(`Te falta completar en una fila: ${camposFilaFaltantes.join(", ")}.`);
                     return;
                 }
 
@@ -573,7 +602,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (detalles.length === 0) {
-                alert("Agregá al menos una fila completa antes de guardar.");
+                mostrarMensajeValidacion("Te falta completar al menos una fila con los datos obligatorios.");
                 return;
             }
 
@@ -597,10 +626,10 @@ document.addEventListener("DOMContentLoaded", function () {
             const data = await resp.json();
 
             if (resp.ok) {
-                alert(
+                mostrarMensajeExito(
                     `Imputación guardada correctamente.\n` +
-                    `Asiento N°: ${data.asiento_nro}\n` +
-                    `Total: $${parseFloat(data.importe_total).toLocaleString("es-AR", {minimumFractionDigits: 2})}`
+                    `Asiento N°: ${data.asiento_nro}. ` +
+                    `Total: $${parseFloat(data.importe_total).toLocaleString("es-AR", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
                 );
                 document.getElementById("input-expediente").value = "";
                 document.querySelectorAll("#filas-body tr:not(:first-child)").forEach(f => f.remove());

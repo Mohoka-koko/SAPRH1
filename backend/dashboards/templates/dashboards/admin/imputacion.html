@@ -8,6 +8,8 @@
 {% block content %}
 
 <div class="imputacion-page">
+    <div class="mensaje-validacion" id="mensaje-validacion" role="alert" hidden></div>
+
     <div class="botones-accion">
         <button type="button" class="btn-accion" id="exportar-pdf-btn">
             <i class="fa-solid fa-file-pdf"></i>
@@ -46,7 +48,7 @@
             <div class="encabezado-campos">
                 <label for="input-expediente">N° Expediente:</label>
                 <div class="expediente-input-group">
-                    <input type="text" id="input-expediente" placeholder="EX-2026-00123">
+                    <input type="text" id="input-expediente">
                     <span class="expediente-fijo">-GDESDE-APRH#MAMA</span>
                 </div>
             </div>

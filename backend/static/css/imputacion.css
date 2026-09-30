@@ -9,6 +9,35 @@
   font-family: inherit;
 }
 
+.mensaje-validacion {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  z-index: 110;
+  width: min(640px, calc(100vw - 2rem));
+  box-sizing: border-box;
+  transform: translateX(-50%);
+  padding: 0.85rem 1rem;
+  color: #7f1d1d;
+  background: #fee2e2;
+  border: 2px solid #991b1b;
+  border-radius: 4px;
+  font-weight: 600;
+  white-space: pre-line;
+  box-shadow: 0 8px 24px rgba(127, 29, 29, 0.2);
+}
+
+.mensaje-validacion[hidden] {
+  display: none;
+}
+
+.mensaje-validacion.mensaje-exito {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #15803d;
+  box-shadow: 0 8px 24px rgba(22, 101, 52, 0.2);
+}
+
 .botones-accion {
   /* Fixed action bar at bottom, horizontal */
   position: fixed;
@@ -587,15 +616,12 @@ input[type=number] {
 }
 
 .contabilizado-box {
-  position: relative;
-  top: 0.35rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 3px;
-  background: #ffffff;
-  padding: 0.3rem 0.55rem;
+  gap: 0.4rem;
+  font-weight: 700;
+  color: #374151;
+  font-size: 1.05rem;
 }
 
 .contabilizado-label {

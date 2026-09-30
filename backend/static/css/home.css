@@ -56,6 +56,64 @@ body {
   letter-spacing: 0.2px;
 }
 
+/* ===== AVISO DE EJERCICIO PRESUPUESTARIO ===== */
+.budget-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background-color: #fde8e8;
+  border: 1px solid #c94a4a;
+  border-left: 5px solid #a83232;
+  border-radius: 6px;
+  color: #1f1f1f;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.budget-alert[hidden] {
+  display: none;
+}
+
+.budget-alert-message {
+  text-align: left;
+  font-size: 20px;
+  line-height: 1.6;
+}
+
+.budget-alert-message strong {
+  font-weight: 700;
+}
+
+.btn-load-budget {
+  flex: 0 0 auto;
+  padding: 9px 20px;
+  background-color: #a83232;
+  color: #ffffff;
+  border: 1px solid #8f2929;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-load-budget:hover {
+  background-color: #8f2929;
+}
+
+.btn-load-budget:active {
+  transform: translateY(1px);
+}
+
+.btn-load-budget:focus-visible {
+  outline: 2px solid #8f2929;
+  outline-offset: 2px;
+}
+
 .section-title-wrapper {
   display: flex;
   align-items: center;
@@ -669,5 +727,13 @@ body {
   }
   .pagination-buttons {
     justify-content: center;
+  }
+  .budget-alert {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .btn-load-budget {
+    align-self: flex-start;
+    max-width: 100%;
   }
 }
