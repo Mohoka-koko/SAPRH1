@@ -833,3 +833,33 @@ td { background: var(--white); }
     resize: none;
     }
 }
+/* Logo dentro del recuadro */
+.logo-box {
+    padding: 4px;
+    background: #ffffff;
+}
+
+.logo-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* Cancelar: como los demás botones, pero en rojo suave */
+a.btn-tool {
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.btn-cancelar-op {
+    background: #fff5f5;
+    color: #b91c1c;
+    border-color: #fca5a5;
+}
+
+.btn-cancelar-op:hover {
+    background: #fee2e2;
+    border-color: #f87171;
+    color: #991b1b;
+}

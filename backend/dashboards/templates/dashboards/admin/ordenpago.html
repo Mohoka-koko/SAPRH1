@@ -23,9 +23,13 @@
             <button id="btnDelPartida" type="button" class="btn-tool">&minus; Partida</button>
         </div>
         <div class="toolbar-group">
-            <button id="btnImprimir" type="button" class="btn-tool primary">&#128424; Guardar</button>
-            <button id="btnExportarPDF" type="button" class="btn-tool primary">&#11115; Exportar a PDF</button>
-        </div>
+    <button id="btnImprimir" type="button" class="btn-tool primary">&#128424; Guardar</button>
+    <button id="btnExportarPDF" type="button" class="btn-tool primary">&#11115; Exportar a PDF</button>
+    <a href="{% url 'lista_imputaciones' %}" class="btn-tool btn-cancelar-op"
+       onclick="return confirm('¿Cancelar y volver a la lista de imputaciones? Se perderán los datos cargados.');">
+        &times; Cancelar
+    </a>
+</div>
     </div>
 
     <div class="hoja" id="hoja">
@@ -33,7 +37,9 @@
 
             <div class="encabezado">
                 <div class="enc-izquierda">
-                    <div class="logo-box">LOGO</div>
+                    <div class="logo-box">
+    <img src="{% static 'img/logo1.png' %}" alt="Logo">
+</div>
                     <div class="organismo">
                         <span class="input-like organismo-nombre" readonly>ADM. PCIAL. DE RECURSOS HIDRICOS</span>
                         <span class="input-like provincia" readonly>Santiago del Estero</span>
