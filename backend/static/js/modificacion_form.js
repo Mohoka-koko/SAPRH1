@@ -6,24 +6,6 @@
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    // ─── MODO VER: deshabilitar todos los controles ───────────────────────────
-    if (MODO === 'ver') {
-        // Deshabilitar radios de tipo UP
-        document.querySelectorAll('input[name="tipoUpTransferente"]').forEach(r => r.disabled = true);
-        // Deshabilitar botones +
-        const btnAgregarT = document.getElementById("btn-agregar-transferente");
-        const btnAgregarR = document.getElementById("btn-agregar-receptora");
-        if (btnAgregarT) btnAgregarT.style.display = "none";
-        if (btnAgregarR) btnAgregarR.style.display = "none";
-        // Deshabilitar campos de info adicional
-        ["m-expediente", "m-fecha", "m-usuario", "m-importe", "m-decreto"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.disabled = true;
-        });
-        document.getElementById("m-decreto-nombre") && 
-        (document.querySelector(".mf-file-btn").style.display = "none");
-    }
-
     // ─── UTILIDADES ───────────────────────────────────────────────────────────
     function formatearImporte(num) {
         if (num === null || num === undefined || num === "") return "";
@@ -66,6 +48,27 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("m-decreto-nombre").textContent =
             archivo ? archivo.name : "Sin archivos seleccionados";
     });
+
+    // ─── MODO VER: deshabilitar todos los controles ───────────────────────────
+    if (MODO === 'ver') {
+        // Ocultar botón Guardar
+        if (btnGuardar) btnGuardar.style.display = "none";
+    
+        // Deshabilitar radios de tipo UP
+        document.querySelectorAll('input[name="tipoUpTransferente"]').forEach(r => r.disabled = true);
+        // Deshabilitar botones +
+        const btnAgregarT = document.getElementById("btn-agregar-transferente");
+        const btnAgregarR = document.getElementById("btn-agregar-receptora");
+        if (btnAgregarT) btnAgregarT.style.display = "none";
+        if (btnAgregarR) btnAgregarR.style.display = "none";
+        // Deshabilitar campos de info adicional
+        ["m-expediente", "m-fecha", "m-usuario", "m-importe", "m-decreto"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = true;
+        });
+        document.getElementById("m-decreto-nombre") && 
+        (document.querySelector(".mf-file-btn").style.display = "none");
+    }
 
     // ─── CACHE ────────────────────────────────────────────────────────────────
     let _programasCache = null;
@@ -199,6 +202,8 @@ document.addEventListener("DOMContentLoaded", () => {
         btnEliminar.type          = "button";
         btnEliminar.className     = "btn-eliminar-fila";
         btnEliminar.textContent   = "✕";
+        // Después de: btnEliminar.textContent = "✕";
+        if (MODO === 'ver') btnEliminar.style.display = "none";
 
         importeWrapper.appendChild(inputImporte);
         importeWrapper.appendChild(btnEliminar);
@@ -265,11 +270,23 @@ document.addEventListener("DOMContentLoaded", () => {
                         const opt          = document.createElement("option");
                         opt.value          = l.linea_id;
                         opt.dataset.saldo  = l.saldo_actual;
+                        opt.dataset.fuente = l.fuente_id;
                         opt.dataset.codigo = l.fuente_nombre.split(" - ")[0];
                         opt.textContent    = opt.dataset.codigo;
                         selectFuente.appendChild(opt);
                     });
                     selectFuente.disabled = false;
+                
+                    // Preseleccionar fuente en modo editar/ver
+                    if (_fuente_id) {
+                        const optFuente = Array.from(selectFuente.options).find(o =>
+                            String(o.dataset.fuente) === String(_fuente_id)
+                        );
+                        if (optFuente) {
+                            selectFuente.value = optFuente.value;
+                            selectFuente.dispatchEvent(new Event("change"));
+                        }
+                    }
                 }
 
             } catch {
@@ -418,8 +435,6 @@ document.addEventListener("DOMContentLoaded", () => {
             importeWrapper.remove();
             onCambio();
         });
-        // Después de crear btnEliminar:
-        if (MODO === 'ver') btnEliminar.style.display = "none";
     }
 
     // ─── CREAR FILA RECEPTORA (siempre Modo A) ────────────────────────────────
@@ -434,49 +449,60 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function obtenerFilasTransferentes() {
-        const wrappers = document.querySelectorAll(`#contenedor-transferentes [data-fila-id]`);
-        const importes = document.querySelectorAll(`#bloque-importes-transferentes .mf-importe-fila`);
+        const wrappers = document.querySelectorAll("#contenedor-transferentes [data-fila-id]");
         const result   = [];
-
-        wrappers.forEach((wrapper, i) => {
-            const fila     = wrapper.querySelector(".fila-receptora-refuerzo");
+    
+        wrappers.forEach(wrapper => {
+            const fila = wrapper.querySelector(".fila-receptora-refuerzo");
             if (!fila) return;
-
+    
+            const filaId   = wrapper.dataset.filaId;
             const linea_id = fila.querySelector(".fila-linea-id")?.value.trim();
-            const importe  = parsearImporte(importes[i]?.querySelector(".fila-importe")?.value) ?? 0;
-
+    
+            // Buscar el importe por filaId en lugar de por índice
+            const importeEl = document.querySelector(
+                `#bloque-importes-transferentes .mf-importe-fila[data-fila-id="${filaId}"] .fila-importe`
+            );
+            const importe = parsearImporte(importeEl?.value) ?? 0;
+    
             if (!linea_id || importe <= 0) return;
-
+    
             const item = { linea_id, importe };
-
+    
             if (getModo() === 'imputacion') {
                 const det_id = fila.querySelector(".fila-detalle-id")?.value.trim();
-                if (!det_id) return; // Modo B requiere imputacion_detalle_id
+                if (!det_id) return;
                 item.imputacion_detalle_id = det_id;
             }
-
+    
             result.push(item);
         });
-
+    
         return result;
     }
-
+    
     function obtenerFilasReceptoras() {
-        const wrappers = document.querySelectorAll(`#contenedor-receptoras [data-fila-id]`);
-        const importes = document.querySelectorAll(`#bloque-importes-receptoras .mf-importe-fila`);
+        const wrappers = document.querySelectorAll("#contenedor-receptoras [data-fila-id]");
         const result   = [];
-
-        wrappers.forEach((wrapper, i) => {
-            const fila     = wrapper.querySelector(".fila-receptora-refuerzo");
+    
+        wrappers.forEach(wrapper => {
+            const fila = wrapper.querySelector(".fila-receptora-refuerzo");
             if (!fila) return;
+    
+            const filaId   = wrapper.dataset.filaId;
             const linea_id = fila.querySelector(".fila-linea-id")?.value.trim();
-            const importe  = parsearImporte(importes[i]?.querySelector(".fila-importe")?.value) ?? 0;
+    
+            const importeEl = document.querySelector(
+                `#bloque-importes-receptoras .mf-importe-fila[data-fila-id="${filaId}"] .fila-importe`
+            );
+            const importe = parsearImporte(importeEl?.value) ?? 0;
+    
             if (linea_id && importe > 0) result.push({ linea_id, importe });
         });
-
+    
         return result;
     }
-
+    
     function calcularTotal(bloqueImporteId) {
         let total = 0;
         document.querySelectorAll(`#${bloqueImporteId} .fila-importe`)
@@ -586,47 +612,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ─── GUARDAR ──────────────────────────────────────────────────────────────
-    btnGuardar.addEventListener("click", async () => {
-        if (!validar()) return;
+        
+    if (btnGuardar) {
+        btnGuardar.addEventListener("click", async () => {
+            if (!validar()) return;
 
-        const transferentes = obtenerFilasTransferentes();
-        const receptoras    = obtenerFilasReceptoras();
+            const transferentes = obtenerFilasTransferentes();
+            const receptoras    = obtenerFilasReceptoras();
 
-        const body = {
-            fecha:             mFecha.value,
-            nro_expediente:    mExpediente.value.trim() + "-GDESDE-APRH#MAMA",
-            nro_decreto:       mDecreto.files[0] ? mDecreto.files[0].name : "",
-            tipo_transferente: getModo(),
-            transferentes,
-            receptoras,
-        };
+            const body = {
+                fecha:             mFecha.value,
+                nro_expediente:    mExpediente.value.trim() + "-GDESDE-APRH#MAMA",
+                nro_decreto:       mDecreto.files[0] ? mDecreto.files[0].name : "",
+                tipo_transferente: getModo(),
+                transferentes,
+                receptoras,
+            };
 
-        try {
-            btnGuardar.disabled = true;
-            btnGuardar.querySelector(".mf-btn-texto").textContent = "Guardando...";
+            try {
+                btnGuardar.disabled = true;
+                btnGuardar.querySelector(".mf-btn-texto").textContent = "Guardando...";
 
-            const url = MODO === "editar"
-                ? `/api/modificacion/editar/${MODIFICACION.id}/`
-                : "/api/modificacion/crear/";
+                const url = MODO === "editar"
+                    ? `/api/modificacion/editar/${MODIFICACION.id}/`
+                    : "/api/modificacion/crear/";
 
-            const res  = await fetch(url, {
-                method:  "POST",
-                headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
-                body:    JSON.stringify(body),
-            });
-            const data = await res.json();
+                const res  = await fetch(url, {
+                    method:  "POST",
+                    headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+                    body:    JSON.stringify(body),
+                });
+                const data = await res.json();
 
-            if (!res.ok) { alert(`Error: ${data.error}`); return; }
-            window.location.href = "/admin-dashboard/registros/modificacion";
+                if (!res.ok) { alert(`Error: ${data.error}`); return; }
+                window.location.href = "/admin-dashboard/registros/modificacion";
 
-        } catch (err) {
-            alert("Error de conexión con el servidor");
-            console.error(err);
-        } finally {
-            btnGuardar.disabled = false;
-            btnGuardar.querySelector(".mf-btn-texto").textContent = "Guardar";
-        }
-    });
+            } catch (err) {
+                alert("Error de conexión con el servidor");
+                console.error(err);
+            } finally {
+                btnGuardar.disabled = false;
+                btnGuardar.querySelector(".mf-btn-texto").textContent = "Guardar";
+            }
+        });
+    }
 
     if (btnExportar) {
         btnExportar.addEventListener("click", () => alert("Exportación a PDF — próximamente."));
@@ -645,7 +674,35 @@ document.addEventListener("DOMContentLoaded", () => {
     limpiarContenedor("bloque-importes-transferentes");
     limpiarContenedor("bloque-importes-receptoras");
 
-    if (MODO === "editar" && MODIFICACION) {
+    // ─── MODO VER: deshabilitar todos los controles ───────────────────────────
+    if (MODO === 'ver') {
+        document.querySelectorAll('input[name="tipoUpTransferente"]').forEach(r => r.disabled = true);
+        const btnAgregarT = document.getElementById("btn-agregar-transferente");
+        const btnAgregarR = document.getElementById("btn-agregar-receptora");
+        if (btnAgregarT) btnAgregarT.style.display = "none";
+        if (btnAgregarR) btnAgregarR.style.display = "none";
+        ["m-expediente", "m-fecha"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = true;
+        });
+        const fileBtn = document.querySelector(".mf-file-btn");
+        if (fileBtn) fileBtn.style.display = "none";
+            // Deshabilitar todos los selectores e inputs de las filas dinámicas
+        // usando un MutationObserver para capturar los que se crean asincrónicamente
+        const observer = new MutationObserver(() => {
+            document.querySelectorAll(
+                ".fila-receptora-refuerzo select, " +
+                ".fila-receptora-refuerzo input:not([type='hidden'])"
+            ).forEach(el => {
+                el.disabled = true;
+                el.style.pointerEvents = "none";
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    if ((MODO === "editar" || MODO === "ver") && MODIFICACION) {
             mFecha.value      = MODIFICACION.fecha || "";
             mFecha.max        = new Date().toISOString().split("T")[0];
             const sufijo = "-GDESDE-APRH#MAMA";

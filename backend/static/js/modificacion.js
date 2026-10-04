@@ -132,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       tdAcc.querySelector(".btn-ver").addEventListener("click", e => {
         e.stopPropagation();
-        toggleDetalle(trMain, trDetails, tdToggle);
+        window.location.href = `/modificacion/ver/${reg.id}/`;
       });
       tdAcc.querySelector(".btn-editar").addEventListener("click", e => {
         e.stopPropagation();

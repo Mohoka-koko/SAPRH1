@@ -442,7 +442,16 @@
       numeroOrden.addEventListener("blur", () => validarSoloNumeros(numeroOrden));
     
       const fechaVencimiento = document.getElementById("fechaVencimiento");
-      fechaVencimiento.addEventListener("blur", () => validarFecha(fechaVencimiento));
+      fechaVencimiento.addEventListener('blur', () => {
+        const val = input.value.trim();
+        const errEl = document.getElementById('err-' + input.id);
+        if (!errEl) return;
+        if (val && !/^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
+          errEl.textContent = 'Formato inválido. Usá dd/mm/aaaa';
+        } else {
+          errEl.textContent = '';
+        }
+      });
    
       const delegacionContable = document.getElementById("delegacionContable");
       delegacionContable.addEventListener("blur", () => validarCampoObligatorio(delegacionContable));
@@ -909,8 +918,8 @@
 
     // ── Validación de descripción del concepto (bloque libre) ────────────
     const descripcionConcepto = Array.from(
-      document.querySelectorAll('#conceptoDescripcionContainer input')
-    ).map(i => i.value.trim()).filter(v => v);
+      document.querySelectorAll('#conceptoDescripcionContainer textarea')
+    ).map(t => t.value.trim()).filter(v => v);
     if (descripcionConcepto.length === 0) {
       errores.push('La descripción del concepto es obligatoria.');
     }
@@ -924,8 +933,8 @@
     if (!nroResolucion) errores.push('El número de resolución es obligatorio.');
 
     // ── Validación de fecha de Rentas Generales ───────────────────────────
-    const fechaRentas = document.getElementById('fechaRentas')?.value.trim();
-    if (!fechaRentas) {
+    const inputFechaRentas = document.querySelector('#fechaRentasWrapper [data-valor-iso]');
+    if (!inputFechaRentas?.dataset?.valorIso) {
       errores.push('La fecha de Rentas Generales es obligatoria.');
     }
 
@@ -937,9 +946,9 @@
   
     // ── A partir de acá todo está validado: continuar con el POST ─────────
     const conceptoLineas = Array.from(
-      document.querySelectorAll('#conceptoDescripcionContainer input')
-    ).map(i => i.value.trim()).filter(v => v).join(' / ');
-  
+      document.querySelectorAll('#conceptoDescripcionContainer textarea')
+    ).map(t => t.value.trim()).filter(v => v).join(' / ');
+    
     const filasConcepto  = document.querySelectorAll('#conceptoPagoBody tr');
     const codigoConcepto = filasConcepto[0]?.querySelector('.input-codigo-concepto')?.value.trim() || '0';
     const descConcepto   = filasConcepto[0]?.querySelector('.input-desc-concepto')?.value.trim()   || '';
@@ -958,6 +967,7 @@
       concepto_del_pago:         descConcepto,
       beneficiarios,
       ups,
+      fecha_rentas: document.querySelector('#fechaRentasWrapper [data-valor-iso]')?.dataset?.valorIso || null,
     };
   
     const btnGuardar = document.getElementById('btnImprimir');
@@ -976,6 +986,7 @@
       });
   
       const data = await resp.json();
+      console.log('Respuesta backend:', data); 
   
       if (resp.ok) {
         alert(`Orden de Pago guardada correctamente.\nTotal: $${formatearImporte(parseFloat(data.importe_total))}`);
