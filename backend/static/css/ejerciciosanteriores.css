@@ -1,0 +1,819 @@
+/* ==========================================================
+   EJERCICIOS ANTERIORES - SAPRH
+   ========================================================== */
+
+.ejant-page {
+    --azul: #0b3d91;
+    --azul-2: #1656c7;
+    --azul-claro: #edf3ff;
+    --azul-suave: #f6f8fc;
+
+    --texto: #172033;
+    --gris: #687386;
+    --borde: #e3e7ee;
+
+    --verde: #16845d;
+    --verde-bg: #e8f7f0;
+
+    --naranja: #a86b00;
+    --naranja-bg: #fff4df;
+
+    --rojo: #c0392b;
+    --rojo-bg: #fdeceb;
+
+    width: 100%;
+    padding: 28px 32px 50px;
+    color: var(--texto);
+}
+
+
+/* ==========================================================
+   HEADER
+   ========================================================== */
+
+.ejant-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 30px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.ejant-titulo {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+}
+
+.ejant-volver {
+    margin-top: 4px;
+
+    border: 1px solid var(--borde);
+    background: white;
+    color: var(--azul);
+
+    padding: 9px 15px;
+    border-radius: 9px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+.ejant-volver:hover {
+    background: var(--azul-claro);
+    border-color: #c7d7f7;
+}
+
+.ejant-volver span {
+    font-size: 17px;
+    margin-right: 4px;
+}
+
+.ejant-kicker {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: var(--azul-2);
+    margin-bottom: 3px;
+}
+
+.ejant-titulo h2 {
+    margin: 0;
+    color: var(--texto);
+    font-size: 25px;
+    font-weight: 700;
+}
+
+.ejant-titulo p {
+    margin: 5px 0 0;
+    color: var(--gris);
+    font-size: 13px;
+}
+
+
+/* ==========================================================
+   BUSCADOR
+   ========================================================== */
+
+.ejant-controles {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ejant-search {
+    height: 40px;
+    width: 275px;
+
+    display: flex;
+    align-items: center;
+
+    background: white;
+    border: 1px solid var(--borde);
+    border-radius: 9px;
+
+    padding: 0 12px;
+
+    transition: .2s;
+}
+
+.ejant-search:focus-within {
+    border-color: var(--azul-2);
+    box-shadow: 0 0 0 3px rgba(22, 86, 199, .10);
+}
+
+.ejant-search span {
+    color: #8993a4;
+    font-size: 22px;
+    margin-right: 7px;
+}
+
+.ejant-search input {
+    border: 0;
+    outline: 0;
+    width: 100%;
+    background: transparent;
+
+    font-size: 13px;
+    color: var(--texto);
+}
+
+
+/* ==========================================================
+   AÑOS
+   ========================================================== */
+
+.ejant-anios {
+    display: flex;
+
+    border: 1px solid var(--borde);
+    border-radius: 9px;
+
+    overflow: hidden;
+    background: white;
+}
+
+.ejant-anio-btn {
+    height: 40px;
+
+    padding: 0 18px;
+
+    border: 0;
+    border-right: 1px solid var(--borde);
+
+    background: white;
+    color: var(--gris);
+
+    font-size: 13px;
+    font-weight: 700;
+
+    cursor: pointer;
+    transition: .2s;
+}
+
+.ejant-anio-btn:last-child {
+    border-right: 0;
+}
+
+.ejant-anio-btn:hover {
+    background: var(--azul-claro);
+    color: var(--azul);
+}
+
+.ejant-anio-btn.on {
+    background: var(--azul);
+    color: white;
+}
+
+
+/* ==========================================================
+   INFORMACIÓN DEL EJERCICIO
+   ========================================================== */
+
+.ejant-ejercicio-info {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+
+    background: white;
+    border: 1px solid var(--borde);
+    border-radius: 11px;
+
+    padding: 13px 18px;
+
+    margin-bottom: 16px;
+
+    box-shadow: 0 2px 8px rgba(20, 40, 80, .03);
+}
+
+.ejant-info-label {
+    display: block;
+
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+
+    color: var(--gris);
+    margin-bottom: 2px;
+}
+
+.ejant-ejercicio-info strong {
+    font-size: 17px;
+    color: var(--azul);
+}
+
+.ejant-info-line {
+    height: 28px;
+    width: 1px;
+    background: var(--borde);
+}
+
+.ejant-estado-badge {
+    display: inline-block;
+
+    padding: 4px 10px;
+
+    border-radius: 20px;
+
+    background: var(--verde-bg);
+    color: var(--verde);
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+
+/* ==========================================================
+   TARJETAS
+   ========================================================== */
+
+.ejant-resumen {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 13px;
+
+    margin-bottom: 22px;
+}
+
+.ejant-card {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+
+    min-height: 92px;
+
+    padding: 15px 17px;
+
+    background: white;
+
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+
+    box-shadow:
+        0 3px 12px rgba(20, 40, 80, .045);
+}
+
+.ejant-card-icon {
+    width: 42px;
+    height: 42px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: var(--azul-claro);
+    color: var(--azul);
+
+    font-size: 19px;
+    font-weight: 700;
+}
+
+.ejant-card-icon.modificacion {
+    background: var(--naranja-bg);
+    color: var(--naranja);
+}
+
+.ejant-card-icon.ejecutado {
+    background: var(--verde-bg);
+    color: var(--verde);
+}
+
+.ejant-card-icon.saldo {
+    background: #eef0ff;
+    color: #5557a8;
+}
+
+.ejant-card span {
+    display: block;
+
+    color: var(--gris);
+
+    font-size: 11px;
+    font-weight: 600;
+
+    margin-bottom: 4px;
+}
+
+.ejant-card strong {
+    display: block;
+
+    font-size: 17px;
+    color: var(--texto);
+
+    white-space: nowrap;
+}
+
+
+/* ==========================================================
+   CABECERA TABLA
+   ========================================================== */
+
+.ejant-tabla-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+
+    margin-bottom: 10px;
+}
+
+.ejant-tabla-header h3 {
+    margin: 0;
+
+    font-size: 17px;
+    color: var(--texto);
+}
+
+.ejant-tabla-header p {
+    margin: 4px 0 0;
+
+    color: var(--gris);
+    font-size: 12px;
+}
+
+.ejant-contador {
+    background: var(--azul-claro);
+    color: var(--azul);
+
+    border-radius: 20px;
+
+    padding: 6px 12px;
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.ejant-contador strong {
+    font-size: 13px;
+}
+
+
+/* ==========================================================
+   TABLA
+   ========================================================== */
+
+.ejant-tabla-wrapper {
+    width: 100%;
+
+    background: white;
+
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 4px 14px rgba(20, 40, 80, .045);
+}
+
+.ejant-tabla {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ejant-tabla thead {
+    background: #f6f8fc;
+}
+
+.ejant-tabla th {
+    padding: 13px 15px;
+
+    text-align: left;
+
+    color: #667085;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+    letter-spacing: .55px;
+
+    border-bottom: 1px solid var(--borde);
+
+    white-space: nowrap;
+}
+
+.ejant-tabla th.num,
+.ejant-tabla td.num {
+    text-align: right;
+}
+
+.ejant-tabla td {
+    padding: 14px 15px;
+
+    border-bottom: 1px solid #edf0f4;
+
+    font-size: 13px;
+
+    background: white;
+}
+
+.ejant-up {
+    cursor: pointer;
+
+    transition: background .15s;
+}
+
+.ejant-up:hover td {
+    background: #f8faff;
+}
+
+.ejant-up.abierta td {
+    background: var(--azul-claro);
+}
+
+
+/* ==========================================================
+   CÓDIGO UP
+   ========================================================== */
+
+.ejant-up-code {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ejant-flecha {
+    display: inline-flex;
+
+    width: 21px;
+    height: 21px;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 5px;
+
+    color: var(--azul);
+    background: var(--azul-claro);
+
+    font-size: 16px;
+
+    transition: .2s;
+}
+
+.ejant-up.abierta .ejant-flecha {
+    background: var(--azul);
+    color: white;
+}
+
+.ejant-up-code {
+    font-family:
+        "Consolas",
+        "Courier New",
+        monospace;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    color: var(--azul);
+}
+
+.ejant-denominacion {
+    color: #344054;
+    font-weight: 500;
+}
+
+
+/* ==========================================================
+   NÚMEROS
+   ========================================================== */
+
+.ejant-tabla td.num {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.positivo {
+    color: var(--verde) !important;
+    font-weight: 600;
+}
+
+.negativo {
+    color: var(--rojo) !important;
+}
+
+.saldo-final {
+    color: var(--azul) !important;
+    font-weight: 700;
+}
+
+
+/* ==========================================================
+   FOOTER TABLA
+   ========================================================== */
+
+.ejant-tabla tfoot td {
+    padding: 15px;
+
+    background: #f2f5fa;
+
+    border-top: 1px solid var(--borde);
+    border-bottom: 0;
+
+    font-weight: 700;
+
+    color: var(--texto);
+}
+
+.ejant-tabla tfoot td:first-child {
+    color: var(--azul);
+}
+
+
+/* ==========================================================
+   DETALLE
+   ========================================================== */
+
+.ejant-detalle[hidden] {
+    display: none;
+}
+
+.ejant-detalle > td {
+    padding: 0 !important;
+
+    background: #f8faff !important;
+}
+
+.ejant-detalle-contenido {
+    padding: 18px 28px 22px 52px;
+
+    border-top: 1px solid #dce5f5;
+}
+
+.ejant-detalle-titulo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 12px;
+}
+
+.ejant-detalle-titulo strong {
+    display: block;
+
+    color: var(--texto);
+
+    font-size: 13px;
+}
+
+.ejant-detalle-titulo span {
+    display: block;
+
+    color: var(--gris);
+
+    font-size: 11px;
+
+    margin-top: 3px;
+}
+
+.ejant-mov-count {
+    background: white;
+
+    border: 1px solid var(--borde);
+
+    padding: 5px 10px;
+
+    border-radius: 20px;
+
+    color: var(--gris) !important;
+    font-weight: 600;
+}
+
+
+/* ==========================================================
+   TABLA DE MOVIMIENTOS
+   ========================================================== */
+
+.ejant-mov {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    background: white;
+
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+
+    overflow: hidden;
+}
+
+.ejant-mov th {
+    padding: 9px 11px;
+
+    text-align: left;
+
+    background: #f3f5f9;
+
+    color: var(--gris);
+
+    font-size: 10px;
+    text-transform: uppercase;
+
+    border-bottom: 1px solid var(--borde);
+}
+
+.ejant-mov th.num {
+    text-align: right;
+}
+
+.ejant-mov td {
+    padding: 9px 11px;
+
+    font-size: 12px;
+
+    border-bottom: 1px solid #edf0f4;
+
+    color: #475467;
+}
+
+.ejant-mov td.num {
+    text-align: right;
+}
+
+
+/* ==========================================================
+   ETIQUETAS DE MOVIMIENTOS
+   ========================================================== */
+
+.ejant-tag {
+    display: inline-block;
+
+    padding: 4px 9px;
+
+    border-radius: 20px;
+
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.ejant-tag.imputacion {
+    background: var(--azul-claro);
+    color: var(--azul);
+}
+
+.ejant-tag.orden {
+    background: var(--verde-bg);
+    color: var(--verde);
+}
+
+.ejant-tag.modificacion {
+    background: var(--naranja-bg);
+    color: var(--naranja);
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media (max-width: 1100px) {
+
+    .ejant-resumen {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 800px) {
+
+    .ejant-page {
+        padding: 20px 15px 40px;
+    }
+
+    .ejant-header {
+        align-items: flex-start;
+    }
+
+    .ejant-controles {
+        width: 100%;
+    }
+
+    .ejant-search {
+        width: 100%;
+    }
+
+    .ejant-anios {
+        width: 100%;
+    }
+
+    .ejant-anio-btn {
+        flex: 1;
+    }
+
+    .ejant-ejercicio-info {
+        width: 100%;
+    }
+
+    .ejant-tabla-wrapper {
+        overflow-x: auto;
+    }
+
+}
+
+
+@media (max-width: 550px) {
+
+    .ejant-resumen {
+        grid-template-columns: 1fr;
+    }
+
+    .ejant-titulo {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .ejant-tabla-header {
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+}
+/* ==========================================================
+   AÑO SELECCIONADO FIJO (barra)
+   ========================================================== */
+
+.ejant-ejercicio-info {
+    position: fixed;
+    top: 75px;
+    left: 0;
+    right: 0;
+    z-index: 999;
+
+    height: 64px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+
+    background: #ffffff;
+    border-bottom: 1px solid var(--borde);
+    box-shadow: 0 2px 8px rgba(20, 40, 80, 0.08);
+}
+
+/* Texto "Ejercicio seleccionado" */
+.ejant-info-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: var(--gris);
+    margin: 0;
+}
+
+/* Año resaltado */
+.ejant-ejercicio-info strong {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    line-height: 1;
+
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--azul), var(--azul-2));
+
+    padding: 8px 22px;
+    border-radius: 10px;
+
+    box-shadow: 0 4px 14px rgba(11, 61, 145, .35);
+}
+
+/* Deja espacio para que la barra no tape el contenido */
+.ejant-page {
+    padding-top: 85px;
+}

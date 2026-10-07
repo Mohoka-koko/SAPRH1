@@ -1,0 +1,550 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ejerciciosanteriores.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="ejant-page">
+
+    <!-- ENCABEZADO -->
+    <div class="ejant-header">
+
+        <div class="ejant-titulo">
+            <button type="button" class="ejant-volver" id="btnVolver">
+                <span>←</span> Volver
+            </button>
+
+            <div>
+                <div class="ejant-kicker">GESTIÓN PRESUPUESTARIA</div>
+                <h2>Ejercicios anteriores</h2>
+                <p>Consulta histórica de presupuestos y movimientos</p>
+            </div>
+        </div>
+
+        <div class="ejant-controles">
+
+            <div class="ejant-search">
+                <span>⌕</span>
+                <input
+                    type="text"
+                    id="ejantBuscador"
+                    placeholder="Buscar unidad o denominación..."
+                    autocomplete="off">
+            </div>
+
+            <div class="ejant-anios" id="ejantAnios">
+                <button class="ejant-anio-btn on" data-anio="2025">
+                    2025
+                </button>
+                <button class="ejant-anio-btn" data-anio="2024">
+                    2024
+                </button>
+                <button class="ejant-anio-btn" data-anio="2023">
+                    2023
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- INFORMACIÓN DEL EJERCICIO -->
+    <div class="ejant-ejercicio-info">
+    <span class="ejant-info-label">Ejercicio seleccionado</span>
+    <strong id="ejantAnioActual">2025</strong>
+</div>
+
+
+    <!-- TARJETAS -->
+    <div class="ejant-resumen" id="ejantResumen">
+
+        <div class="ejant-card">
+            <div class="ejant-card-icon">₿</div>
+            <div>
+                <span>Presupuesto inicial</span>
+                <strong id="totalInicial">$ 48.500.000,00</strong>
+            </div>
+        </div>
+
+        <div class="ejant-card">
+            <div class="ejant-card-icon modificacion">↕</div>
+            <div>
+                <span>Modificaciones</span>
+                <strong id="totalModificaciones">$ 6.250.000,00</strong>
+            </div>
+        </div>
+
+        <div class="ejant-card">
+            <div class="ejant-card-icon ejecutado">✓</div>
+            <div>
+                <span>Ejecutado</span>
+                <strong id="totalEjecutado">$ 31.780.000,00</strong>
+            </div>
+        </div>
+
+        <div class="ejant-card">
+            <div class="ejant-card-icon saldo">◉</div>
+            <div>
+                <span>Saldo final</span>
+                <strong id="totalSaldo">$ 22.970.000,00</strong>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- TÍTULO DE TABLA -->
+    <div class="ejant-tabla-header">
+
+        <div>
+            <h3>Unidades presupuestarias</h3>
+            <p>Detalle de la ejecución correspondiente al ejercicio seleccionado</p>
+        </div>
+
+        <div class="ejant-contador">
+            <strong id="cantidadUP">5</strong>
+            unidades
+        </div>
+
+    </div>
+
+
+    <!-- TABLA -->
+    <div class="ejant-tabla-wrapper">
+
+        <table class="ejant-tabla">
+
+            <thead>
+                <tr>
+                    <th>Unidad presupuestaria</th>
+                    <th>Denominación</th>
+                    <th class="num">Inicial</th>
+                    <th class="num">Modificaciones</th>
+                    <th class="num">Ejecutado</th>
+                    <th class="num">Saldo final</th>
+                </tr>
+            </thead>
+
+            <tbody id="ejantBody"></tbody>
+
+            <tfoot>
+                <tr>
+                    <td colspan="2">
+                        TOTAL DEL EJERCICIO
+                    </td>
+
+                    <td class="num" id="totIni">
+                        48.500.000,00
+                    </td>
+
+                    <td class="num positivo" id="totMod">
+                        +6.250.000,00
+                    </td>
+
+                    <td class="num" id="totEj">
+                        31.780.000,00
+                    </td>
+
+                    <td class="num saldo-final" id="totFin">
+                        22.970.000,00
+                    </td>
+                </tr>
+            </tfoot>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const datosEjercicios = {
+
+    2025: [
+        {
+            up: "01-00-02-03-253-11",
+            denominacion: "Mantenimiento de equipos",
+            inicial: 12500000,
+            modificaciones: 1500000,
+            ejecutado: 8200000,
+
+            movimientos: [
+                ["15/02/2025", "Imputación", "IMP-0012", -250000],
+                ["03/03/2025", "Orden de pago", "OP-0045", -1200000],
+                ["18/04/2025", "Modificación", "MOD-0021", 1500000],
+                ["11/06/2025", "Imputación", "IMP-0087", -800000],
+                ["20/08/2025", "Orden de pago", "OP-0132", -950000]
+            ]
+        },
+
+        {
+            up: "01-00-03-02-215-11",
+            denominacion: "Materiales y suministros",
+            inicial: 9800000,
+            modificaciones: 750000,
+            ejecutado: 6200000,
+
+            movimientos: [
+                ["12/01/2025", "Imputación", "IMP-0008", -450000],
+                ["22/03/2025", "Modificación", "MOD-0015", 750000],
+                ["14/05/2025", "Orden de pago", "OP-0068", -1800000],
+                ["09/07/2025", "Imputación", "IMP-0104", -950000]
+            ]
+        },
+
+        {
+            up: "02-01-01-04-341-22",
+            denominacion: "Servicios generales",
+            inicial: 7500000,
+            modificaciones: 2000000,
+            ejecutado: 5100000,
+
+            movimientos: [
+                ["10/02/2025", "Modificación", "MOD-0009", 2000000],
+                ["19/04/2025", "Imputación", "IMP-0035", -1100000],
+                ["02/06/2025", "Orden de pago", "OP-0091", -2000000],
+                ["15/09/2025", "Imputación", "IMP-0154", -2000000]
+            ]
+        },
+
+        {
+            up: "03-02-01-01-412-11",
+            denominacion: "Obras de infraestructura",
+            inicial: 14500000,
+            modificaciones: 2000000,
+            ejecutado: 9500000,
+
+            movimientos: [
+                ["05/01/2025", "Modificación", "MOD-0004", 2000000],
+                ["17/03/2025", "Imputación", "IMP-0048", -2500000],
+                ["20/05/2025", "Orden de pago", "OP-0077", -3500000],
+                ["12/08/2025", "Imputación", "IMP-0121", -3500000]
+            ]
+        },
+
+        {
+            up: "04-01-02-02-296-11",
+            denominacion: "Equipamiento informático",
+            inicial: 4200000,
+            modificaciones: 0,
+            ejecutado: 2780000,
+
+            movimientos: [
+                ["08/02/2025", "Imputación", "IMP-0025", -980000],
+                ["21/05/2025", "Orden de pago", "OP-0082", -1200000],
+                ["10/09/2025", "Imputación", "IMP-0148", -600000]
+            ]
+        }
+    ],
+
+    2024: [
+        {
+            up: "01-00-02-03-253-11",
+            denominacion: "Mantenimiento de equipos",
+            inicial: 10800000,
+            modificaciones: 1200000,
+            ejecutado: 7900000,
+            movimientos: [
+                ["12/02/2024", "Modificación", "MOD-0007", 1200000],
+                ["20/04/2024", "Imputación", "IMP-0041", -3200000],
+                ["15/07/2024", "Orden de pago", "OP-0078", -4700000]
+            ]
+        },
+
+        {
+            up: "01-00-03-02-215-11",
+            denominacion: "Materiales y suministros",
+            inicial: 8200000,
+            modificaciones: 600000,
+            ejecutado: 5300000,
+            movimientos: [
+                ["10/03/2024", "Modificación", "MOD-0011", 600000],
+                ["18/05/2024", "Imputación", "IMP-0058", -2100000],
+                ["22/08/2024", "Orden de pago", "OP-0114", -3200000]
+            ]
+        }
+    ],
+
+    2023: [
+        {
+            up: "01-00-02-03-253-11",
+            denominacion: "Mantenimiento de equipos",
+            inicial: 9000000,
+            modificaciones: 900000,
+            ejecutado: 6800000,
+            movimientos: [
+                ["14/02/2023", "Modificación", "MOD-0003", 900000],
+                ["20/05/2023", "Imputación", "IMP-0032", -2800000],
+                ["18/09/2023", "Orden de pago", "OP-0098", -4000000]
+            ]
+        }
+    ]
+};
+
+
+function formato(valor) {
+
+    return Number(valor).toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+
+}
+
+
+function calcular(up) {
+
+    const inicial = up.inicial;
+    const modificaciones = up.modificaciones;
+    const ejecutado = up.ejecutado;
+
+    return {
+        inicial,
+        modificaciones,
+        ejecutado,
+        saldo: inicial + modificaciones - ejecutado
+    };
+
+}
+
+
+function renderTabla(anio) {
+
+    const lista = datosEjercicios[anio] || [];
+
+    const body = document.getElementById("ejantBody");
+
+    body.innerHTML = "";
+
+    let totalInicial = 0;
+    let totalModificaciones = 0;
+    let totalEjecutado = 0;
+    let totalSaldo = 0;
+
+    lista.forEach((up) => {
+
+        const c = calcular(up);
+
+        totalInicial += c.inicial;
+        totalModificaciones += c.modificaciones;
+        totalEjecutado += c.ejecutado;
+        totalSaldo += c.saldo;
+
+        const fila = document.createElement("tr");
+
+        fila.className = "ejant-up";
+
+        fila.innerHTML = `
+            <td>
+                <div class="ejant-up-code">
+                    <span class="ejant-flecha">›</span>
+                    ${up.up}
+                </div>
+            </td>
+
+            <td>
+                <span class="ejant-denominacion">
+                    ${up.denominacion}
+                </span>
+            </td>
+
+            <td class="num">
+                $ ${formato(c.inicial)}
+            </td>
+
+            <td class="num positivo">
+                ${c.modificaciones > 0 ? "+" : ""}
+                $ ${formato(c.modificaciones)}
+            </td>
+
+            <td class="num">
+                $ ${formato(c.ejecutado)}
+            </td>
+
+            <td class="num saldo-final">
+                $ ${formato(c.saldo)}
+            </td>
+        `;
+
+
+        const detalle = document.createElement("tr");
+
+        detalle.className = "ejant-detalle";
+
+        detalle.hidden = true;
+
+        detalle.innerHTML = `
+            <td colspan="6">
+
+                <div class="ejant-detalle-contenido">
+
+                    <div class="ejant-detalle-titulo">
+                        <div>
+                            <strong>Historial de movimientos</strong>
+                            <span>${up.denominacion}</span>
+                        </div>
+
+                        <span class="ejant-mov-count">
+                            ${up.movimientos.length} movimientos
+                        </span>
+                    </div>
+
+                    <table class="ejant-mov">
+
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Referencia</th>
+                                <th class="num">Importe</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            ${up.movimientos.map(m => `
+
+                                <tr>
+
+                                    <td>${m[0]}</td>
+
+                                    <td>
+                                        <span class="ejant-tag ${m[1] === "Modificación" ? "modificacion" : m[1] === "Orden de pago" ? "orden" : "imputacion"}">
+                                            ${m[1]}
+                                        </span>
+                                    </td>
+
+                                    <td>${m[2]}</td>
+
+                                    <td class="num ${m[3] > 0 ? "positivo" : "negativo"}">
+                                        ${m[3] > 0 ? "+" : ""}
+                                        $ ${formato(m[3])}
+                                    </td>
+
+                                </tr>
+
+                            `).join("")}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </td>
+        `;
+
+
+        fila.addEventListener("click", () => {
+
+            const abrir = detalle.hidden;
+
+            detalle.hidden = !abrir;
+
+            fila.classList.toggle("abierta", abrir);
+
+            fila.querySelector(".ejant-flecha").textContent =
+                abrir ? "⌄" : "›";
+
+        });
+
+
+        body.appendChild(fila);
+        body.appendChild(detalle);
+
+    });
+
+
+    document.getElementById("totIni").textContent =
+        formato(totalInicial);
+
+    document.getElementById("totMod").textContent =
+        "+" + formato(totalModificaciones);
+
+    document.getElementById("totEj").textContent =
+        formato(totalEjecutado);
+
+    document.getElementById("totFin").textContent =
+        formato(totalSaldo);
+
+    document.getElementById("totalInicial").textContent =
+        "$ " + formato(totalInicial);
+
+    document.getElementById("totalModificaciones").textContent =
+        "$ " + formato(totalModificaciones);
+
+    document.getElementById("totalEjecutado").textContent =
+        "$ " + formato(totalEjecutado);
+
+    document.getElementById("totalSaldo").textContent =
+        "$ " + formato(totalSaldo);
+
+    document.getElementById("cantidadUP").textContent =
+        lista.length;
+
+    document.getElementById("ejantAnioActual").textContent =
+        anio;
+
+}
+
+
+document.querySelectorAll(".ejant-anio-btn").forEach(btn => {
+
+    btn.addEventListener("click", () => {
+
+        document.querySelectorAll(".ejant-anio-btn")
+            .forEach(b => b.classList.remove("on"));
+
+        btn.classList.add("on");
+
+        renderTabla(Number(btn.dataset.anio));
+
+    });
+
+});
+
+
+document.getElementById("ejantBuscador")
+    .addEventListener("input", function () {
+
+        const texto = this.value.toLowerCase();
+
+        document.querySelectorAll("#ejantBody .ejant-up")
+            .forEach(fila => {
+
+                const coincide =
+                    fila.textContent.toLowerCase().includes(texto);
+
+                fila.style.display =
+                    coincide ? "" : "none";
+
+                const detalle = fila.nextElementSibling;
+
+                if (!coincide) {
+                    detalle.style.display = "none";
+                }
+
+            });
+
+    });
+
+
+document.getElementById("btnVolver")
+    .addEventListener("click", () => {
+
+        history.back();
+
+    });
+
+
+renderTabla(2025);
+
+</script>
+
+{% endblock %}

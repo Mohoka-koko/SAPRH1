@@ -6,23 +6,23 @@
 /* ===== CARDS ===== */
 .card {
     background: #ffffff;
-    border-radius: var(--radius); /* Unificado a 12px */
-    padding: 2rem; /* Aire unificado de las tarjetas principales */
+    border-radius: var(--radius);
+    padding: 2rem;
     margin-bottom: 20px;
-    box-shadow: var(--shadow-md); /* Sombra suave unificada */
+    box-shadow: var(--shadow-md);
 }
 
 .card h2 {
-    font-size: 1.35rem; /* Tamaño de título unificado */
-    font-weight: 700; /* Bien negrita */
-    color: var(--text); /* Color unificado */
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text);
     margin-bottom: 2.5rem;
 }
 
 .actions-container-xl {
     display: flex;
-    column-gap: 30px; /* Espacio horizontal entre botones */
-    row-gap: 40px;    /* Aumentado para dar espacio al brillo/sombra al hacer hover */
+    column-gap: 30px;
+    row-gap: 40px;
     padding: 0 2rem 2rem;
     justify-content: center;
     flex-wrap: wrap;
@@ -49,15 +49,12 @@ ESTILO BASE: CYBER-KEY LIGHT
     text-decoration: none;
     background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
     transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-
-    /* Base 3D gris en reposo */
-    box-shadow: 
+    box-shadow:
     0 7px 0 #94a3b8,
     0 10px 20px rgba(0, 0, 0, 0.06),
     inset 0 1px 2px rgba(255, 255, 255, 1);
 }
 
-/* Tira superior permanente */
 .cyber-key::before {
     content: '';
     position: absolute;
@@ -71,7 +68,6 @@ ESTILO BASE: CYBER-KEY LIGHT
     transition: box-shadow 0.2s ease;
 }
 
-/* Bisel interno */
 .cyber-key::after {
     content: '';
     position: absolute;
@@ -82,7 +78,6 @@ ESTILO BASE: CYBER-KEY LIGHT
     pointer-events: none;
 }
 
-/* Texto neutro base */
 .cyber-key .label {
     position: relative;
     z-index: 2;
@@ -92,65 +87,38 @@ ESTILO BASE: CYBER-KEY LIGHT
     transition: color 0.2s ease;
 }
 
-/* ===================================================
-    HOVER: LA BASE 3D SE VUELVE DEL COLOR NEÓN
-=================================================== */
 .cyber-key:hover {
     transform: translateY(-2px);
     background: linear-gradient(180deg, #ffffff 0%, #dbe2ef 100%);
-    
-    /* La sombra del relieve toma el color del botón */
-    box-shadow: 
+    box-shadow:
     0 9px 0 var(--key-bright-color),
     0 12px 20px rgba(0, 0, 0, 0.08),
     0 18px 30px -2px var(--key-bright-color),
     inset 0 1px 3px rgba(255, 255, 255, 1);
 }
 
-/* Intensifica la tira superior al hacer hover */
 .cyber-key:hover::before {
     box-shadow: 0 0 12px var(--key-bright-color), 0 0 4px var(--key-bright-color);
 }
 
-/* El texto toma el color brillante */
 .cyber-key:hover .label {
     color: var(--key-bright-color);
 }
 
-/* Recorrido de pulsación */
 .cyber-key:active {
     transform: translateY(5px);
-    box-shadow: 
+    box-shadow:
     0 2px 0 var(--key-bright-color),
     0 6px 15px -2px var(--key-bright-color),
     0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* ===================================================
-    NUEVA PALETA DE COLORES
-=================================================== */
+/* ===== PALETA ===== */
+.key-yellow     { --key-bright-color: #ffea00; }
+.key-light-blue { --key-bright-color: #00bfff; }
+.key-turquoise  { --key-bright-color: #00be93; }
+.key-orange     { --key-bright-color: #ff8800; }
 
-/* 1. AMARILLO NEÓN (Crear Imputación) */
-.key-yellow {
-    --key-bright-color: #ffea00;
-}
-
-/* 2. CELESTE VIBRANTE (Orden de Pago y Orden de Pago Personal) */
-.key-light-blue {
-    --key-bright-color: #00bfff;
-}
-
-/* 3. CIAN TURQUESA NEÓN (Modificación) */
-.key-turquoise {
-    --key-bright-color: #00be93;
-}
-
-/* 4. NARANJA VIBRANTE (Refuerzo) */
-.key-orange {
-    --key-bright-color: #ff8800;
-}
-
-/* Alineación personalizada: Desplaza 'Modificación' y 'Refuerzo' a la izquierda */
 .actions-container-xl > .cyber-key:nth-child(4) {
     margin-left: -35px;
 }
@@ -209,6 +177,10 @@ ESTILO BASE: CYBER-KEY LIGHT
     border-bottom: 1.5px solid var(--border);
 }
 
+.history-table thead th {
+    background: #2b6f8e;
+}
+
 .history-table th {
     padding: 0.85rem 1rem;
     text-align: left;
@@ -223,6 +195,7 @@ ESTILO BASE: CYBER-KEY LIGHT
     padding: 0.85rem 1rem;
     color: var(--text);
     border-bottom: 1px solid var(--border);
+    vertical-align: middle;
 }
 
 .history-table tbody tr:hover {
@@ -245,8 +218,9 @@ ESTILO BASE: CYBER-KEY LIGHT
     display: inline-block;
 }
 
-.badge-listo   { background: var(--primary); }
-.badge-revisar { background: #ef4444; }
+.badge-listo     { background: var(--primary); }
+.badge-revisar   { background: #ef4444; }
+.badge-pendiente { background: #fef3c7; color: #92400e; }
 
 /* Badges de tipo */
 .badge-tipo {
@@ -268,44 +242,117 @@ ESTILO BASE: CYBER-KEY LIGHT
     color: #1e1e2e;
     border: 1px solid #48ccf5;
 }
-.badge-tipo-op-personal         { background: #e8ebee; color: #1e1e2e; }
 .badge-tipo-modificacion        { background: #68ddbd; color: #1e1e2e; }
 .badge-tipo-refuerzo            { background: #fcba2c; color: #1e1e2e; }
 
-/* Botón de edición */
-.edit-btn {
-    border: none;
-    background: none;
-    cursor: pointer;
-    color: var(--text-muted);
-    font-size: 1.1rem;
-    transition: color 0.2s, transform 0.2s;
+/* ===== COLUMNA ACCIONES (Ver / Editar) ===== */
+.col-acciones {
+    white-space: nowrap;
 }
 
-.edit-btn:hover {
-    color: var(--primary);
+.btn-accion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    color: #fff;
+    text-decoration: none;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-accion + .btn-accion {
+    margin-left: 6px;
+}
+
+.btn-accion:hover {
+    opacity: 0.85;
     transform: translateY(-1px);
 }
-/* Filas principales */
+
+.btn-ver    { background: #3b82f6; }
+.btn-editar { background: #f59e0b; }
+
+/* ===================================================
+   FILAS DESPLEGABLES (botón chevron mejorado)
+=================================================== */
+
+/* Fila principal */
 .registro-row {
     cursor: pointer;
+    transition: background 0.2s ease;
 }
 
-/* Botón para desplegar */
+/* Fila abierta: resaltada con borde lateral */
+.registro-row.abierto {
+    background: #e3fcfa;
+}
+
+.registro-row.abierto td:first-child {
+    box-shadow: inset 4px 0 0 #2b6f8e;
+}
+
+/* Columna del botón: angosta y centrada */
+.history-table td.expandir {
+    width: 60px;
+    text-align: center;
+    padding-left: 0.5rem;
+    padding-right: 0.75rem;
+}
+
+/* Botón circular */
 .btn-expandir {
-    background: none;
-    border: none;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: #2b6f8e;
+    font-size: 13px;
     cursor: pointer;
-    font-size: 15px;
-    transition: transform 0.2s ease;
+    outline: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    transition: background 0.2s ease, color 0.2s ease,
+                border-color 0.2s ease, box-shadow 0.2s ease,
+                transform 0.15s ease;
 }
 
-/* Cuando está abierto */
+.btn-expandir i {
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Hover (también cuando pasás por la fila) */
+.registro-row:hover .btn-expandir,
+.btn-expandir:hover {
+    border-color: #2b6f8e;
+    box-shadow: 0 2px 6px rgba(43, 111, 142, 0.25);
+}
+
+.btn-expandir:hover {
+    transform: scale(1.08);
+}
+
+/* Foco con teclado */
+.btn-expandir:focus-visible {
+    box-shadow: 0 0 0 3px rgba(43, 111, 142, 0.35);
+}
+
+/* Abierto: botón relleno y flecha girada */
 .registro-row.abierto .btn-expandir {
+    background: #2b6f8e;
+    border-color: #2b6f8e;
+    color: #ffffff;
+}
+
+.registro-row.abierto .btn-expandir i {
     transform: rotate(180deg);
 }
 
-/* Detalle oculto */
+/* Fila de detalle */
 .detalle-row {
     display: none;
 }
@@ -314,49 +361,35 @@ ESTILO BASE: CYBER-KEY LIGHT
     display: table-row;
 }
 
-/* Contenido del desplegable */
-.detalle-contenido {
-    display: flex;
-    gap: 40px;
-    padding: 15px 20px;
-    background: #f7f8fa;
-    border-top: 1px solid #e5e5e5;
-}
-
-.detalle-contenido div {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.detalle-contenido strong {
-    font-size: 12px;
-    color: #666;
-}
-
-.detalle-contenido span {
-    font-size: 14px;
-    color: #222;
-}
-/* Fila desplegable de detalles */
 .history-table .detalle-row {
     background: #eef8fa;
     border-left: 4px solid #5bc0be;
+}
+
+.history-table .detalle-row:hover {
+    background: #eef8fa;
 }
 
 .history-table .detalle-row td {
     padding: 18px 24px;
 }
 
+/* Contenido del desplegable (con animación de entrada) */
 .detalle-contenido {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 40px;
+    padding: 15px 20px;
     background: #ffffff;
     border: 1px solid #d7ecef;
     border-radius: 10px;
-    padding: 15px 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 18px 35px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    animation: detalleEntrada 0.25s ease;
+}
+
+@keyframes detalleEntrada {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .detalle-contenido div {
@@ -367,37 +400,36 @@ ESTILO BASE: CYBER-KEY LIGHT
 
 .detalle-contenido strong {
     color: #3b6f73;
-    font-size: 13px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .detalle-contenido span {
-    color: #333;
+    color: #222;
     font-size: 14px;
 }
 
-
-/* Texto de total de registros en gris */
+/* ===== PAGINACIÓN ===== */
 .pagination-info {
     color: #64748b;
     font-size: 0.875rem;
-  }
-  
-  .pagination-buttons {
+}
+
+.pagination-buttons {
     display: flex;
     align-items: center;
     gap: 10px;
-  }
-  
-  /* Texto "Página X de Y" en gris */
-  .page-number-text {
+}
+
+.page-number-text {
     font-size: 0.875rem;
     color: #64748b;
     font-weight: 500;
     margin-right: 4px;
-  }
-  
-  /* Estilo limpio para los botones Prev / Next */
-  .btn-page {
+}
+
+.btn-page {
     appearance: none;
     border: 1px solid #d1d5db;
     background: #ffffff;
@@ -412,22 +444,20 @@ ESTILO BASE: CYBER-KEY LIGHT
     justify-content: center;
     transition: all 0.15s ease-in-out;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
-  
-  /* Hover Opción B con font-weight: 600 */
-  .btn-page:hover:not(:disabled) {
+}
+
+.btn-page:hover:not(:disabled) {
     background-color: #f0f7fa;
     border-color: #2b6f8e;
     color: #2b6f8e;
     font-weight: 600;
-  }
-  
-  /* Estado deshabilitado (gris atenuado) */
-  .btn-page:disabled {
+}
+
+.btn-page:disabled {
     color: #9ca3af;
     border-color: #e5e7eb;
     background-color: #ffffff;
     cursor: not-allowed;
     box-shadow: none;
     opacity: 0.7;
-  }
+}

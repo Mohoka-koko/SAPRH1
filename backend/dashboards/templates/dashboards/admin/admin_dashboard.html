@@ -56,6 +56,12 @@
                         <span>Panel Registro</span>
                     </a>
                 </li>
+          <li class="{% if request.resolver_match.url_name == 'ejerciciosanteriores_prueba' %}active{% endif %}">
+    <a href="{% url 'ejerciciosanteriores_prueba' %}">
+        <i class="fa-solid fa-clock-rotate-left nav-icon"></i>
+        <span>Ejercicios Anteriores</span>
+    </a>
+</li>
                 <li class="{% if request.resolver_match.url_name == 'usuarios' %}active{% endif %}">
                     <a href="{% url 'usuarios' %}">
                         <i class="fa-solid fa-users nav-icon"></i>

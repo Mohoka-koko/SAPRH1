@@ -2272,3 +2272,8 @@ def api_historial_registros(request):
     registros.sort(key=lambda x: x['fecha_creacion'], reverse=True)
 
     return JsonResponse({'registros': registros})
+def ejerciciosanteriores_prueba(request):
+    return render(
+        request,
+        'dashboards/admin/ejerciciosanteriores.html'
+    )

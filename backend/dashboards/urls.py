@@ -14,7 +14,9 @@ urlpatterns = [
 
     # ── Panel admin ────────────────────────────────────────────────────────
     path('admin-dashboard/', views.admin_dashboard,           name='admin_dashboard'),
-    path('admin-dashboard/home/', views.home,                  name='home'),
+    path('admin-dashboard/home/', views.home, name='home'),
+
+
     path('admin-dashboard/registros/', views.admin_registros, name='registros'),
     path('admin-dashboard/usuarios/', views.admin_usuarios,   name='usuarios'),
     path('admin-dashboard/configuracion/', views.admin_configuracion, name='configuracion'),
@@ -24,16 +26,23 @@ urlpatterns = [
     path('admin-dashboard/registros/ordenpago/', views.ordenpago,                        name='ordenpago'),
     path('admin-dashboard/registros/ordenpagopersonal/',  views.ordenpagopersonal,       name= 'ordenpagopersonal'),
     path('admin-dashboard/home/cargarpresupuesto/', views.cargar_presupuesto,  name='cargarpresupuesto'),
+  
     path(
     'admin-dashboard/home/carga-catalogos/',
     views.carga_catalogos,
     name='carga_catalogos'
+
+),
+path(
+    'ejercicios-anteriores-prueba/',
+    views.ejerciciosanteriores_prueba,
+    name='ejerciciosanteriores_prueba'
 ),
 
     path('admin-dashboard/crear-usuario/', views.crear_usuario, name='crear_usuario'),
     path('admin-dashboard/usuarios-baja/<int:usuario_id>/', views.dar_baja_usuario, name='dar_baja_usuario'),
     path('admin-dashboard/usuarios-reactivar/<int:usuario_id>/', views.reactivar_usuario, name='reactivar_usuario'),
-
+    
     # APIs
     path('api/linea-presupuestaria/crear/',  views.api_crear_linea_presupuestaria, name='api_crear_linea_presupuestaria'),
     path('api/linea-presupuestaria/listar/', views.api_listar_lineas,               name='api_listar_lineas'),
@@ -83,4 +92,5 @@ urlpatterns = [
     path('usuariovip-dashboard/', views.usuariovip_dashboard, name='usuariovip_dashboard'),
     path('usuariocomun-dashboard/', views.usuariocomun_dashboard, name='usuariocomun_dashboard'),
     path('acceso-denegado/', views.acceso_denegado, name='acceso_denegado'),
+    
 ]

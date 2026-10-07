@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const filtroUsuario = document.getElementById('filtro-usuario');
     const apiUrl = tbody.getAttribute('data-api-url');
 
+    const COLUMNAS = 7;
+
     // ─── VARIABLES DE ESTADO Y PAGINACIÓN ──────────────────────────────
     let registrosCompletos = []; // Almacena todo el JSON original
     let registrosFiltrados = []; // Almacena los resultados tras aplicar filtros
@@ -17,13 +19,13 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error("Error en la red");
-            
+
             const data = await response.json();
             registrosCompletos = data.registros;
             aplicarFiltros(); // Inicia el proceso de filtrado y renderizado
         } catch (error) {
             console.error("Error al cargar datos:", error);
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Error al cargar los datos.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="${COLUMNAS}" style="text-align: center;">Error al cargar los datos.</td></tr>`;
         }
     }
 
@@ -33,10 +35,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const fecha = filtroFecha.value; // Formato YYYY-MM-DD
         const usuario = filtroUsuario.value.trim().toLowerCase();
 
-        // Filtrar los datos en crudo
         registrosFiltrados = registrosCompletos.filter(reg => {
             const tipoInfo = obtenerDatosTipo(reg.tipo);
-            
+
             let dataFecha = '';
             if (reg.fecha_creacion) {
                 const [fechaParte] = reg.fecha_creacion.split(' - ');
@@ -52,30 +53,47 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // Reiniciar a la primera página cada vez que se filtra
-        paginaActual = 1; 
+        paginaActual = 1;
         renderTabla();
     }
 
     // ─── RENDERIZADO DE TABLA (SOLO LA PÁGINA ACTUAL) ───────────────────
     function renderTabla() {
         tbody.innerHTML = '';
-        
-        // Calcular inicio y fin para el .slice()
+
         const inicio = (paginaActual - 1) * REGISTROS_POR_PAGINA;
         const fin = inicio + REGISTROS_POR_PAGINA;
         const paginaRegistros = registrosFiltrados.slice(inicio, fin);
 
         if (paginaRegistros.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No se encontraron registros.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="${COLUMNAS}" style="text-align: center;">No se encontraron registros.</td></tr>`;
         } else {
             paginaRegistros.forEach(reg => {
                 const tipoInfo = obtenerDatosTipo(reg.tipo);
-                const claseEstado = reg.estado.toLowerCase() === 'listo' ? 'badge-listo' : 'badge-revisar';
-                
+
+                const estadoLower = (reg.estado || '').trim().toLowerCase();
+                const esPendiente = estadoLower === 'pendiente';
+
+                let claseEstado = 'badge-revisar';
+                if (estadoLower === 'listo') claseEstado = 'badge-listo';
+                else if (esPendiente) claseEstado = 'badge-pendiente';
+
+                // Ver: SIEMPRE visible, sin importar el estado
+                const btnVer = `<a href="${reg.url_ver || '#'}" class="btn-accion btn-ver" title="Ver">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>`;
+
+                // Editar: solo visible si el registro está pendiente
+                const btnEditar = esPendiente
+                    ? `<a href="${reg.url_editar || '#'}" class="btn-accion btn-editar" title="Editar">
+                           <i class="fa-solid fa-pen-to-square"></i>
+                       </a>`
+                    : '';
+
                 // Fila principal
                 const trPrincipal = document.createElement('tr');
                 trPrincipal.className = 'registro-row';
-                
+
                 trPrincipal.innerHTML = `
                     <td>
                         <span class="badge-tipo ${tipoInfo.clase}">${reg.tipo}</span>
@@ -86,6 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td>
                         <span class="badge ${claseEstado}">${reg.estado}</span>
                     </td>
+                    <td class="col-acciones">${btnVer}${btnEditar}</td>
                     <td class="expandir">
                         <button type="button" class="btn-expandir">
                             <i class="fa-solid fa-chevron-down"></i>
@@ -97,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const trDetalle = document.createElement('tr');
                 trDetalle.className = 'detalle-row';
                 trDetalle.innerHTML = `
-                    <td colspan="6">
+                    <td colspan="${COLUMNAS}">
                         <div class="detalle-contenido">
                             <div>
                                 <strong>Fecha de modificación:</strong>
@@ -116,11 +135,10 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // Llamar a la paginación estándar con el total de registros filtrados
         renderPaginacion(registrosFiltrados.length);
     }
 
-    // ─── PAGINACIÓN (Tu código estándar integrado) ──────────────────────────
+    // ─── PAGINACIÓN ─────────────────────────────────────────────────────
     function renderPaginacion(totalRegistros) {
         const infoEl = document.querySelector(".pagination-info");
         if (infoEl) {
@@ -174,11 +192,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Expansión de filas usando delegación de eventos
     tbody.addEventListener("click", function (e) {
+        // Si el clic fue en un botón de acción (Editar), no expandir la fila
+        if (e.target.closest(".btn-accion")) return;
+
         const fila = e.target.closest(".registro-row");
-        if (!fila) return; 
+        if (!fila) return;
 
         const detalle = fila.nextElementSibling;
-        
+
         if (detalle && detalle.classList.contains("detalle-row")) {
             if (detalle.classList.contains("mostrar")) {
                 detalle.classList.remove("mostrar");
