@@ -38,12 +38,6 @@
                         <span>Inicio</span>
                     </a>
                 </li>
-                <li class="{% if request.resolver_match.url_name == 'cargarpresupuesto' %}active{% endif %}">
-                    <a href="{% url 'cargarpresupuesto' %}">
-                        <i class="fa-solid fa-upload nav-icon"></i>
-                        <span>Cargar Presupuesto Inicial</span>
-                    </a>
-                </li>
                 <li class="{% if request.resolver_match.url_name == 'carga_catalogos' %}active{% endif %}">
                     <a href="{% url 'carga_catalogos' %}">
                         <i class="fa-solid fa-book nav-icon"></i>
