@@ -2277,3 +2277,43 @@ def ejerciciosanteriores_prueba(request):
         request,
         'dashboards/admin/ejerciciosanteriores.html'
     )
+    import json
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+
+@require_POST
+def api_editar_monto_linea(request, linea_id):
+    try:
+        body = json.loads(request.body)
+        monto = float(body.get('saldo_inicial'))
+        if monto < 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Monto inválido.'}, status=400)
+
+    try:
+        linea = LineaPresupuestaria.objects.get(id=linea_id)
+    except LineaPresupuestaria.DoesNotExist:
+        return JsonResponse({'error': 'Línea no encontrada.'}, status=404)
+
+    linea.saldo_inicial = monto
+    linea.save()
+    return JsonResponse({'mensaje': 'Monto actualizado.'})
+
+
+@require_POST
+def api_eliminar_linea(request, linea_id):
+    try:
+        linea = LineaPresupuestaria.objects.get(id=linea_id)
+    except LineaPresupuestaria.DoesNotExist:
+        return JsonResponse({'error': 'Línea no encontrada.'}, status=404)
+
+    try:
+        linea.delete()
+    except Exception:
+        return JsonResponse(
+            {'error': 'No se puede eliminar: tiene movimientos asociados.'},
+            status=400
+        )
+    return JsonResponse({'mensaje': 'Partida eliminada.'})

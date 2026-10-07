@@ -121,41 +121,141 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-// ── Cargar tabla al iniciar ──────────────────────────────────────────────
+// ── Tabla + edición de monto en línea ────────────────────────────────────
+let lineasCache = [];
+
+function formatearMonto(n) {
+    return "$" + Number(n || 0).toLocaleString("es-AR");
+}
+
+function celdaMontoHTML(l) {
+    const esCero = Number(l.saldo_inicial) === 0;
+    return `
+        <span class="monto-valor ${esCero ? "monto-cero" : ""}">${formatearMonto(l.saldo_inicial)}</span>
+        <button type="button" class="btn-editar-monto" onclick="editarMonto(${l.id})">Editar</button>
+        <button type="button" class="btn-eliminar-monto" onclick="eliminarLinea(${l.id})">Eliminar</button>
+    `;
+}
+
+function actualizarTotal() {
+    const total = lineasCache.reduce((acc, l) => acc + Number(l.saldo_inicial || 0), 0);
+    totalGeneralCalculado = total;
+    document.getElementById("totalGeneral").textContent =
+        "$" + total.toLocaleString("es-AR", { minimumFractionDigits: 2 });
+    validarPresupuestoGeneral();
+}
+
 async function cargarTabla() {
     try {
         const resp = await fetch("/api/linea-presupuestaria/listar/");
         const data = await resp.json();
+        lineasCache = data.lineas;
+
         const tbody = document.getElementById("tablaPartidas");
-        tbody.innerHTML = "";
-        let total = 0;
+        tbody.innerHTML = lineasCache.map((l) => `
+            <tr>
+                <td>${l.prog}</td>
+                <td>${l.subp}</td>
+                <td>${l.py}</td>
+                <td>${l.ao}</td>
+                <td>${l.partida}</td>
+                <td>${l.denominacion}</td>
+                <td>${l.func ?? ""}</td>
+                <td>${l.fuente}</td>
+                <td class="celda-monto" id="monto-${l.id}">${celdaMontoHTML(l)}</td>
+            </tr>
+        `).join("");
 
-        data.lineas.forEach((l) => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${l.prog}</td>
-                    <td>${l.subp}</td>
-                    <td>${l.py}</td>
-                    <td>${l.ao}</td>
-                    <td>${l.partida}</td>
-                    <td>${l.denominacion}</td>
-                    <td>${l.fuente}</td>
-                    <td>$${Number(l.saldo_inicial).toLocaleString("es-AR")}</td>
-                </tr>
-            `;
-            total += parseFloat(l.saldo_inicial);
-        });
-
-        totalGeneralCalculado = total;
-
-        document.getElementById("totalGeneral").textContent =
-            "$" + total.toLocaleString("es-AR", { minimumFractionDigits: 2 });
-
-        // Revalida contra lo que haya cargado en el campo de presupuesto general
-        validarPresupuestoGeneral();
-
+        actualizarTotal();
     } catch (err) {
         console.error("Error cargando tabla:", err);
+    }
+}
+
+function editarMonto(id) {
+    const l = lineasCache.find((x) => x.id === id);
+    const td = document.getElementById(`monto-${id}`);
+    const valor = Number(l.saldo_inicial) || "";
+
+    td.innerHTML = `
+        <input type="number" min="0" step="0.01" class="input-monto"
+               value="${valor}" placeholder="0"
+               onkeydown="if(event.key==='Enter') guardarMonto(${id}); if(event.key==='Escape') cancelarMonto(${id});">
+        <button type="button" class="btn-guardar-monto" onclick="guardarMonto(${id})">Guardar</button>
+        <button type="button" class="btn-cancelar-monto" onclick="cancelarMonto(${id})">✕</button>
+    `;
+    td.querySelector("input").focus();
+}
+
+function cancelarMonto(id) {
+    const l = lineasCache.find((x) => x.id === id);
+    document.getElementById(`monto-${id}`).innerHTML = celdaMontoHTML(l);
+}
+
+async function guardarMonto(id) {
+    const l = lineasCache.find((x) => x.id === id);
+    const td = document.getElementById(`monto-${id}`);
+    const monto = parseFloat(td.querySelector("input").value);
+
+    if (isNaN(monto) || monto < 0) {
+        alert("Ingresá un monto válido (0 o mayor).");
+        return;
+    }
+
+    // No permitir pasarse del presupuesto general
+    const general = parseFloat(document.getElementById("presupuestoGeneralInicial").value);
+    if (!isNaN(general)) {
+        const otros = lineasCache.reduce(
+            (acc, x) => acc + (x.id === id ? 0 : Number(x.saldo_inicial || 0)), 0
+        );
+        if (otros + monto - general > 0.01) {
+            alert("Con este monto el total supera el presupuesto general disponible.");
+            return;
+        }
+    }
+
+    try {
+        const resp = await fetch(`/api/linea-presupuestaria/editar-monto/${id}/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken,
+            },
+            body: JSON.stringify({ saldo_inicial: monto }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            alert("Error: " + (data.error || "no se pudo guardar el monto."));
+            return;
+        }
+        l.saldo_inicial = monto;
+        td.innerHTML = celdaMontoHTML(l);
+        actualizarTotal();
+    } catch (err) {
+        console.error(err);
+        alert("Error de red al guardar el monto.");
+    }
+}
+
+async function eliminarLinea(id) {
+    const l = lineasCache.find((x) => x.id === id);
+    if (!confirm(`¿Eliminar la partida "${l.denominacion}"?`)) return;
+
+    try {
+        const resp = await fetch(`/api/linea-presupuestaria/eliminar/${id}/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": csrftoken },
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            alert("Error: " + (data.error || "no se pudo eliminar."));
+            return;
+        }
+        lineasCache = lineasCache.filter((x) => x.id !== id);
+        cargarTabla();
+    } catch (err) {
+        console.error(err);
+        alert("Error de red al eliminar.");
     }
 }
 
@@ -255,7 +355,6 @@ function limpiarFormulario() {
     document.getElementById("partida").innerHTML = '<option value="">Seleccionar partida...</option>';
     document.getElementById("fuente").innerHTML  = '<option value="">Seleccionar fuente...</option>';
     document.getElementById("nombre").value      = "";
-    document.getElementById("presupuesto").value = "";
     document.getElementById("py").disabled       = true;
     document.getElementById("ao").disabled       = true;
 }
@@ -265,27 +364,26 @@ window.onclick = function (e) {
     if (e.target === modal) cerrarModal();
 };
 
-// ── Guardar ──────────────────────────────────────────────────────────────
+// ── Guardar (el presupuesto inicial se carga siempre en 0) ───────────────
 async function guardarPresupuesto() {
-    const progId     = document.getElementById("prog").value;
-    const pyId       = document.getElementById("py").value;
-    const aoId       = document.getElementById("ao").value;
-    const partidaId  = document.getElementById("partida").value;
-    const fuenteId   = document.getElementById("fuente").value;
-    const presupuesto = document.getElementById("presupuesto").value;
+    const progId    = document.getElementById("prog").value;
+    const pyId      = document.getElementById("py").value;
+    const aoId      = document.getElementById("ao").value;
+    const partidaId = document.getElementById("partida").value;
+    const fuenteId  = document.getElementById("fuente").value;
 
-    if (!progId || !pyId || !aoId || !partidaId || !fuenteId || !presupuesto) {
+    if (!progId || !pyId || !aoId || !partidaId || !fuenteId) {
         alert("Completá todos los campos antes de guardar.");
         return;
     }
 
     const payload = {
-        programa_id:        progId,
-        proyecto_id:        pyId,
-        actividad_id:       aoId,
-        partida_id:         partidaId,
-        fuente_id:          fuenteId,
-        presupuesto_inicial: presupuesto,
+        programa_id:         progId,
+        proyecto_id:         pyId,
+        actividad_id:        aoId,
+        partida_id:          partidaId,
+        fuente_id:           fuenteId,
+        presupuesto_inicial: 0,
     };
 
     try {
@@ -324,6 +422,7 @@ function buscarPartida() {
 // ── Inicializar ──────────────────────────────────────────────────────────
 restaurarPresupuestoGeneral();
 cargarTabla();
+
 // ── Catálogos ──────────────────────────────────────────────────────────
 const PADRE_LABEL = {
     'Programa': 'Jurisdicción',
@@ -339,7 +438,6 @@ let datosCatalogos = {
 
 let catalogoActual = 'Programa';
 let editandoId = null;
-
 
 
 function abrirModalCatalogos() {
@@ -478,7 +576,7 @@ async function guardarCatalogoItem() {
 
         cerrarModalItem();
         await cargarCatalogo(catalogoActual);
-       
+
     } catch (err) {
         alert(err.message);
     }
@@ -505,7 +603,7 @@ async function eliminarItemCatalogo(id) {
         if (!resp.ok) throw new Error(data.error || 'Error al eliminar');
 
         await cargarCatalogo(catalogoActual);
-        
+
     } catch (err) {
         alert(err.message);
     }
