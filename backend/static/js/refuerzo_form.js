@@ -58,6 +58,29 @@ document.addEventListener("DOMContentLoaded", () => {
       const v = parsearImporte(mImporteTotal.value);
       if (v !== null && v > 0) mImporteTotal.value = v.toFixed(2).replace(".", ",");
     });
+
+    // ─── MODO VER ─────────────────────────────────────────────
+    if (MODO === 'ver') {
+      const btnAgregarR = document.getElementById("btn-agregar-receptora");
+      if (btnAgregarR) btnAgregarR.style.display = "none";
+      ["m-expediente", "m-fecha", "m-importe-total-refuerzo"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = true;
+      });
+      const fileBtn = document.querySelector(".mf-file-btn");
+      if (fileBtn) fileBtn.style.display = "none";
+
+      // Deshabilitar selectores dinámicamente
+      const observer = new MutationObserver(() => {
+          document.querySelectorAll(
+              ".fila-receptora-refuerzo select, " +
+              ".fila-receptora-refuerzo input:not([type='hidden'])"
+          ).forEach(el => { el.disabled = true; el.style.pointerEvents = "none"; });
+          document.querySelectorAll(".btn-eliminar-fila")
+              .forEach(el => el.style.display = "none");
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
   
     // ─── CACHE ────────────────────────────────────────────────────────────────
     let _programasCache = null;
@@ -409,48 +432,274 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   
     // ─── GUARDAR ──────────────────────────────────────────────────────────────
-    btnGuardar.addEventListener("click", async () => {
-      if (!validar()) return;
-  
-      const filas        = obtenerFilas();
-      const importeTotal = parsearImporte(mImporteTotal.value) ?? 0;
-  
-      const body = {
-        fecha:          mFecha.value,
-        nro_expediente: mExpediente.value.trim() + "-GDESDE-APRH#MAMA",
-        nro_decreto:    mDecreto.files[0] ? mDecreto.files[0].name : "",
-        detalles:       filas.map(f => ({ linea_id: f.linea_id, importe: f.importe })),
-      };
-  
-      try {
-        btnGuardar.disabled = true;
-        btnGuardar.querySelector(".mf-btn-texto").textContent = "Guardando...";
-  
-        const url = MODO === "editar"
-          ? `/api/refuerzo/editar/${REFUERZO.id}/`
-          : "/api/refuerzo/crear/";
-  
-        const res  = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
-          body: JSON.stringify(body),
-        });
-        const data = await res.json();
-        if (!res.ok) { alert(`Error: ${data.error}`); return; }
-  
-        window.location.href = "/admin-dashboard/registros/refuerzo";
-  
-      } catch (err) {
-        alert("Error de conexión con el servidor");
-        console.error(err);
-      } finally {
-        btnGuardar.disabled = false;
-        btnGuardar.querySelector(".mf-btn-texto").textContent = "Guardar";
-      }
-    });
-  
+    if (btnGuardar) {
+      btnGuardar.addEventListener("click", async () => {
+        if (!validar()) return;
+    
+        const filas        = obtenerFilas();
+        const importeTotal = parsearImporte(mImporteTotal.value) ?? 0;
+    
+        const body = {
+          fecha:          mFecha.value,
+          nro_expediente: mExpediente.value.trim() + "-GDESDE-APRH#MAMA",
+          nro_decreto:    mDecreto.files[0] ? mDecreto.files[0].name : "",
+          detalles:       filas.map(f => ({ linea_id: f.linea_id, importe: f.importe })),
+        };
+    
+        try {
+          btnGuardar.disabled = true;
+          btnGuardar.querySelector(".mf-btn-texto").textContent = "Guardando...";
+    
+          const url = MODO === "editar"
+            ? `/api/refuerzo/editar/${REFUERZO.id}/`
+            : "/api/refuerzo/crear/";
+    
+          const res  = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          if (!res.ok) { alert(`Error: ${data.error}`); return; }
+    
+          window.location.href = "/admin-dashboard/registros/refuerzo";
+    
+        } catch (err) {
+          alert("Error de conexión con el servidor");
+          console.error(err);
+        } finally {
+          btnGuardar.disabled = false;
+          btnGuardar.querySelector(".mf-btn-texto").textContent = "Guardar";
+        }
+      });
+    }
+
     if (btnExportar) {
-      btnExportar.addEventListener("click", () => alert("Exportación a PDF — próximamente."));
+    btnExportar.addEventListener("click", () => generarPDFRefuerzo());
+    }
+
+    function generarPDFRefuerzo() {
+        // ── Recolectar datos de receptoras ────────────────────────
+        const wrappers = document.querySelectorAll("#contenedor-receptoras [data-fila-id]");
+        const filas_r  = [];
+
+        wrappers.forEach(wrapper => {
+            const fila   = wrapper.querySelector(".fila-receptora-refuerzo");
+            if (!fila) return;
+            const filaId = wrapper.dataset.filaId;
+            const importeEl = document.querySelector(
+                `#bloque-importes-receptoras .mf-importe-fila[data-fila-id="${filaId}"] .fila-importe`
+            );
+            filas_r.push({
+                jur:     "51",
+                prg:     fila.querySelector(".fila-prg")?.value    || "—",
+                sprg:    "00",
+                pry:     fila.querySelector(".fila-pry")?.value    || "—",
+                ao:      fila.querySelector(".fila-ao")?.value     || "—",
+                par:     fila.querySelector(".fila-par")?.value    || "—",
+                ff:      fila.querySelector(".fila-fuente")?.value || "—",
+                importe: importeEl?.value || "—",
+            });
+        });
+
+        // ── Datos adicionales ─────────────────────────────────────
+        const fecha        = document.getElementById("m-fecha")?.value || "";
+        const expediente   = document.getElementById("m-expediente")?.value || "";
+        const usuario      = document.getElementById("m-usuario")?.value || "";
+        const decreto      = document.getElementById("m-decreto-nombre")?.textContent || "";
+        const importeTotal = document.getElementById("m-importe-total-refuerzo")?.value || "";
+        const totalA       = document.getElementById("total-asignado-refuerzo")?.textContent || "";
+
+        // ── Filas de tabla ────────────────────────────────────────
+        function filasTabla(filas) {
+            return filas.map(f => `
+                <tr>
+                    <td>${f.jur}</td>
+                    <td>${f.prg}</td>
+                    <td>${f.sprg}</td>
+                    <td>${f.pry}</td>
+                    <td>${f.ao}</td>
+                    <td>${f.par}</td>
+                    <td>${f.ff}</td>
+                    <td class="importe">${f.importe}</td>
+                </tr>
+            `).join("");
+        }
+
+        // ── HTML del PDF ──────────────────────────────────────────
+        const html = `<!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>Refuerzo Presupuestario</title>
+        <style>
+            @page { size: A4 landscape; margin: 12mm 15mm; }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9pt; color: #1e293b; }
+
+            .encabezado {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                border-bottom: 2px solid #1d2731;
+                padding-bottom: 8px;
+                margin-bottom: 10px;
+            }
+            .encabezado-titulo { font-size: 13pt; font-weight: 700; color: #1d2731; }
+            .encabezado-sub    { font-size: 9pt; color: #475569; }
+
+            h1 { font-size: 14pt; font-weight: 700; margin-bottom: 10px; color: #1d2731; }
+
+            .card {
+                border: 1px solid #dcdfe6;
+                border-radius: 6px;
+                margin-bottom: 10px;
+                overflow: hidden;
+                page-break-inside: avoid;
+            }
+            .card-header {
+                background: #eef2f6;
+                padding: 6px 12px;
+                font-size: 8pt;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+                color: #1d2731;
+                text-transform: uppercase;
+            }
+            .card-body { padding: 10px 12px; }
+
+            .importe-total-box {
+                display: inline-block;
+                background: #f0fdf4;
+                border: 1px solid #86efac;
+                border-radius: 4px;
+                padding: 4px 12px;
+                font-size: 10pt;
+                font-weight: 700;
+                color: #166534;
+                margin-bottom: 10px;
+            }
+
+            table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+            thead tr { background: #1d4ed8; color: #fff; }
+            thead th {
+                padding: 5px 8px;
+                font-size: 7.5pt;
+                font-weight: 700;
+                text-align: center;
+                letter-spacing: 0.3px;
+            }
+            tbody tr:nth-child(even) { background: #f8fafc; }
+            tbody td {
+                padding: 5px 8px;
+                font-size: 8.5pt;
+                text-align: center;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            td.importe { text-align: right; font-weight: 600; }
+
+            .totales {
+                display: flex;
+                justify-content: flex-end;
+                padding: 6px 12px;
+                background: #f8fafc;
+                border-top: 1px solid #dcdfe6;
+            }
+            .total-item { font-size: 8.5pt; font-weight: 700; color: #1d2731; }
+            .total-item span { color: #2e7d32; margin-left: 8px; }
+
+            .info-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px 16px;
+            }
+            .info-campo label {
+                display: block;
+                font-size: 7pt;
+                font-weight: 700;
+                color: #475569;
+                text-transform: uppercase;
+                margin-bottom: 2px;
+            }
+            .info-campo p {
+                font-size: 9pt;
+                color: #1e293b;
+                border-bottom: 1px solid #e2e8f0;
+                padding-bottom: 3px;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div class="encabezado">
+            <div>
+                <div class="encabezado-titulo">ADM. PCIAL. DE RECURSOS HÍDRICOS</div>
+                <div class="encabezado-sub">Santiago del Estero</div>
+            </div>
+        </div>
+
+        <h1>REFUERZO PRESUPUESTARIO</h1>
+
+        <div class="card">
+            <div class="card-header">Datos del Refuerzo</div>
+            <div class="card-body">
+
+                <div style="margin-bottom:8px; font-size:8pt; color:#475569;">
+                    Importe Total del Refuerzo:
+                    <span class="importe-total-box">$${importeTotal}</span>
+                </div>
+
+                <div class="card-header" style="background:#e8f0fe; color:#1d4ed8; margin: 0 -12px 8px; padding: 4px 12px;">
+                    UNIDAD PRESUPUESTARIA RECEPTORA
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>JUR</th><th>PRG</th><th>SPRG</th>
+                            <th>PRY</th><th>A/O</th><th>PAR</th><th>FF</th>
+                            <th>IMPORTE ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>${filasTabla(filas_r)}</tbody>
+                </table>
+
+            </div>
+            <div class="totales">
+                <div class="total-item">TOTAL ASIGNADO ($): <span>${totalA}</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Información Adicional</div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-campo">
+                        <label>Decreto / Resolución</label>
+                        <p>${decreto}</p>
+                    </div>
+                    <div class="info-campo">
+                        <label>N° Expediente</label>
+                        <p>${expediente}-GDESDE-APRH#MAMA</p>
+                    </div>
+                    <div class="info-campo">
+                        <label>Fecha</label>
+                        <p>${fecha}</p>
+                    </div>
+                    <div class="info-campo">
+                        <label>Responsable</label>
+                        <p>${usuario}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>window.onload = () => { window.print(); }<\/script>
+    </body>
+    </html>`;
+
+        const ventana = window.open("", "_blank", "width=1000,height=700");
+        ventana.document.write(html);
+        ventana.document.close();
     }
   
     // ─── INICIALIZAR ──────────────────────────────────────────────────────────
@@ -463,7 +712,7 @@ document.addEventListener("DOMContentLoaded", () => {
     limpiarContenedor("bloque-saldos-receptoras");
     limpiarContenedor("bloque-importes-receptoras");
   
-    if (MODO === "editar" && REFUERZO) {
+    if ((MODO === "editar" || MODO === "ver") && REFUERZO) {
       mFecha.value        = REFUERZO.fecha || "";
       mFecha.max = new Date().toISOString().split("T")[0];
       const sufijo = "-GDESDE-APRH#MAMA";

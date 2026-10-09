@@ -11,7 +11,7 @@
 
         <!-- TÍTULO -->
         <div class="mf-titulo">
-            {% if modo == 'crear' %}NUEVO REFUERZO{% else %}EDITAR REFUERZO{% endif %}
+            {% if modo == 'crear' %}NUEVO REFUERZO{% elif modo == 'editar' %}EDITAR REFUERZO{% else %}VER REFUERZO{% endif %}
         </div>
 
         <!-- ENCABEZADO INSTITUCIONAL -->
@@ -120,14 +120,16 @@
     
         <!-- ACCIONES FLOTANTES -->
         <div class="mf-acciones">
-            <a href="{% url 'modificacion' %}" class="mf-btn mf-btn-cancelar">
+            <a href="{% url 'refuerzo' %}" class="mf-btn mf-btn-cancelar">
                 <span class="mf-btn-icono"><i class="fa-solid fa-xmark"></i></span>
                 <span class="mf-btn-texto">Cancelar</span>
             </a>
+            {% if modo != 'ver' %}
             <button type="button" id="btn-guardar" class="mf-btn mf-btn-guardar">
                 <span class="mf-btn-icono"><i class="fa-solid fa-floppy-disk"></i></span>
                 <span class="mf-btn-texto">Guardar</span>
             </button>
+            {% endif %}
             <button type="button" id="btn-exportar" class="mf-btn mf-btn-exportar">
                 <span class="mf-btn-icono"><i class="fa-solid fa-file-pdf"></i></span>
                 <span class="mf-btn-texto">Exportar PDF</span>

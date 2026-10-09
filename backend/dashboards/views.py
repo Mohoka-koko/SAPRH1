@@ -777,6 +777,41 @@ def api_listar_refuerzos(request):
 
     return JsonResponse({'refuerzos': data})
 
+@rol_requerido('admin', 'adminprincipal')
+def refuerzo_ver(request, refuerzo_id):
+    import json as _json
+    refuerzo = get_object_or_404(Refuerzo, id=refuerzo_id)
+    detalles = RefuerzoDetalle.objects.filter(refuerzo=refuerzo).select_related(
+        'linea_destino__programa', 'linea_destino__proyecto',
+        'linea_destino__actividad_obra', 'linea_destino__partida',
+        'linea_destino__fuente_financiamiento'
+    )
+    datos = {
+        'id':             refuerzo.id,
+        'fecha':          refuerzo.fecha.strftime('%Y-%m-%d'),
+        'nro_expediente': refuerzo.nro_expediente,
+        'nro_decreto':    refuerzo.nro_decreto_resolucion,
+        'importe_total':  str(refuerzo.importe_total),
+        'receptoras': [
+            {
+                'linea_id':     d.linea_destino.id,
+                'importe':      str(d.importe),
+                'programa_id':  d.linea_destino.programa.id,
+                'proyecto_id':  d.linea_destino.proyecto.id,
+                'actividad_id': d.linea_destino.actividad_obra.id,
+                'partida_id':   d.linea_destino.partida.id,
+                'fuente_id':    d.linea_destino.fuente_financiamiento.id,
+            }
+            for d in detalles
+        ],
+    }
+    context = {
+        'usuario':  request.user,
+        'modo':     'ver',
+        'refuerzo': _json.dumps(datos),
+    }
+    return render(request, 'dashboards/admin/refuerzo_form.html', context)
+
 
 
 import json

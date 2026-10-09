@@ -486,9 +486,8 @@ body {
 }
 
 .detail-row.open .detail-row-content {
-  max-height: 420px;
+  max-height: none;
   padding: 14px 24px;
-  overflow-y: auto;
 }
 
 .detail-movimientos-list {

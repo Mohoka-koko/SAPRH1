@@ -658,7 +658,282 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (btnExportar) {
-        btnExportar.addEventListener("click", () => alert("Exportación a PDF — próximamente."));
+        btnExportar.addEventListener("click", () => generarPDF());
+    }
+    
+    function generarPDF() {
+        // ── Recolectar datos de transferentes ─────────────────────
+        const wrappers_t = document.querySelectorAll("#contenedor-transferentes [data-fila-id]");
+        const filas_t = [];
+        wrappers_t.forEach(wrapper => {
+            const fila    = wrapper.querySelector(".fila-receptora-refuerzo");
+            if (!fila) return;
+            const filaId  = wrapper.dataset.filaId;
+            const inputs  = fila.querySelectorAll("select, input[type='text']:not([readonly])");
+            const valores = Array.from(fila.querySelectorAll("select, input[type='text']"))
+                .map(el => el.value || "—");
+            const importeEl = document.querySelector(
+                `#bloque-importes-transferentes .mf-importe-fila[data-fila-id="${filaId}"] .fila-importe`
+            );
+            filas_t.push({
+                jur:    "51",
+                prg:    fila.querySelector(".fila-prg")?.value || "—",
+                sprg:   "00",
+                pry:    fila.querySelector(".fila-pry")?.value || "—",
+                ao:     fila.querySelector(".fila-ao")?.value  || "—",
+                par:    fila.querySelector(".fila-par")?.value || "—",
+                ff:     fila.querySelector(".fila-fuente")?.value || "—",
+                importe: importeEl?.value || "—",
+            });
+        });
+    
+        // ── Recolectar datos de receptoras ────────────────────────
+        const wrappers_r = document.querySelectorAll("#contenedor-receptoras [data-fila-id]");
+        const filas_r = [];
+        wrappers_r.forEach(wrapper => {
+            const fila   = wrapper.querySelector(".fila-receptora-refuerzo");
+            if (!fila) return;
+            const filaId = wrapper.dataset.filaId;
+            const importeEl = document.querySelector(
+                `#bloque-importes-receptoras .mf-importe-fila[data-fila-id="${filaId}"] .fila-importe`
+            );
+            filas_r.push({
+                jur:    "51",
+                prg:    fila.querySelector(".fila-prg")?.value    || "—",
+                sprg:   "00",
+                pry:    fila.querySelector(".fila-pry")?.value    || "—",
+                ao:     fila.querySelector(".fila-ao")?.value     || "—",
+                par:    fila.querySelector(".fila-par")?.value    || "—",
+                ff:     fila.querySelector(".fila-fuente")?.value || "—",
+                importe: importeEl?.value || "—",
+            });
+        });
+    
+        // ── Datos adicionales ─────────────────────────────────────
+        const fecha      = document.getElementById("m-fecha")?.value || "";
+        const expediente = document.getElementById("m-expediente")?.value || "";
+        const usuario    = document.getElementById("m-usuario")?.value || "";
+        const decreto    = document.getElementById("m-decreto-nombre")?.textContent || "";
+        const importe    = document.getElementById("m-importe")?.value || "";
+        const totalT     = document.getElementById("total-asignado-transferente")?.textContent || "";
+        const totalR     = document.getElementById("total-asignado-receptora")?.textContent || "";
+        const tipoUp     = document.querySelector('input[name="tipoUpTransferente"]:checked')?.value === "imputacion"
+                           ? "UP de una Imputación" : "UP Presupuesto General";
+    
+        // ── Función para generar filas de tabla HTML ──────────────
+        function filasTabla(filas) {
+            return filas.map(f => `
+                <tr>
+                    <td>${f.jur}</td>
+                    <td>${f.prg}</td>
+                    <td>${f.sprg}</td>
+                    <td>${f.pry}</td>
+                    <td>${f.ao}</td>
+                    <td>${f.par}</td>
+                    <td>${f.ff}</td>
+                    <td class="importe">${f.importe}</td>
+                </tr>
+            `).join("");
+        }
+    
+        // ── Construir HTML del PDF ────────────────────────────────
+        const html = `<!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>Modificación Presupuestaria</title>
+            <style>
+                @page { size: A4 landscape; margin: 12mm 15mm; }
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9pt; color: #1e293b; }
+        
+                /* Encabezado */
+                .encabezado {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    border-bottom: 2px solid #1d2731;
+                    padding-bottom: 8px;
+                    margin-bottom: 10px;
+                }
+                .encabezado img { width: 48px; height: 48px; object-fit: contain; }
+                .encabezado-titulo { font-size: 13pt; font-weight: 700; color: #1d2731; }
+                .encabezado-sub { font-size: 9pt; color: #475569; }
+        
+                h1 { font-size: 14pt; font-weight: 700; margin-bottom: 10px; color: #1d2731; }
+        
+                /* Cards */
+                .card {
+                    border: 1px solid #dcdfe6;
+                    border-radius: 6px;
+                    margin-bottom: 10px;
+                    overflow: hidden;
+                    page-break-inside: avoid;
+                }
+                .card-header {
+                    background: #eef2f6;
+                    padding: 6px 12px;
+                    font-size: 8pt;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                    color: #1d2731;
+                    text-transform: uppercase;
+                }
+                .card-body { padding: 10px 12px; }
+        
+                /* Tipo UP */
+                .tipo-up { font-size: 8pt; color: #475569; margin-bottom: 8px; }
+                .tipo-up strong { color: #1d2731; }
+        
+                /* Tablas de UPs */
+                table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+                thead tr { background: #1d4ed8; color: #fff; }
+                thead th {
+                    padding: 5px 8px;
+                    font-size: 7.5pt;
+                    font-weight: 700;
+                    text-align: center;
+                    letter-spacing: 0.3px;
+                }
+                tbody tr:nth-child(even) { background: #f8fafc; }
+                tbody td {
+                    padding: 5px 8px;
+                    font-size: 8.5pt;
+                    text-align: center;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+                td.importe { text-align: right; font-weight: 600; }
+        
+                /* Totales */
+                .totales {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 24px;
+                    padding: 6px 12px;
+                    background: #f8fafc;
+                    border-top: 1px solid #dcdfe6;
+                }
+                .total-item { font-size: 8.5pt; font-weight: 700; color: #1d2731; }
+                .total-item span { color: #2e7d32; margin-left: 8px; }
+        
+                /* Info adicional */
+                .info-grid {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 10px 16px;
+                }
+                .info-campo label {
+                    display: block;
+                    font-size: 7pt;
+                    font-weight: 700;
+                    color: #475569;
+                    text-transform: uppercase;
+                    margin-bottom: 2px;
+                }
+                .info-campo p {
+                    font-size: 9pt;
+                    color: #1e293b;
+                    border-bottom: 1px solid #e2e8f0;
+                    padding-bottom: 3px;
+                }
+            </style>
+        </head>
+        <body>
+        
+            <!-- Encabezado institucional -->
+            <div class="encabezado">
+                <div>
+                    <div class="encabezado-titulo">ADM. PCIAL. DE RECURSOS HÍDRICOS</div>
+                    <div class="encabezado-sub">Santiago del Estero</div>
+                </div>
+            </div>
+        
+            <h1>MODIFICACIÓN PRESUPUESTARIA</h1>
+        
+            <!-- Datos de modificación -->
+            <div class="card">
+                <div class="card-header">Datos de Modificación</div>
+                <div class="card-body">
+        
+                    <!-- Tipo de UP -->
+                    <div class="tipo-up">Tipo de UP: <strong>${tipoUp}</strong></div>
+        
+                    <!-- Unidades Transferentes -->
+                    <div class="card-header" style="background:#e8f0fe; color:#1d4ed8; margin: 0 -12px 8px; padding: 4px 12px;">
+                        UNIDAD PRESUPUESTARIA TRANSFERENTE
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>JUR</th><th>PRG</th><th>SPRG</th>
+                                <th>PRY</th><th>A/O</th><th>PAR</th><th>FF</th>
+                                <th>IMPORTE ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${filasTabla(filas_t)}</tbody>
+                    </table>
+        
+                    <!-- Unidades Receptoras -->
+                    <div class="card-header" style="background:#e8f0fe; color:#1d4ed8; margin: 8px -12px 8px; padding: 4px 12px;">
+                        UNIDAD PRESUPUESTARIA RECEPTORA
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>JUR</th><th>PRG</th><th>SPRG</th>
+                                <th>PRY</th><th>A/O</th><th>FF</th>
+                                <th>IMPORTE ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>${filasTabla(filas_r)}</tbody>
+                    </table>
+        
+                </div>
+        
+                <!-- Totales -->
+                <div class="totales">
+                    <div class="total-item">TOTAL TRANSFERENTE ($): <span>${totalT}</span></div>
+                    <div class="total-item">TOTAL RECEPTORA ($): <span>${totalR}</span></div>
+                </div>
+            </div>
+        
+            <!-- Información adicional -->
+            <div class="card">
+                <div class="card-header">Información Adicional</div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        <div class="info-campo">
+                            <label>Decreto / Resolución</label>
+                            <p>${decreto}</p>
+                        </div>
+                        <div class="info-campo">
+                            <label>N° Expediente</label>
+                            <p>${expediente}-GDESDE-APRH#MAMA</p>
+                        </div>
+                        <div class="info-campo">
+                            <label>Fecha</label>
+                            <p>${fecha}</p>
+                        </div>
+                        <div class="info-campo">
+                            <label>Responsable</label>
+                            <p>${usuario}</p>
+                        </div>
+                        <div class="info-campo">
+                            <label>Importe Total</label>
+                            <p><strong>${importe}</strong></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
+            <script>window.onload = () => { window.print(); }</script>
+        </body>
+        </html>`;
+    
+        // ── Abrir en ventana nueva y disparar impresión ────────────
+        const ventana = window.open("", "_blank", "width=1000,height=700");
+        ventana.document.write(html);
+        ventana.document.close();
     }
 
     // ─── INICIALIZAR ──────────────────────────────────────────────────────────

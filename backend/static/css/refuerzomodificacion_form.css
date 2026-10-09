@@ -786,3 +786,141 @@ span.mf-total-input.error-total {
         gap: 8px;
     }
   }
+
+/* ============================================================
+   ESTILOS DE IMPRESIÓN / EXPORTAR PDF
+   ============================================================ */
+@media print {
+
+    /* Configuración de página A4 horizontal */
+    @page {
+        size: A4 landscape;
+        margin: 15mm 15mm 15mm 15mm;
+    }
+
+    /* Ocultar todo excepto el contenido del formulario */
+    body * {
+        visibility: hidden;
+    }
+
+    .mf-pagina,
+    .mf-pagina * {
+        visibility: visible;
+    }
+
+    .mf-pagina {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        padding: 0;
+        background: #fff;
+        min-height: unset;
+    }
+
+    /* Ocultar botones y acciones */
+    .mf-acciones,
+    .mf-btn-agregar-fila-wrap,
+    .btn-eliminar-fila,
+    .mf-file-btn,
+    input[type="radio"],
+    input[type="file"] {
+        display: none !important;
+    }
+
+    /* Ocultar columna de saldo actual completa */
+    .mf-transfer-grid-col:nth-child(2) {
+        display: none !important;
+    }
+
+    /* Ajustar grid a 2 columnas sin la del saldo */
+    .mf-transfer-grid {
+        grid-template-columns: 1fr 160px !important;
+    }
+
+    /* Ocultar navbar y sidebar del dashboard */
+    nav, aside, header, footer,
+    [class*="navbar"], [class*="sidebar"],
+    [class*="nav-"], [class*="side-"] {
+        display: none !important;
+    }
+
+    /* Sombras y bordes simplificados para impresión */
+    .mf-card {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        break-inside: avoid;
+        margin-bottom: 12px;
+    }
+
+    /* Selectores e inputs legibles en impresión */
+    select, input[type="text"], input[type="date"] {
+        border: none !important;
+        background: transparent !important;
+        padding: 4px 0 !important;
+        font-size: 0.8rem !important;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    /* Ocultar la flecha de los selects en impresión */
+    select {
+        background-image: none !important;
+    }
+
+    /* Radio buttons — mostrar solo el texto del seleccionado */
+    .mf-radio-label {
+        display: none !important;
+    }
+
+    .mf-radio-label:has(input:checked) {
+        display: inline-flex !important;
+    }
+
+    /* Encabezado institucional visible */
+    .mf-encabezado-institucional {
+        display: flex !important;
+        margin-bottom: 12px;
+    }
+
+    /* Título */
+    .mf-titulo {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+
+    /* Totales */
+    .mf-totales {
+        padding: 10px 16px;
+    }
+
+    /* Asegurar que el texto sea legible */
+    .mf-col-header {
+        font-size: 0.7rem;
+        padding: 6px 10px;
+    }
+
+    /* Evitar cortes de página dentro de bloques importantes */
+    .mf-card,
+    .mf-section-block,
+    .mf-totales {
+        break-inside: avoid;
+    }
+
+    /* Info adicional en grid de 3 columnas para aprovechar el espacio */
+    .mf-info-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    /* Campos de info adicional */
+    .mf-campo label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #475569;
+    }
+
+    /* Saldo display en impresión */
+    .fila-saldo-display {
+        display: none !important;
+    }
+}

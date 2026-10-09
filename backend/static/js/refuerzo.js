@@ -214,7 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // ── Eventos de los botones ────────────────────────────────
       tdAcc.querySelector(".btn-ver").addEventListener("click", e => {
         e.stopPropagation();
-        toggleDetalle(trMain, trDetails, tdToggle);
+        window.location.href = `/refuerzo/ver/${reg.id}/`;
       });
       tdAcc.querySelector(".btn-editar").addEventListener("click", e => {
         e.stopPropagation();
