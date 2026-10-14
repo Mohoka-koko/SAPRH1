@@ -269,5 +269,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+    const MODO = "{{ modo|default:'crear' }}";
+    const IMPUTACION = {{ imputacion|safe|default:"null" }};
+    const USUARIO_ACTUAL = "{{ usuario.nombre }}";
+</script>
 <script src="{% static 'js/imputacion.js'%}"></script>
 {% endblock %}

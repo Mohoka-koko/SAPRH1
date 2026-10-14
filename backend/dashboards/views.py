@@ -2235,6 +2235,43 @@ def api_codigos_pago(request):
     return JsonResponse(list(codigos), safe=False)
 
 # ==========================================
+#  VISTA — VER IMPUTACIÓN
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+def imputacion_ver(request, imputacion_id):
+    import json as _json
+    imputacion = get_object_or_404(Imputacion, id=imputacion_id)
+    detalles = ImputacionDetalle.objects.filter(imputacion=imputacion).select_related(
+        'linea_presupuestaria__programa', 'linea_presupuestaria__proyecto',
+        'linea_presupuestaria__actividad_obra', 'linea_presupuestaria__partida',
+        'linea_presupuestaria__fuente_financiamiento'
+    )
+    datos = {
+        'id':             imputacion.id,
+        'fecha':          imputacion.fecha.strftime('%Y-%m-%d'),
+        'nro_expediente': imputacion.nro_expediente,
+        'asiento_nro':    imputacion.asiento_nro,
+        'detalles': [
+            {
+                'importe':      str(d.importe),
+                'proveedor':    d.proveedor_concepto,
+                'programa_id':  d.linea_presupuestaria.programa.id,
+                'proyecto_id':  d.linea_presupuestaria.proyecto.id,
+                'actividad_id': d.linea_presupuestaria.actividad_obra.id,
+                'partida_id':   d.linea_presupuestaria.partida.id,
+                'fuente_id':    d.linea_presupuestaria.fuente_financiamiento.id,
+            }
+            for d in detalles
+        ],
+    }
+    context = {
+        'usuario':    request.user,
+        'modo':       'ver',
+        'imputacion': _json.dumps(datos),
+    }
+    return render(request, 'dashboards/admin/imputacion.html', context)
+
+# ==========================================
 #  API — HISTORIAL DE REGISTROS (auditoría)
 # ==========================================
 @rol_requerido('admin', 'adminprincipal')
@@ -2256,6 +2293,7 @@ def api_historial_registros(request):
             'estado':                'Listo',
             'referencia_id':         imp.id,
             'nro_expediente':        imp.nro_expediente,
+            'url_ver':               f'/admin-dashboard/imputacion/ver/{imp.id}/',
         })
 
     # ── Órdenes de Pago ───────────────────────────────────────────────────
@@ -2286,6 +2324,7 @@ def api_historial_registros(request):
             'estado':                'Listo',
             'referencia_id':         mod.id,
             'nro_expediente':        mod.nro_expediente,
+            'url_ver':               f'/modificacion/ver/{mod.id}/',
         })
 
     # ── Refuerzos ─────────────────────────────────────────────────────────
@@ -2301,6 +2340,7 @@ def api_historial_registros(request):
             'estado':                'Listo',
             'referencia_id':         ref.id,
             'nro_expediente':        ref.nro_expediente,
+            'url_ver':               f'/refuerzo/ver/{ref.id}/',
         })
 
     # Ordenar por fecha de creación más reciente

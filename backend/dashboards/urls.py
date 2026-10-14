@@ -90,6 +90,7 @@ path(
     path('api/actividades-catalogo/', views.api_actividades_catalogo, name='api_actividades_catalogo'),
     path('modificacion/ver/<int:modificacion_id>/', views.modificacion_ver, name='modificacion_ver'),
     path('refuerzo/ver/<int:refuerzo_id>/', views.refuerzo_ver, name='refuerzo_ver'),
+    path('admin-dashboard/imputacion/ver/<int:imputacion_id>/', views.imputacion_ver, name='imputacion_ver'),
 
     # ── Otros dashboards ───────────────────────────────────────────────────
     path('usuariovip-dashboard/', views.usuariovip_dashboard, name='usuariovip_dashboard'),

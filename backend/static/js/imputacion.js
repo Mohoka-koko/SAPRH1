@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", function () {
+
     const exportBtn = document.getElementById("exportar-pdf-btn");
 
     if (exportBtn) {
@@ -649,5 +650,161 @@ document.addEventListener("DOMContentLoaded", function () {
             guardarBtn.disabled    = false;
             guardarBtn.textContent = "Guardar imputación";
         }
+    }
+
+    // ─── MODO VER: deshabilitar todos los controles de forma definitiva ────
+    function aplicarModoVer() {
+        if (typeof MODO !== 'undefined' && MODO === 'ver') {
+            const guardarBtn = document.getElementById("guardar-imputacion-btn");
+            if (guardarBtn) guardarBtn.style.display = "none";
+            
+            const agregarFilaBtn = document.getElementById("agregar-fila-btn");
+            const borrarFilaBtn = document.getElementById("borrar-fila-btn");
+            if (agregarFilaBtn) agregarFilaBtn.style.display = "none";
+            if (borrarFilaBtn) borrarFilaBtn.style.display = "none";
+
+            // Deshabilitar cabecera
+            ["fecha-actual", "input-expediente", "contabilizado-select", "comp-fecha", "comp-contabilizado"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = true;
+            });
+
+            // Deshabilitar todos los selects, inputs y textareas de las filas actuales y futuras
+            document.querySelectorAll("#filas-body select, #filas-body input, #filas-body textarea").forEach(el => {
+                el.disabled = true;
+                el.style.pointerEvents = "none";
+            });
+
+            // Ocultar botones de eliminar fila si existieran
+            document.querySelectorAll(".btn-eliminar-fila").forEach(el => el.style.display = "none");
+        }
+    }
+
+    // Ejecutar al iniciar por si acaso
+    aplicarModoVer();
+
+    // ─── CARGAR DATOS SI ESTÁ EN MODO VER (CORREGIDO) ──────────────────────
+    if (typeof MODO !== 'undefined' && MODO === "ver" && typeof IMPUTACION !== "undefined" && IMPUTACION) {
+        const fechaInput = document.getElementById("fecha-actual");
+        const expedienteInput = document.getElementById("input-expediente");
+
+        if (fechaInput) fechaInput.value = IMPUTACION.fecha || "";
+        if (expedienteInput) {
+            const sufijo = "-GDESDE-APRH#MAMA";
+            expedienteInput.value = IMPUTACION.nro_expediente.endsWith(sufijo)
+                ? IMPUTACION.nro_expediente.slice(0, -sufijo.length)
+                : IMPUTACION.nro_expediente;
+        }
+
+        const detalles = IMPUTACION.detalles || [];
+        
+        // Crear las filas necesarias
+        detalles.forEach((det, index) => {
+            if (index > 0) agregarNuevaFila();
+        });
+
+        // Poblar cada fila secuencialmente reutilizando las funciones del archivo
+        setTimeout(async () => {
+            const filas = document.querySelectorAll("#filas-body tr");
+            
+            // Obtener programas y partidas usando las utilidades ya existentes en el archivo
+            const respPrg = await fetch("/api/programas/");
+            const dataPrg = await respPrg.json();
+            const programas = dataPrg.programas;
+            
+            const partidas = await getPartidas(); // Reutiliza la función existente
+
+            for (let i = 0; i < detalles.length; i++) {
+                const det = detalles[i];
+                const fila = filas[i];
+                if (!fila) continue;
+
+                const cods = fila.querySelectorAll(".cod");
+                const selectPrg = cods[1];
+                const selectPry = cods[3];
+                const selectAo  = cods[4];
+                const selectPar = cods[5];
+                const selectFf  = cods[6];
+
+                // 1. Llenar y seleccionar Programa
+                if (selectPrg && det.programa_id) {
+                    llenarSelect(selectPrg, programas, "id",
+                        (p) => String(p.codigo_programa).padStart(2, "0"),
+                        (p) => p.nombre, "Seleccionar PRG...");
+                    selectPrg.value = det.programa_id;
+                    actualizarCodigoVisible(selectPrg);
+                }
+
+                // 2. Llenar y seleccionar Partida
+                if (selectPar && det.partida_id) {
+                    llenarSelect(selectPar, partidas, "id",
+                        (p) => p.codigo, (p) => p.denominacion, "Seleccionar PAR...");
+                    selectPar.value = det.partida_id;
+                    actualizarCodigoVisible(selectPar);
+                }
+
+                // 3. Cargar Proyectos, Actividades y Fuentes en cascada
+                if (det.programa_id && det.proyecto_id) {
+                    try {
+                        const respPry = await fetch(`/api/proyectos/?programa_id=${det.programa_id}`);
+                        const dataPry = await respPry.json();
+                        llenarSelect(selectPry, dataPry.proyectos, "id",
+                            (p) => String(p.codigo_proyecto).padStart(3, "0"),
+                            (p) => p.nombre, "Seleccionar PRY...");
+                        selectPry.value = det.proyecto_id;
+                        actualizarCodigoVisible(selectPry);
+
+                        if (det.actividad_id) {
+                            const respAo = await fetch(`/api/actividades/?proyecto_id=${det.proyecto_id}`);
+                            const dataAo = await respAo.json();
+                            llenarSelect(selectAo, dataAo.actividades, "id",
+                                (a) => String(a.codigo_act_obra).padStart(3, "0"),
+                                (a) => a.nombre, "Seleccionar A/O...");
+                            selectAo.value = det.actividad_id;
+                            actualizarCodigoVisible(selectAo);
+
+                            // Resolver líneas / Fuentes de Financiamiento
+                            const ejercicio = new Date(IMPUTACION.fecha).getFullYear();
+                            const params = new URLSearchParams({
+                                programa_id:  det.programa_id,
+                                proyecto_id:  det.proyecto_id,
+                                actividad_id: det.actividad_id,
+                                partida_id:   det.partida_id,
+                                ejercicio:    ejercicio,
+                            });
+
+                            const respRes = await fetch(`/api/resolver-lineas/?${params.toString()}`);
+                            const dataRes = await respRes.json();
+                            
+                            if (respRes.ok && dataRes.lineas) {
+                                llenarSelectFuentes(selectFf, dataRes.lineas);
+                                if (det.fuente_id) {
+                                    const optFf = Array.from(selectFf.options).find(o => o.value == det.fuente_id || o.dataset.lineaId == det.fuente_id);
+                                    if (optFf) {
+                                        selectFf.value = optFf.value;
+                                        actualizarCodigoVisible(selectFf);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Error al cargar cascada en modo ver:", err);
+                    }
+                }
+
+                // 4. Asignar concepto/proveedor e importe
+                const proveedorInput = fila.querySelector(".proveedor-input");
+                const importeInput = fila.querySelector(".importe-input") || fila.querySelector(".importe");
+                
+                if (proveedorInput) proveedorInput.value = det.proveedor || "";
+                if (importeInput) {
+                    // Usar toFixed(2) para evitar el error del input type="number" con comas y puntos de miles
+                    importeInput.value = det.importe ? parseFloat(det.importe).toFixed(2) : "0.00";
+                }
+            }
+            calcularTotal();
+            actualizarPanelSaldos();
+            aplicarModoVer();
+        }, 350);
     }
 });
