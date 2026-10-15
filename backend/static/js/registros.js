@@ -72,19 +72,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 const tipoInfo = obtenerDatosTipo(reg.tipo);
 
                 const estadoLower = (reg.estado || '').trim().toLowerCase();
-                const esPendiente = estadoLower === 'pendiente';
+                const esRevisar = estadoLower === 'revisar';
 
                 let claseEstado = 'badge-revisar';
                 if (estadoLower === 'listo') claseEstado = 'badge-listo';
-                else if (esPendiente) claseEstado = 'badge-pendiente';
+                else if (estadoLower === 'revisar') claseEstado = 'badge-revisar';
 
-                // Ver: SIEMPRE visible, sin importar el estado
+                // Ver: visible en todos los registros
                 const btnVer = `<a href="${reg.url_ver || '#'}" class="btn-accion btn-ver" title="Ver">
                                     <i class="fa-solid fa-eye"></i>
                                 </a>`;
 
-                // Editar: solo visible si el registro está pendiente
-                const btnEditar = esPendiente
+                // Editar: solo visible si el estado es 'revisar'
+                const btnEditar = esRevisar
                     ? `<a href="${reg.url_editar || '#'}" class="btn-accion btn-editar" title="Editar">
                            <i class="fa-solid fa-pen-to-square"></i>
                        </a>`
@@ -119,11 +119,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td colspan="${COLUMNAS}">
                         <div class="detalle-contenido">
                             <div>
-                                <strong>Fecha de modificación:</strong>
+                                <strong>Fecha de Edicion:</strong>
                                 <span>${reg.fecha_modificacion || 'S/N'}</span>
                             </div>
                             <div>
-                                <strong>Modificado por:</strong>
+                                <strong>Editado por:</strong>
                                 <span>${reg.modificado_por}</span>
                             </div>
                         </div>
