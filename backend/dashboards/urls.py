@@ -27,18 +27,8 @@ urlpatterns = [
     path('admin-dashboard/registros/ordenpagopersonal/',  views.ordenpagopersonal,       name= 'ordenpagopersonal'),
     path('admin-dashboard/home/cargarpresupuesto/', views.cargar_presupuesto,  name='cargarpresupuesto'),
   
-    path(
-    'admin-dashboard/home/carga-catalogos/',
-    views.carga_catalogos,
-    name='carga_catalogos'
-
-),
-path(
-    'ejercicios-anteriores-prueba/',
-    views.ejerciciosanteriores_prueba,
-    name='ejerciciosanteriores_prueba'
-),
-
+    path('admin-dashboard/home/carga-catalogos/', views.carga_catalogos,  name='carga_catalogos'),
+    path('ejercicios-anteriores-prueba/', views.ejerciciosanteriores_prueba,  name='ejerciciosanteriores_prueba'),
     path('admin-dashboard/crear-usuario/', views.crear_usuario, name='crear_usuario'),
     path('admin-dashboard/usuarios-baja/<int:usuario_id>/', views.dar_baja_usuario, name='dar_baja_usuario'),
     path('admin-dashboard/usuarios-reactivar/<int:usuario_id>/', views.reactivar_usuario, name='reactivar_usuario'),
@@ -65,6 +55,7 @@ path(
     path('api/fuentes/',        views.api_fuentes,        name='api_fuentes'),
     path('api/imputaciones-por-linea/', views.api_imputaciones_por_linea, name='api_imputaciones_por_linea'),
     path('api/historial-registros/', views.api_historial_registros, name='api_historial_registros'),
+    path('api/op-personal/crear/', views.api_crear_op_personal, name='api_crear_op_personal'),
 
 
     # ── Carga de catálogos (CRUD genérico) ─────────────────────────────────

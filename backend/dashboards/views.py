@@ -17,7 +17,8 @@ from dashboards.models import (
     Imputacion, ImputacionDetalle,
     OrdenPago, OrdenPagoBeneficiario, OrdenPagoUnidadPresupuestaria,
     MovimientoHistorial, Jurisdiccion, Programa, Subprograma, Proyecto,
-    ActividadObra, Partida, FuenteFinanciamiento
+    ActividadObra, Partida, FuenteFinanciamiento,
+    OrdenPagoPersonal, OrdenPagoPersonalBeneficiario, OrdenPagoPersonalPartida,
 )
 from django.db.models.deletion import ProtectedError
 from decimal import Decimal
@@ -581,6 +582,33 @@ def api_movimientos_linea(request, linea_id):
             # Caso borde (no debería pasar dado el filtro de arriba):
             # se muestra suelta para no perder la información.
             items_ordenables.append((op.fecha_creacion, op_item))
+
+    # ── Órdenes de Pago Personal: se anidan dentro de su Imputación automática
+    #    usando OrdenPagoPersonalPartida que tiene FK a ImputacionDetalle.
+    partidas_opp = OrdenPagoPersonalPartida.objects.filter(
+        linea_presupuestaria=linea,
+        imputacion_detalle__isnull=False,
+    ).select_related(
+        'orden_pago_personal',
+        'orden_pago_personal__usuario',
+        'imputacion_detalle__imputacion',
+    )
+
+    for partida in partidas_opp:
+        opp  = partida.orden_pago_personal
+        opp_item = {
+            'tipo':              'O. P. Personal',
+            'fechaCreacion':     opp.fecha_creacion.strftime('%d/%m/%Y') if opp.fecha_creacion else '',
+            'numeroExpediente':  opp.nro_orden_pago,
+            'usuario':           opp.usuario.nombre if opp.usuario else '',
+            'importe':           str(-partida.importe),
+            'decretoResolucion': '',
+        }
+        padre = imputacion_items.get(partida.imputacion_detalle.imputacion_id)
+        if padre is not None:
+            padre['ordenesPago'].append(opp_item)
+        else:
+            items_ordenables.append((opp.fecha_creacion, opp_item))
 
     # ── Refuerzos: se leen directamente de RefuerzoDetalle, NO de
     #    MovimientoHistorial (que ahora guarda un único registro por todo
@@ -2311,6 +2339,24 @@ def api_historial_registros(request):
             'nro_expediente':        op.nro_orden_pago,
         })
 
+    # ── Órdenes de Pago Personal ──────────────────────────────────────────────
+    ops_personal = OrdenPagoPersonal.objects.select_related(
+        'usuario'
+    ).order_by('-fecha_creacion')
+
+    for op in ops_personal:
+        registros.append({
+            'id':                 f'opp-{op.id}',
+            'tipo':               'OP Personal',
+            'fecha_creacion':     timezone.localtime(op.fecha_creacion).strftime('%d/%m/%Y - %H:%M') if op.fecha_creacion else '--',
+            'creado_por':         op.usuario.nombre if op.usuario else 'S/N',
+            'fecha_modificacion': timezone.localtime(op.fecha_creacion).strftime('%d/%m/%Y - %H:%M') if op.fecha_creacion else '--',
+            'modificado_por':     op.usuario.nombre if op.usuario else 'S/N',
+            'estado':             'Listo',
+            'referencia_id':      op.id,
+            'nro_expediente':     op.nro_orden_pago,
+        })
+
     # ── Modificaciones ────────────────────────────────────────────────────
     modificaciones = Modificacion.objects.select_related('usuario').order_by('-fecha_creacion')
     for mod in modificaciones:
@@ -2347,12 +2393,15 @@ def api_historial_registros(request):
     registros.sort(key=lambda x: x['fecha_creacion'], reverse=True)
 
     return JsonResponse({'registros': registros})
+
+
 def ejerciciosanteriores_prueba(request):
     return render(
         request,
         'dashboards/admin/ejerciciosanteriores.html'
     )
     import json
+
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
@@ -2392,3 +2441,181 @@ def api_eliminar_linea(request, linea_id):
             status=400
         )
     return JsonResponse({'mensaje': 'Partida eliminada.'})
+
+
+# ==========================================
+#  API — CREAR ORDEN DE PAGO PERSONAL
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_crear_op_personal(request):
+    from django.db.models import Max, Sum
+
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    nro_orden_pago = body.get('nro_orden_pago', '').strip()
+    nro_expediente = body.get('nro_expediente', '').strip()
+    fecha          = body.get('fecha', '').strip()
+    codigo         = body.get('codigo', '').strip()
+    concepto       = body.get('concepto', '').strip()
+    beneficiarios  = body.get('beneficiarios', [])
+    erogaciones    = body.get('erogaciones', [])
+    # beneficiarios: [{codigo, nomina, importe_parcial, importe_total}]
+    # erogaciones:   [{linea_id, descripcion, importe}]
+
+    if not all([nro_orden_pago, nro_expediente, fecha, concepto]):
+        return JsonResponse({'error': 'Faltan campos obligatorios'}, status=400)
+
+    if not beneficiarios:
+        return JsonResponse({'error': 'Debe incluir al menos un beneficiario'}, status=400)
+
+    if not erogaciones:
+        return JsonResponse({'error': 'Debe incluir al menos una erogación'}, status=400)
+
+    try:
+        fecha_obj = date.fromisoformat(fecha)
+    except ValueError:
+        return JsonResponse({'error': 'Fecha inválida. Usar formato YYYY-MM-DD'}, status=400)
+
+    try:
+        with transaction.atomic():
+            # ── Parsear importes ──────────────────────────────────────────
+            try:
+                total_beneficiarios = sum(
+                    Decimal(str(b['importe_total'])) for b in beneficiarios
+                )
+                total_erogaciones = sum(
+                    Decimal(str(e['importe'])) for e in erogaciones
+                )
+            except Exception:
+                raise ValueError('Importe inválido en beneficiarios o erogaciones')
+
+            if total_beneficiarios != total_erogaciones:
+                raise ValueError(
+                    f'El total de beneficiarios (${total_beneficiarios}) '
+                    f'no coincide con el total de erogaciones (${total_erogaciones})'
+                )
+
+            importe_total = total_erogaciones
+
+            # ── Validar líneas y saldo ────────────────────────────────────
+            lineas_validas = []
+            for e in erogaciones:
+                linea_id = e.get('linea_id')
+                importe  = Decimal(str(e.get('importe', 0)))
+                desc     = e.get('descripcion', '').strip()
+
+                if not linea_id or importe <= 0:
+                    raise ValueError('Cada erogación debe tener linea_id e importe mayor a cero')
+
+                try:
+                    linea = LineaPresupuestaria.objects.select_for_update().get(id=linea_id)
+                except LineaPresupuestaria.DoesNotExist:
+                    raise ValueError(f'Línea presupuestaria {linea_id} no encontrada')
+
+                if linea.saldo_actual < importe:
+                    raise ValueError(
+                        f'Saldo insuficiente en línea {linea_id}. '
+                        f'Disponible: ${linea.saldo_actual}, requerido: ${importe}'
+                    )
+
+                lineas_validas.append({
+                    'linea':       linea,
+                    'importe':     importe,
+                    'descripcion': desc or linea.partida.denominacion,
+                })
+
+            # ── Crear OP Personal ─────────────────────────────────────────
+            op_personal = OrdenPagoPersonal.objects.create(
+                nro_orden_pago = nro_orden_pago,
+                nro_expediente = nro_expediente,
+                importe_total  = importe_total,
+                codigo         = codigo,
+                concepto       = concepto,
+                fecha          = fecha_obj,
+                imputacion     = None,
+                usuario        = request.user,
+            )
+
+            # ── Crear beneficiarios ───────────────────────────────────────
+            for b in beneficiarios:
+                OrdenPagoPersonalBeneficiario.objects.create(
+                    orden_pago_personal  = op_personal,
+                    codigo               = b.get('codigo', ''),
+                    nomina_beneficiarios = b.get('nomina', ''),
+                    importe_parcial      = Decimal(str(b.get('importe_parcial', 0))),
+                    importe_total        = Decimal(str(b.get('importe_total', 0))),
+                )
+
+            # ── Generar Imputación automática ─────────────────────────────
+            ultimo_asiento = Imputacion.objects.filter(
+                fecha__year=fecha_obj.year
+            ).aggregate(Max('asiento_nro'))['asiento_nro__max']
+
+            try:
+                asiento_nro = str(int(ultimo_asiento) + 1).zfill(4) if ultimo_asiento else '0001'
+            except (ValueError, TypeError):
+                asiento_nro = '0001'
+
+            imputacion = Imputacion.objects.create(
+                nro_expediente = nro_expediente,
+                asiento_nro    = asiento_nro,
+                fecha          = fecha_obj,
+                origen         = 'AUTOMATICA',
+                observacion    = f'Generada automáticamente por OP Personal {nro_orden_pago}',
+                usuario        = request.user,
+            )
+
+            # ── Crear erogaciones, detalles de imputación y descontar saldo
+            for lv in lineas_validas:
+                det = ImputacionDetalle.objects.create(
+                    imputacion           = imputacion,
+                    linea_presupuestaria = lv['linea'],
+                    proveedor_concepto   = lv['descripcion'],
+                    importe              = lv['importe'],
+                )
+
+                OrdenPagoPersonalPartida.objects.create(
+                    orden_pago_personal  = op_personal,
+                    linea_presupuestaria = lv['linea'],
+                    descripcion          = lv['descripcion'],
+                    importe              = lv['importe'],
+                    imputacion_detalle   = det,
+                )
+
+                # La imputación descuenta el saldo — solo una vez
+                lv['linea'].saldo_actual -= lv['importe']
+                lv['linea'].save()
+
+                MovimientoHistorial.objects.create(
+                    linea_presupuestaria = lv['linea'],
+                    tipo                 = 'ORDEN_PAGO_PERSONAL',
+                    referencia_id        = op_personal.id,
+                    usuario              = request.user,
+                    monto                = -lv['importe'],
+                    descripcion          = (
+                        f'OP Personal {nro_orden_pago} — '
+                        f'exp. {nro_expediente} — '
+                        f'{lv["descripcion"][:80]}'
+                    ),
+                )
+
+            # ── Vincular imputación a la OP Personal ──────────────────────
+            op_personal.imputacion = imputacion
+            op_personal.save()
+
+    except ValueError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({
+        'ok':              True,
+        'op_personal_id':  op_personal.id,
+        'imputacion_id':   imputacion.id,
+        'asiento_nro':     asiento_nro,
+        'importe_total':   str(importe_total),
+    })
