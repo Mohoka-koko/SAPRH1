@@ -695,6 +695,11 @@
     color: var(--naranja);
 }
 
+.ejant-tag.refuerzo {
+    background: #eef0ff;
+    color: #5557a8;
+}
+
 
 /* ==========================================================
    RESPONSIVE

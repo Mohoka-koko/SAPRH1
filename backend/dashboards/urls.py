@@ -82,6 +82,8 @@ urlpatterns = [
     path('modificacion/ver/<int:modificacion_id>/', views.modificacion_ver, name='modificacion_ver'),
     path('refuerzo/ver/<int:refuerzo_id>/', views.refuerzo_ver, name='refuerzo_ver'),
     path('admin-dashboard/imputacion/ver/<int:imputacion_id>/', views.imputacion_ver, name='imputacion_ver'),
+    path('api/ejercicios-anteriores/anios/', views.api_ejercicios_anios,  name='api_ejercicios_anios'),
+    path('api/ejercicios-anteriores/',       views.api_ejercicios_datos,   name='api_ejercicios_datos'),
 
     # ── Otros dashboards ───────────────────────────────────────────────────
     path('usuariovip-dashboard/', views.usuariovip_dashboard, name='usuariovip_dashboard'),

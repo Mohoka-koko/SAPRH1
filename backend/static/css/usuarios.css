@@ -240,3 +240,66 @@
     from { transform: translateY(20px); opacity: 0; }
     to   { transform: translateY(0);    opacity: 1; }
 }
+
+/* ===== ALERTA FLOTANTE SUPERIOR (CREAR USUARIO) ===== */
+.alerta-flotante-exito {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #22c55e;
+    color: #ffffff;
+    padding: 18px 26px; /* Aumentado para mayor presencia */
+    border-radius: var(--radius);
+    box-shadow: 0 12px 30px rgba(34, 197, 94, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    z-index: 9999;
+    min-width: 380px; /* Ancho mínimo mayor */
+    max-width: 90%;
+    animation: fadeInDown 0.3s ease-out;
+    font-family: inherit;
+    font-size: 1.2rem; /* <-- Letra del mensaje más grande */
+    font-weight: 500;
+}
+
+.alerta-contenido {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.icono-pulgar {
+    font-size: 1.5rem; /* <-- Icono más grande acorde al texto */
+}
+
+.btn-cerrar-alerta {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 1.4rem; /* <-- Botón de cierre más grande */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.btn-cerrar-alerta:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}

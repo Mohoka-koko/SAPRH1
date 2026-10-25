@@ -94,3 +94,24 @@ if (selectRol && selectArea) {
         }
     });
 }
+
+/* ===== CONTROL DE ALERTA FLOTANTE DE ÉXITO ===== */
+function cerrarAlertaFlotante() {
+    const alerta = document.getElementById('alerta-flotante-exito');
+    if (alerta) {
+        alerta.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        alerta.style.opacity = '0';
+        alerta.style.transform = 'translate(-50%, -20px)';
+        setTimeout(() => alerta.remove(), 300);
+    }
+}
+
+// Ocultar automáticamente después de 10 segundos
+document.addEventListener('DOMContentLoaded', () => {
+    const alerta = document.getElementById('alerta-flotante-exito');
+    if (alerta) {
+        setTimeout(() => {
+            cerrarAlertaFlotante();
+        }, 10000); // 10 segundos
+    }
+});

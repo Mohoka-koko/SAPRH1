@@ -2619,3 +2619,165 @@ def api_crear_op_personal(request):
         'asiento_nro':     asiento_nro,
         'importe_total':   str(importe_total),
     })
+
+# ==========================================
+#  API — EJERCICIOS ANTERIORES: AÑOS
+#  Devuelve los ejercicios disponibles
+#  distintos al año actual
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+def api_ejercicios_anios(request):
+    anio_actual = timezone.now().year
+    anios = LineaPresupuestaria.objects.filter(
+        ejercicio__lt=anio_actual
+    ).values_list('ejercicio', flat=True).distinct().order_by('-ejercicio')
+
+    return JsonResponse({'anios': list(anios)})
+
+
+# ==========================================
+#  API — EJERCICIOS ANTERIORES: DATOS
+#  Devuelve las líneas presupuestarias
+#  de un ejercicio anterior con sus movimientos
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+def api_ejercicios_datos(request):
+    from django.db.models import Sum
+
+    ejercicio = request.GET.get('ejercicio')
+    if not ejercicio:
+        return JsonResponse({'error': 'Falta parámetro ejercicio'}, status=400)
+
+    try:
+        ejercicio = int(ejercicio)
+    except ValueError:
+        return JsonResponse({'error': 'Ejercicio inválido'}, status=400)
+
+    anio_actual = timezone.now().year
+    if ejercicio >= anio_actual:
+        return JsonResponse({'error': 'Solo se permiten ejercicios anteriores'}, status=400)
+
+    lineas = LineaPresupuestaria.objects.filter(
+        ejercicio=ejercicio
+    ).select_related(
+        'programa', 'proyecto', 'actividad_obra', 'partida', 'fuente_financiamiento'
+    )
+
+    resultado = []
+
+    for linea in lineas:
+        # ── Código de la UP ───────────────────────────────────────────────
+        codigo_up = (
+            f"{linea.programa.codigo_programa}-"
+            f"00-"
+            f"{linea.proyecto.codigo_proyecto}-"
+            f"{linea.actividad_obra.codigo_act_obra}-"
+            f"{linea.partida.codigo}-"
+            f"{linea.fuente_financiamiento.codigo}"
+        )
+
+        # ── Modificaciones: receptoras + refuerzos − transferentes Modo A ─────
+        total_refuerzos = RefuerzoDetalle.objects.filter(
+            linea_destino=linea
+        ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
+
+        total_receptoras = ModificacionReceptora.objects.filter(
+            linea_destino=linea
+        ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
+
+        total_transferentes = ModificacionTransferente.objects.filter(
+            linea_origen=linea,
+            modificacion__tipo_transferente='general'
+        ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
+
+        total_modificaciones = total_refuerzos + total_receptoras - total_transferentes
+
+        # ── Ejecutado: suma de OPs pagadas (OrdenPagoUnidadPresupuestaria) ────
+        total_ejecutado = OrdenPagoUnidadPresupuestaria.objects.filter(
+            imputacion_detalle__linea_presupuestaria=linea
+        ).aggregate(total=Sum('importe'))['total'] or Decimal('0')
+
+        # ── Saldo final: saldo_actual ya tiene todo descontado ────────────────
+        saldo_final = linea.saldo_actual
+
+        # ── Movimientos históricos ────────────────────────────────────────
+        movimientos = []
+
+        # Imputaciones
+        for det in ImputacionDetalle.objects.filter(
+            linea_presupuestaria=linea
+        ).select_related('imputacion').order_by('imputacion__fecha'):
+            imp = det.imputacion
+            movimientos.append({
+                'fecha':      imp.fecha.strftime('%d/%m/%Y'),
+                'tipo':       'Imputación',
+                'referencia': imp.nro_expediente,
+                'importe':    float(-det.importe),
+            })
+
+        # Órdenes de Pago
+        for up in OrdenPagoUnidadPresupuestaria.objects.filter(
+            imputacion_detalle__linea_presupuestaria=linea
+        ).select_related('orden_pago').order_by('orden_pago__fecha'):
+            op = up.orden_pago
+            movimientos.append({
+                'fecha':      op.fecha.strftime('%d/%m/%Y'),
+                'tipo':       'Orden de pago',
+                'referencia': op.nro_orden_pago,
+                'importe':    float(-up.importe),
+            })
+
+        # Refuerzos
+        for det in RefuerzoDetalle.objects.filter(
+            linea_destino=linea
+        ).select_related('refuerzo').order_by('refuerzo__fecha'):
+            ref = det.refuerzo
+            movimientos.append({
+                'fecha':      ref.fecha.strftime('%d/%m/%Y'),
+                'tipo':       'Refuerzo',
+                'referencia': ref.nro_expediente,
+                'importe':    float(det.importe),
+            })
+
+        # Modificaciones transferentes Modo A
+        for det in ModificacionTransferente.objects.filter(
+            linea_origen=linea,
+            modificacion__tipo_transferente='general'
+        ).select_related('modificacion').order_by('modificacion__fecha'):
+            mod = det.modificacion
+            movimientos.append({
+                'fecha':      mod.fecha.strftime('%d/%m/%Y'),
+                'tipo':       'Modificación',
+                'referencia': mod.nro_expediente,
+                'importe':    float(-det.importe),
+            })
+
+        # Modificaciones receptoras
+        for det in ModificacionReceptora.objects.filter(
+            linea_destino=linea
+        ).select_related('modificacion').order_by('modificacion__fecha'):
+            mod = det.modificacion
+            movimientos.append({
+                'fecha':      mod.fecha.strftime('%d/%m/%Y'),
+                'tipo':       'Modificación',
+                'referencia': mod.nro_expediente,
+                'importe':    float(det.importe),
+            })
+
+        # Ordenar movimientos por fecha
+        movimientos.sort(key=lambda m: m['fecha'])
+
+        resultado.append({
+            'up':             codigo_up,
+            'denominacion':   linea.partida.denominacion,
+            'inicial':        float(linea.saldo_inicial),
+            'modificaciones': float(total_modificaciones),
+            'ejecutado':      float(total_ejecutado),
+            'saldo_final':    float(saldo_final),      # ← float, no str
+            'movimientos':    movimientos,
+        })
+
+    return JsonResponse({
+        'ejercicio': ejercicio,
+        'lineas':    resultado,
+    })

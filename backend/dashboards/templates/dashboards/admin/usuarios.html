@@ -7,17 +7,26 @@
 
 {% block content %}
 
+<!-- ===== CARTEL FLOTANTE DE ÉXITO ===== -->
+{% if messages %}
+  {% for message in messages %}
+    {% if message.tags == 'success' or 'success' in message.tags %}
+      <div id="alerta-flotante-exito" class="alerta-flotante-exito">
+        <div class="alerta-contenido">
+          <span class="icono-pulgar">👍</span>
+          <span class="texto-alerta">Usuario creado exitosamente</span>
+        </div>
+        <button class="btn-cerrar-alerta" onclick="cerrarAlertaFlotante()" title="Cerrar">X</button>
+      </div>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
 <div class="main-wrapper">
 
   <!-- ===== CREAR USUARIO ===== -->
   <div class="card">
     <h2>Crear Usuario</h2>
-
-    {% if messages %}
-      {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
 
     <form method="POST" action="{% url 'crear_usuario' %}">
       {% csrf_token %}
