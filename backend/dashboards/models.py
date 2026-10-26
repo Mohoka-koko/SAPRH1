@@ -1,6 +1,7 @@
 #dashboards/models.py
 from django.db import models
 from accounts.models import UsuarioPersonalizado
+from django.core.validators import RegexValidator
 
 
 # ─────────────────────────────────────────────
@@ -229,7 +230,7 @@ class ImputacionDetalle(RegistroAuditable):
 # y agregar la clase OrdenPagoDetalle a continuación.
 # ─────────────────────────────────────────────
 class OrdenPago(ControlModificacion):
-    imputacion                = models.ForeignKey('Imputacion', on_delete=models.PROTECT, related_name='ordenes_pago', null=True, blank=True) 
+    imputacion                = models.ForeignKey('Imputacion', on_delete=models.PROTECT, related_name='ordenes_pago', null=True, blank=True)
     nro_orden_pago            = models.CharField(max_length=50)
     fecha                     = models.DateField()
     fecha_vencimiento         = models.DateField(null=True, blank=True)
@@ -238,6 +239,16 @@ class OrdenPago(ControlModificacion):
     concepto                  = models.TextField()
     nro_factura               = models.CharField(max_length=50, blank=True)
     nro_resolucion            = models.CharField(max_length=50, blank=True)
+    # Resolución que corrige errores legales del decreto (distinta de nro_resolucion)
+    nro_resolucion_rectificatoria = models.CharField(
+        max_length=50, blank=True, default='',
+        validators=[RegexValidator(r'^\d+/\d+$', 'Formato esperado: número/número (ej: 123/2026)')],
+    )
+    decreto                   = models.CharField(
+        max_length=50, blank=True, default='',
+        validators=[RegexValidator(r'^\d+/\d+$', 'Formato esperado: número/número (ej: 123/2026)')],
+    )
+    licencia                  = models.CharField(max_length=100, blank=True, default='')
     referencia_administrativa = models.TextField(blank=True)
     codigo_concepto_pago      = models.IntegerField()
     concepto_del_pago         = models.TextField()
