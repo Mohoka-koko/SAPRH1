@@ -2336,7 +2336,7 @@ def api_historial_registros(request):
             'modificado_por':        op.usuario.nombre if op.usuario else 'S/N',
             'estado':                'Revisar',
             'referencia_id':         op.id,
-            'nro_expediente':        op.nro_orden_pago,
+            'nro_expediente':        op.imputacion.nro_expediente if op.imputacion else 'S/N',
         })
 
     # ── Órdenes de Pago Personal ──────────────────────────────────────────────
@@ -2354,7 +2354,7 @@ def api_historial_registros(request):
             'modificado_por':     op.usuario.nombre if op.usuario else 'S/N',
             'estado':             'Listo',
             'referencia_id':      op.id,
-            'nro_expediente':     op.nro_orden_pago,
+            'nro_expediente':     op.nro_expediente,
         })
 
     # ── Modificaciones ────────────────────────────────────────────────────
