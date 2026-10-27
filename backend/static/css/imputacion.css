@@ -78,25 +78,31 @@
 }
 
 /* Botones individuales */
-#exportar-pdf-btn {
+#exportar-pdf-btn,
+#btnExportarPDF {
   background: #3b82f6; /* azul claro */
   color: #ffffff;
   border: 1px solid rgba(59,130,246,0.12);
 }
 
-#exportar-pdf-btn i { color: #ffffff; }
+#exportar-pdf-btn i,
+#btnExportarPDF i { color: #ffffff; }
 
-#exportar-pdf-btn:hover { background: #2563eb; box-shadow: 0 10px 22px rgba(37,99,235,0.18); }
+#exportar-pdf-btn:hover,
+#btnExportarPDF:hover { background: #2563eb; box-shadow: 0 10px 22px rgba(37,99,235,0.18); }
 
-#guardar-imputacion-btn {
+#guardar-imputacion-btn,
+#btnImprimir {
   background: #1e3a8a; /* azul oscuro */
   color: #ffffff;
   border: 1px solid rgba(30,58,138,0.12);
 }
 
-#guardar-imputacion-btn i { color: #ffffff; }
+#guardar-imputacion-btn i,
+#btnImprimir i { color: #ffffff; }
 
-#guardar-imputacion-btn:hover { background: #172a66; box-shadow: 0 10px 22px rgba(23,42,102,0.18); }
+#guardar-imputacion-btn:hover,
+#btnImprimir:hover { background: #172a66; box-shadow: 0 10px 22px rgba(23,42,102,0.18); }
 
 /* Orden de pago: botón blanco con texto oscuro */
 .btn-accion.btn-link {

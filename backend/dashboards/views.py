@@ -2053,6 +2053,9 @@ def api_crear_orden_pago(request):
     nro_factura                 = body.get('nro_factura', '').strip()
     nro_resolucion              = body.get('nro_resolucion', '').strip()
     referencia_administrativa   = body.get('referencia_administrativa', '').strip()
+    licencia                    = body.get('licencia', '').strip()
+    decreto                     = body.get('decreto', '').strip()
+    nro_resolucion_decreto      = body.get('nro_resolucion_decreto', '').strip()
     codigo_concepto_pago        = body.get('codigo_concepto_pago', 0)
     concepto_del_pago           = body.get('concepto_del_pago', '').strip()
     beneficiarios               = body.get('beneficiarios', [])
@@ -2061,6 +2064,28 @@ def api_crear_orden_pago(request):
     #---Validaciones Bassicas---------------
     if not all ([imputacion_id, nro_orden_pago, codigo_pago, concepto]):
         return JsonResponse({'error': 'Faltan campos obligatorios'}, status= 400)
+
+    partes_numero_orden = nro_orden_pago.split('-')
+    if (
+        len(partes_numero_orden) != 3
+        or tuple(map(len, partes_numero_orden)) != (2, 2, 4)
+        or not all(parte.isascii() and parte.isdigit() for parte in partes_numero_orden)
+    ):
+        return JsonResponse(
+            {'error': 'El número de orden debe tener el formato 00-00-0000 (8 dígitos).'},
+            status=400,
+        )
+
+    try:
+        fecha_vencimiento = date.fromisoformat(fecha_vencimiento)
+    except (TypeError, ValueError):
+        return JsonResponse(
+            {'error': 'La fecha de vencimiento debe ser válida y tener formato DD/MM/AAAA.'},
+            status=400,
+        )
+
+    if not licencia or not decreto:
+        return JsonResponse({'error': 'La Licencia y el Decreto son obligatorios.'}, status=400)
     
     if not beneficiarios:
         return JsonResponse({'error': 'Debe incluir al menos un benificiario'}, status= 400)
@@ -2143,6 +2168,9 @@ def api_crear_orden_pago(request):
                 nro_factura               = nro_factura,
                 nro_resolucion            = nro_resolucion,
                 referencia_administrativa = referencia_administrativa,
+                licencia                  = licencia,
+                decreto                   = decreto,
+                nro_resolucion_decreto    = nro_resolucion_decreto,
                 codigo_concepto_pago      = codigo_concepto_pago or 0,
                 concepto_del_pago         = concepto_del_pago,
                 importe_total             = importe_total,

@@ -75,16 +75,103 @@
        contenedorError.textContent = esValido ? "" : mensaje;
      }
    }
+
+   function revalidarAlEditar(input, validar) {
+     const revalidar = () => {
+       const contenedorError = document.getElementById(`err-${input.id}`);
+       if (input.classList.contains("input-invalido") || contenedorError?.textContent) {
+         validar(input);
+       }
+     };
+
+     input.addEventListener("input", revalidar);
+     input.addEventListener("change", revalidar);
+   }
    
    /**
     * Valida que el campo solo contenga números (Número de Orden).
     */
    function validarSoloNumeros(input) {
-     const soloDigitosGuiones = /^[0-9-]*$/;
      const valor = input.value.trim();
-     const esValido = valor !== "" && soloDigitosGuiones.test(valor);
-     marcarValidacion(input, esValido, "Solo se admiten números (y guiones).");
+     const esValido = /^\d{2}-\d{2}-\d{4}$/.test(valor);
+     marcarValidacion(input, esValido, "El número debe tener el formato 00-00-0000 (8 dígitos).");
      return esValido;
+   }
+
+   function formatearNumeroOrden(input) {
+     const posicion = input.selectionStart ?? input.value.length;
+     const digitosAntes = input.value.slice(0, posicion).replace(/\D/g, "").length;
+     const digitos = input.value.replace(/\D/g, "").slice(0, 8);
+     let valorFormateado = digitos;
+
+     if (digitos.length > 2) {
+       valorFormateado = `${digitos.slice(0, 2)}-${digitos.slice(2)}`;
+     }
+     if (digitos.length > 4) {
+       valorFormateado = `${digitos.slice(0, 2)}-${digitos.slice(2, 4)}-${digitos.slice(4)}`;
+     }
+
+     input.value = valorFormateado;
+     const guionesAntes = (digitosAntes > 2 ? 1 : 0) + (digitosAntes > 4 ? 1 : 0);
+     const guionesEnPosicion = digitos.length > 2 && digitosAntes === 2 ? 1 : 0;
+     input.setSelectionRange(digitosAntes + guionesAntes + guionesEnPosicion, digitosAntes + guionesAntes + guionesEnPosicion);
+   }
+
+   function formatearFecha(input) {
+     const posicion = input.selectionStart ?? input.value.length;
+     const digitosAntes = input.value.slice(0, posicion).replace(/\D/g, "").length;
+     let digitos = input.value.replace(/\D/g, "").slice(0, 8);
+
+     let dia = digitos.slice(0, 2);
+     let mes = digitos.slice(2, 4);
+     const anio = digitos.slice(4, 8);
+
+     if (dia.length === 2 && Number(dia) > 31) dia = "31";
+     if (mes.length === 2 && Number(mes) > 12) mes = "12";
+
+     if (dia.length === 2 && mes.length === 2 && Number(mes) >= 1 && Number(mes) <= 12) {
+       const anioCompleto = anio.length === 4 ? Number(anio) : null;
+       const esBisiesto = anioCompleto !== null
+         && anioCompleto % 4 === 0
+         && (anioCompleto % 100 !== 0 || anioCompleto % 400 === 0);
+       const diasPorMes = [31, esBisiesto || anioCompleto === null ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+       const maximoDia = diasPorMes[Number(mes) - 1];
+       if (Number(dia) > maximoDia) dia = String(maximoDia).padStart(2, "0");
+     }
+
+     digitos = dia + mes + anio;
+     let valorFormateado = digitos;
+
+     if (digitos.length > 2) {
+       valorFormateado = `${digitos.slice(0, 2)}/${digitos.slice(2)}`;
+     }
+     if (digitos.length > 4) {
+       valorFormateado = `${digitos.slice(0, 2)}/${digitos.slice(2, 4)}/${digitos.slice(4)}`;
+     }
+
+     input.value = valorFormateado;
+     const separadoresAntes = (digitosAntes > 2 ? 1 : 0) + (digitosAntes > 4 ? 1 : 0);
+     const separadoresEnPosicion = (digitos.length > 2 && digitosAntes === 2 ? 1 : 0)
+       + (digitos.length > 4 && digitosAntes === 4 ? 1 : 0);
+     const nuevaPosicion = digitosAntes + separadoresAntes + separadoresEnPosicion;
+     input.setSelectionRange(nuevaPosicion, nuevaPosicion);
+   }
+
+   function validarFecha(input) {
+     const partes = input.value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+     let esValida = false;
+
+     if (partes) {
+       const dia = Number(partes[1]);
+       const mes = Number(partes[2]);
+       const anio = Number(partes[3]);
+       const esBisiesto = anio % 4 === 0 && (anio % 100 !== 0 || anio % 400 === 0);
+       const diasPorMes = [31, esBisiesto ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+       esValida = anio > 0 && mes >= 1 && mes <= 12 && dia >= 1 && dia <= diasPorMes[mes - 1];
+     }
+
+     marcarValidacion(input, esValida, "Ingresá una fecha válida con formato dd/mm/aaaa.");
+     return esValida;
    }
    
    /**
@@ -439,28 +526,26 @@
    
     function configurarValidaciones() {
       const numeroOrden = document.getElementById("numeroOrden");
+      numeroOrden.addEventListener("input", () => formatearNumeroOrden(numeroOrden));
       numeroOrden.addEventListener("blur", () => validarSoloNumeros(numeroOrden));
+      revalidarAlEditar(numeroOrden, validarSoloNumeros);
     
       const fechaVencimiento = document.getElementById("fechaVencimiento");
-      fechaVencimiento.addEventListener('blur', () => {
-        const val = input.value.trim();
-        const errEl = document.getElementById('err-' + input.id);
-        if (!errEl) return;
-        if (val && !/^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
-          errEl.textContent = 'Formato inválido. Usá dd/mm/aaaa';
-        } else {
-          errEl.textContent = '';
-        }
-      });
+      fechaVencimiento.addEventListener("input", () => formatearFecha(fechaVencimiento));
+      fechaVencimiento.addEventListener("blur", () => validarFecha(fechaVencimiento));
+      revalidarAlEditar(fechaVencimiento, validarFecha);
    
       const delegacionContable = document.getElementById("delegacionContable");
       delegacionContable.addEventListener("blur", () => validarCampoObligatorio(delegacionContable));
+      revalidarAlEditar(delegacionContable, validarCampoObligatorio);
     
       const expediente = document.getElementById("expediente");
       expediente.addEventListener("blur", () => validarCampoObligatorio(expediente));
+      revalidarAlEditar(expediente, validarCampoObligatorio);
     
       const importeTotal = document.getElementById("importeTotal");
       importeTotal.addEventListener("blur", () => validarImporte(importeTotal));
+      revalidarAlEditar(importeTotal, validarImporte);
     }
    
   /* ------------------------------------------------------------------------
@@ -474,17 +559,10 @@
     if (btnNuevo)   btnNuevo.addEventListener("click", nuevoFormulario);
     if (btnLimpiar) btnLimpiar.addEventListener("click", limpiarFormulario);
 
-    document.getElementById("btnAddBeneficiario").addEventListener("click", agregarFilaBeneficiario);
-    document.getElementById("btnDelBeneficiario").addEventListener("click", eliminarFilaBeneficiario);
-
-    document.getElementById("btnAddConcepto").addEventListener("click", agregarFilaConceptoPago);
-    document.getElementById("btnDelConcepto").addEventListener("click", eliminarFilaConceptoPago);
-
-    document.getElementById("btnAddPartida").addEventListener("click", agregarFilaPartida);
-    document.getElementById("btnDelPartida").addEventListener("click", eliminarFilaPartida);
-
-    document.getElementById("btnImprimir").addEventListener("click", guardarOrdenPago);
-    document.getElementById("btnExportarPDF").addEventListener("click", exportarAPDF);
+    document.getElementById("btnAddBeneficiario")?.addEventListener("click", agregarFilaBeneficiario);
+    document.getElementById("btnDelBeneficiario")?.addEventListener("click", eliminarFilaBeneficiario);
+    document.getElementById("btnImprimir")?.addEventListener("click", guardarOrdenPago);
+    document.getElementById("btnExportarPDF")?.addEventListener("click", exportarAPDF);
 
     inicializarPanelSaldos();
   }
@@ -515,14 +593,10 @@
       const detalle = await respDetalle.json();
 
       const campExpediente   = document.getElementById('expediente');
-      const campEjercicio    = document.getElementById('ejercicio');
       const campJurisdiccion = document.getElementById('jurisdiccion');
 
       if (campExpediente)   campExpediente.value   = detalle.expediente   || '';
       if (campJurisdiccion) campJurisdiccion.value = detalle.jurisdiccion  || '';
-      if (campEjercicio && detalle.detalles.length > 0) {
-          campEjercicio.value = detalle.detalles[0].ejercicio || '';
-      }
 
       // ── UPs disponibles con saldo ─────────────────────────────────────
       const respUPs = await fetch(`/api/imputacion/${imputacionId}/ups/`);
@@ -808,6 +882,9 @@
     // ── Validaciones de encabezado ────────────────────────────────────────
     const numeroOrden = document.getElementById('numeroOrden')?.value.trim();
     if (!numeroOrden) errores.push('Número de Orden de Pago es obligatorio.');
+    else if (!/^\d{2}-\d{2}-\d{4}$/.test(numeroOrden)) {
+      errores.push('El número de orden debe tener el formato 00-00-0000 (8 dígitos).');
+    }
   
     const expediente = document.getElementById('expediente')?.value.trim();
     if (!expediente) errores.push('Expediente Nº es obligatorio.');
@@ -824,8 +901,8 @@
     const fechaVencimiento = document.getElementById('fechaVencimiento')?.value.trim();
     if (!fechaVencimiento) {
       errores.push('Fecha de Vencimiento es obligatoria.');
-    } else if (!/^\d{2}\/\d{2}\/\d{4}$/.test(fechaVencimiento)) {
-      errores.push('Fecha de Vencimiento debe tener formato dd/mm/aaaa.');
+    } else if (!validarFecha(document.getElementById('fechaVencimiento'))) {
+      errores.push('Fecha de Vencimiento debe ser válida y tener formato dd/mm/aaaa.');
     }
   
     const importeTotal = parsearImporte(document.getElementById('importeTotal')?.value);
@@ -932,6 +1009,12 @@
     const nroResolucion = document.getElementById('resolucion')?.value.trim();
     if (!nroResolucion) errores.push('El número de resolución es obligatorio.');
 
+    // ── Validación de licencia y decreto ──────────────────────────────────
+    const licencia = document.getElementById('licencia')?.value.trim();
+    const decreto = document.getElementById('decreto')?.value.trim();
+    if (!licencia) errores.push('La licencia es obligatoria.');
+    if (!decreto) errores.push('El decreto es obligatorio.');
+
     // ── Validación de fecha de Rentas Generales ───────────────────────────
     const inputFechaRentas = document.querySelector('#fechaRentasWrapper [data-valor-iso]');
     if (!inputFechaRentas?.dataset?.valorIso) {
@@ -962,7 +1045,9 @@
       concepto:                  conceptoLineas,
       nro_factura:               document.getElementById('numeroFactura')?.value.trim()          || '',
       nro_resolucion:            document.getElementById('resolucion')?.value.trim()             || '',
-      referencia_administrativa: document.getElementById('referenciaAdministrativa')?.value.trim() || '',
+      licencia:                  licencia || '',
+      decreto:                   decreto || '',
+      nro_resolucion_decreto:    document.getElementById('nroResolucionDecreto')?.value.trim() || '',
       codigo_concepto_pago:      parseInt(codigoConcepto) || 0,
       concepto_del_pago:         descConcepto,
       beneficiarios,
@@ -999,7 +1084,7 @@
       mostrarModalValidacion(['Error de red al guardar la Orden de Pago.']);
     } finally {
       btnGuardar.disabled    = false;
-      btnGuardar.textContent = '💾 Guardar';
+      btnGuardar.innerHTML   = '<i class="fa-solid fa-floppy-disk"></i> Guardar orden de pago';
     }
   }
 
@@ -1032,21 +1117,18 @@
   function inicializarPanelSaldos() {
     const panel       = document.getElementById('panelSaldos');
     const btnMinimizar = document.getElementById('btnMinimizarOP');
+    const btnRestaurar = panel?.querySelector('.panel-saldos-icono');
 
-    if (!panel || !btnMinimizar) return;
+    if (!panel || !btnMinimizar || !btnRestaurar) return;
 
-    // X → minimizar
-    btnMinimizar.addEventListener('click', (e) => {
-        e.stopPropagation();
-        panel.classList.add('minimizado');
-    });
+    const actualizarEstadoPanel = (minimizado) => {
+      panel.classList.toggle('minimizado', minimizado);
+      btnMinimizar.setAttribute('aria-expanded', String(!minimizado));
+      btnRestaurar.setAttribute('aria-expanded', String(!minimizado));
+    };
 
-    // Clic en el cuadro minimizado → desplegar
-    panel.addEventListener('click', () => {
-        if (panel.classList.contains('minimizado')) {
-            panel.classList.remove('minimizado');
-        }
-    });
+    btnMinimizar.addEventListener('click', () => actualizarEstadoPanel(true));
+    btnRestaurar.addEventListener('click', () => actualizarEstadoPanel(false));
   }
 
   function mostrarPanelSaldos(ups) {
@@ -1079,7 +1161,7 @@
 
     const saldoRestante = saldoOriginal - importeAsignado;
     celdaSaldo.textContent = `$ ${formatearImporte(Math.max(saldoRestante, 0))}`;
-    celdaSaldo.className   = saldoRestante < 0 ? 'saldo-rojo' : 'saldo-verde';
+    celdaSaldo.className   = saldoRestante <= 0 ? 'saldo-rojo' : 'saldo-verde';
   }
 
   /* ------------------------------------------------------------------------

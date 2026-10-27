@@ -2,34 +2,26 @@
 {% load static %}
 
 {% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/imputacion.css' %}">
   <link rel="stylesheet" href="{% static 'css/ordenpago.css' %}">
 {% endblock %}
 
 {% block content %}
 
 <div class="ordenpago-page">
-    <div class="toolbar no-print">
-            
-        <div class="toolbar-group">
-            <button id="btnAddBeneficiario" type="button" class="btn-tool">+ Beneficiario</button>
-            <button id="btnDelBeneficiario" type="button" class="btn-tool">&minus; Beneficiario</button>
-        </div>
-        <div class="toolbar-group">
-            <button id="btnAddConcepto" type="button" class="btn-tool">+ Concepto</button>
-            <button id="btnDelConcepto" type="button" class="btn-tool">&minus; Concepto</button>
-        </div>
-        <div class="toolbar-group">
-            <button id="btnAddPartida" type="button" class="btn-tool">+ Partida</button>
-            <button id="btnDelPartida" type="button" class="btn-tool">&minus; Partida</button>
-        </div>
-        <div class="toolbar-group">
-    <button id="btnImprimir" type="button" class="btn-tool primary">&#128424; Guardar</button>
-    <button id="btnExportarPDF" type="button" class="btn-tool primary">&#11115; Exportar a PDF</button>
-    <a href="{% url 'lista_imputaciones' %}" class="btn-tool btn-cancelar-op"
-       onclick="return confirm('¿Cancelar y volver a la lista de imputaciones? Se perderán los datos cargados.');">
-        &times; Cancelar
-    </a>
-</div>
+    <div class="botones-accion no-print">
+        <button type="button" class="btn-accion" id="btnExportarPDF">
+            <i class="fa-solid fa-file-pdf"></i>
+            Exportar a PDF
+        </button>
+        <button type="button" class="btn-accion" id="btnImprimir">
+            <i class="fa-solid fa-floppy-disk"></i>
+            Guardar orden de pago
+        </button>
+        <a href="{% url 'lista_imputaciones' %}" class="btn-accion btn-link"
+           onclick="return confirm('¿Cancelar y volver a la lista de imputaciones? Se perderán los datos cargados.');">
+            &times; Cancelar
+        </a>
     </div>
 
     <div class="hoja" id="hoja">
@@ -49,14 +41,15 @@
                 <div class="enc-centro">
                     <div class="ejercicio-linea">
                         EJERCICIO
-                        <input type="text" id="ejercicio" class="input-linea corto" maxlength="4" placeholder="AAAA">
+                        <input type="text" id="ejercicio" class="input-linea corto" value="{% now 'Y' %}" maxlength="4" readonly>
                     </div>
-                    <div class="orden-titulo">ORDEN DE PAGO Nº</div>
-                </div>
-
-                <div class="enc-derecha">
-                    <div class="numero-orden-box">
-                        <input type="text" id="numeroOrden" class="input-caja" placeholder="00-00-0000">
+                    <div class="orden-linea">
+                        <div class="orden-titulo">ORDEN DE PAGO Nº</div>
+                        <div class="numero-orden-box">
+                            <input type="text" id="numeroOrden" class="input-caja" placeholder="00-00-0000"
+                                maxlength="10" inputmode="numeric" pattern="[0-9]{2}-[0-9]{2}-[0-9]{4}"
+                                aria-describedby="err-numeroOrden" required>
+                        </div>
                         <div class="error-msg" id="err-numeroOrden"></div>
                     </div>
                 </div>
@@ -94,7 +87,9 @@
                 </div>
                 <div class="cod-pago-der">
                     <span class="etiqueta-inline">F. de Vencimiento:</span>
-                    <input type="text" id="fechaVencimiento" class="input-caja fecha" placeholder="dd/mm/aaaa">
+                    <input type="text" id="fechaVencimiento" class="input-caja fecha"
+                        placeholder="dd/mm/aaaa" maxlength="10" inputmode="numeric"
+                        pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" aria-describedby="err-fechaVencimiento" required>
                     <div class="error-msg" id="err-fechaVencimiento"></div>
                 </div>
             </div>
@@ -127,6 +122,17 @@
                 </tbody>
             </table>
 
+            <div class="tabla-acciones no-print">
+                <button type="button" class="btn-add-row" id="btnAddBeneficiario" aria-label="Agregar beneficiario">
+                    <i class="fa-solid fa-plus"></i>
+                    Agregar beneficiario
+                </button>
+                <button type="button" class="btn-remove-row" id="btnDelBeneficiario" aria-label="Borrar beneficiario">
+                    <i class="fa-solid fa-trash"></i>
+                    Borrar beneficiario
+                </button>
+            </div>
+
             <div class="bloque-concepto">
                 <div class="concepto-fila">
                     <span class="etiqueta-inline">CONCEPTO</span>
@@ -142,8 +148,19 @@
                     <span class="etiqueta-inline">Resolución</span>
                     <input type="text" id="resolucion" class="input-linea full" placeholder="Nº ____/____">
                 </div>
-                <div class="resolucion-fila">
-                    <input type="text" id="referenciaAdministrativa" class="input-linea full" placeholder="Referencia administrativa adicional (licitación, decreto, etc.)">
+                <div class="resolucion-fila resolucion-referencias">
+                    <label class="resolucion-referencia">
+                        <span class="etiqueta-inline">Licencia </span>
+                        <input type="text" id="licencia" class="input-linea" placeholder="N° de licencia" required>
+                    </label>
+                    <label class="resolucion-referencia">
+                        <span class="etiqueta-inline">Decreto </span>
+                        <input type="text" id="decreto" class="input-linea" placeholder="N° de decreto" required>
+                    </label>
+                    <label class="resolucion-referencia">
+                        <span class="etiqueta-inline">N° de Resolución</span>
+                        <input type="text" id="nroResolucionDecreto" class="input-linea" placeholder="Resolución rectificatoria">
+                    </label>
                 </div>
             </div>
 
@@ -196,14 +213,14 @@
 
     <div class="panel-saldos-widget" id="panelSaldos">
 
-        <div class="panel-saldos-icono" title="Ver Saldos Disponibles">
+        <button type="button" class="panel-saldos-icono" aria-label="Mostrar saldos disponibles" aria-controls="panelSaldosContenido" aria-expanded="true">
             <img src="{% static 'img/Screenshot_43.png' %}" alt="Saldos" class="icono-imagen-local" />
-        </div>
+        </button>
     
-        <div class="panel-saldos-contenido">
+        <div class="panel-saldos-contenido" id="panelSaldosContenido">
             <div class="panel-saldos-header">
                 <span class="panel-saldos-titulo">HERRAMIENTA DE SALDOS DISPONIBLES</span>
-                <button type="button" class="panel-saldos-cerrar" id="btnMinimizarOP" title="Minimizar">&times;</button>
+                <button type="button" class="panel-saldos-cerrar" id="btnMinimizarOP" title="Minimizar" aria-label="Minimizar saldos disponibles" aria-controls="panelSaldosContenido" aria-expanded="true">&times;</button>
             </div>
     
             <div class="panel-saldos-body">

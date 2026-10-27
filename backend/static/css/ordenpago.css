@@ -3,139 +3,71 @@
     flex-direction: column;
     width: 100%;
     gap: 1rem;
-    padding-right: 140px;
+    padding-bottom: 5rem;
+    font-size: 1.1rem;
 }
 
-/* ==========================================================
-   TOOLBAR FLOTANTE LATERAL — mismo estilo que Orden de Pago Personal
-   ========================================================== */
-
-.toolbar {
-    position: fixed;
-    top: 50%;
-    right: 10px;
-    transform: translateY(-50%);
-
-    width: 125px;
-
-    background: #ffffff;
-    padding: 9px;
-
-    border: 1px solid #d5d5d5;
-    border-radius: 9px;
-
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.10);
-
-    z-index: 50;
-}
-
-.toolbar-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e2e2e2;
-}
-
-.toolbar-group:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-.btn-tool {
+.ordenpago-page > #panelSaldos > .panel-saldos-contenido {
     width: 100%;
+}
 
-    background: #f7f7f7;
-    color: #333;
-
-    border: 1px solid #d3d3d3;
-    border-radius: 6px;
-
-    padding: 8px 5px;
-
-    font-family: inherit;
-    font-size: 10.5px;
-    font-weight: 600;
-
+.ordenpago-page > #panelSaldos > .panel-saldos-icono {
+    padding: 0;
+    border: 0;
+    background: transparent;
     cursor: pointer;
-    white-space: nowrap;
-    text-align: center;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.btn-tool:hover {
-    background: #eeeeee;
-    border-color: #bdbdbd;
+.ordenpago-page > #panelSaldos > .panel-saldos-icono:hover {
+    transform: none;
 }
 
-.btn-tool:active {
-    background: #e2e2e2;
+.ordenpago-page > #panelSaldos.minimizado:focus-within {
+    outline: 3px solid #2563eb;
+    outline-offset: 3px;
 }
 
-.btn-tool.primary {
-    background: var(--primary);
-    color: #ffffff;
-    border-color: var(--primary);
+.ordenpago-page > #panelSaldos .panel-saldos-body {
+    max-height: min(300px, 45vh);
+    overflow-y: auto;
 }
 
-.btn-tool.primary:hover {
-    background: var(--primary-hover);
-    border-color: var(--primary-hover);
-    color: #ffffff;
+.ordenpago-page > #panelSaldos .saldo-rojo {
+    color: #ef4444;
+    font-weight: 700;
 }
 
-/* ==========================================================
-   RESPONSIVE — en pantallas chicas, la barra baja
-   y se acuesta horizontal para no tapar contenido
-   ========================================================== */
-@media (max-width: 900px) {
+.ordenpago-page > #panelSaldos .saldo-verde {
+    color: #16a34a;
+    font-weight: 700;
+}
 
+@media print {
+    .botones-accion,
+    .tabla-acciones,
+    #panelSaldos {
+        display: none !important;
+    }
+}
+
+body.exportando-pdf .no-print {
+    display: none !important;
+}
+
+@media (max-width: 760px) {
     .ordenpago-page {
-        padding-right: 0;
+        padding-bottom: 6rem;
     }
 
-    .toolbar {
-        top: auto;
-        bottom: 12px;
-        right: 50%;
-        transform: translateX(50%);
-
-        width: auto;
-        max-width: 95vw;
-        overflow-x: auto;
-
-        flex-direction: row;
-        padding: 8px;
+    .ordenpago-page > #panelSaldos {
+        bottom: 76px;
+        left: 1rem;
     }
 
-    .toolbar-group {
-        flex-direction: row;
-
-        border-bottom: none;
-        border-right: 1px solid #e5e5e5;
-
-        padding: 0 6px;
+    .ordenpago-page > #panelSaldos:not(.minimizado) {
+        width: min(290px, calc(100vw - 2rem));
     }
 
-    .toolbar-group:last-child {
-        border-right: none;
-    }
-
-    .btn-tool {
-        width: auto;
-        min-width: 90px;
-    }
 }
 
 
@@ -143,8 +75,9 @@
    HOJA DE PAGO (PAGE SIZING)
 ========================================= */
 .hoja {
-    width: 96%;
-    max-width: 1400px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     min-height: 80vh;
     background: var(--white);
     box-shadow: var(--shadow-md);
@@ -200,13 +133,13 @@
 
 .organismo-nombre {
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.5rem;
     text-transform: uppercase;
     color: var(--text);
 }
 
 .provincia {
-    font-size: 0.85rem;
+    font-size: 1.3rem;
     color: var(--text-muted);
     font-style: italic;
     margin-top: 4px;
@@ -232,37 +165,41 @@
 }
 
 .enc-centro {
-    flex: 1.2;
+    flex: 2;
     text-align: center;
-    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .ejercicio-linea {
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.35rem;
     margin-bottom: 8px;
     color: var(--text);
 }
 
 .orden-titulo {
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1.35rem;
     color: var(--text);
     letter-spacing: 0.05em;
 }
 
-.enc-derecha {
-    flex: 0.8;
+.orden-linea {
+    position: relative;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
+    gap: 12px;
 }
 
 .numero-orden-box {
     border: 1.5px solid var(--border);
     border-radius: 6px;
     padding: 8px 12px;
-    width: 180px;
+    width: 160px;
+    flex-shrink: 0;
     text-align: center;
     background: #f9fafb;
 }
@@ -271,10 +208,20 @@
     width: 100%;
     text-align: center;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.1rem;
     border: none;
     background: transparent;
     color: var(--text);
+}
+
+.orden-linea .error-msg {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    width: max-content;
+    max-width: 100%;
+    margin-top: 4px;
+    transform: translateX(-50%);
 }
 
 /* =========================================
@@ -289,7 +236,7 @@ input[type="number"] {
     background: transparent;
     outline: none;
     padding: 4px 6px;
-    font-size: 0.9rem;
+    font-size: 1.1rem;
     transition: all 0.2s ease;
 }
 
@@ -305,13 +252,13 @@ input[type="number"]:focus {
 .input-linea.corto { width: 80px; border: 1.5px solid var(--border); border-radius: 4px; text-align: center; margin-left: 8px; padding: 4px; }
 .input-linea.corto:focus { border-color: var(--primary); }
 .input-linea.centrado { display: block; margin: 8px auto 0; text-align: center; width: 300px; }
-.input-linea.chico { width: 180px; font-size: 0.85rem; }
+.input-linea.chico { width: 180px; font-size: 1rem; }
 
 .input-caja { 
     border: 1.5px solid var(--border) !important; 
     border-radius: 4px;
     padding: 6px 8px; 
-    font-size: 0.9rem; 
+    font-size: 1.1rem;
 }
 .input-caja:focus {
     border-color: var(--primary) !important;
@@ -319,15 +266,15 @@ input[type="number"]:focus {
 }
 .input-caja.chica { width: 60px; text-align: center; margin: 0 8px; }
 .input-caja.fecha { width: 130px; text-align: center; margin-left: 8px; }
-.input-caja.importe-total { width: 160px; text-align: right; font-weight: 700; font-size: 1.05rem; background: #f9fafb; }
+.input-caja.importe-total { width: 160px; text-align: right; font-weight: 700; font-size: 1.2rem; background: #f9fafb; }
 .input-caja.mini { width: 45px; text-align: center; margin: 0 6px; }
 
-.etiqueta-inline { font-weight: 600; font-size: 0.85rem; color: #4b5563; }
-.error-msg { font-size: 0.75rem; color: #ef4444; margin-top: 4px; display: empty ? none : block; }
+.etiqueta-inline { font-weight: 600; font-size: 1.05rem; color: #4b5563; }
+.error-msg { font-size: 0.9rem; color: #ef4444; margin-top: 4px; display: empty ? none : block; }
 
 
 .tabla-datos { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-.tabla-datos td { border-bottom: 1.5px dashed var(--border); padding: 8px; font-size: 0.9rem; vertical-align: middle; }
+.tabla-datos td { border-bottom: 1.5px dashed var(--border); padding: 8px; font-size: 1.1rem; vertical-align: middle; }
 .tabla-datos .etiqueta { font-weight: 600; width: 220px; white-space: nowrap; color: #4b5563; }
 .tabla-datos .valor { width: 100%; }
 
@@ -354,15 +301,16 @@ input[type="number"]:focus {
     gap: 16px; 
 }
 .texto-pago-izq { flex: 1; }
-.linea-fija { margin: 4px 0; font-size: 0.9rem; font-weight: 600; color: #4b5563; }
-.linea-importe-letras { margin: 12px 0 4px 0; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
+.linea-fija { margin: 4px 0; font-size: 1.1rem; font-weight: 600; color: #4b5563; }
+.linea-importe-letras { margin: 12px 0 4px 0; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
 .texto-pago-der { display: flex; align-items: center; gap: 8px; border-left: 2px solid var(--border); padding-left: 20px; }
 .signo { font-weight: 700; font-size: 1.2rem; color: var(--text); }
 
-/* TABLAS PRINCIPALES */
-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
-th, td { border: 1.5px solid var(--border); padding: 10px 12px; font-size: 0.85rem; vertical-align: middle; }
-th { 
+/* Estilos de tablas del documento; el widget conserva los estilos de imputación. */
+.hoja table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+.hoja th,
+.hoja td { border: 1.5px solid var(--border); padding: 10px 12px; font-size: 1.1rem; vertical-align: middle; }
+.hoja th {
     text-align: center; 
     font-weight: 600; 
     background: #f9fafb; 
@@ -370,7 +318,7 @@ th {
     text-transform: uppercase; 
     letter-spacing: 0.05em;
 }
-td { background: var(--white); }
+.hoja td { background: var(--white); }
 
 .tabla-principal .col-codigo { width: 15%; text-align: center; }
 .tabla-principal .col-beneficiario { width: 60%; }
@@ -381,7 +329,7 @@ td { background: var(--white); }
 .tabla-partidas input { 
     width: 100%; 
     border: none; 
-    font-size: 0.85rem; 
+    font-size: 1.1rem;
     padding: 4px;
     box-sizing: border-box;
 }
@@ -400,7 +348,7 @@ td { background: var(--white); }
     margin-bottom: 1rem; 
 }
 .concepto-fila { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-.etiqueta-factura { font-weight: 600; font-size: 0.85rem; margin-left: auto; color: #4b5563; }
+.etiqueta-factura { font-weight: 600; font-size: 1.05rem; margin-left: auto; color: #4b5563; }
 .concepto-descripcion { display: flex; flex-direction: column; gap: 6px; }
 
 .bloque-resolucion { 
@@ -412,12 +360,30 @@ td { background: var(--white); }
 .resolucion-fila { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
 .resolucion-fila:first-child .input-linea { width: auto; flex: 1; }
 .resolucion-fila:last-child { margin-bottom: 0; }
+.resolucion-fila.resolucion-referencias {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+}
+.resolucion-referencia {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.resolucion-referencia .input-linea { width: 100%; }
+
+@media (max-width: 700px) {
+    .resolucion-fila.resolucion-referencias {
+        grid-template-columns: 1fr;
+    }
+}
 
 .tabla-concepto-pago .col-codigo { width: 15%; text-align: center; }
 .tabla-concepto-pago .col-importe { width: 25%; text-align: right; }
 
 .tabla-partidas { table-layout: fixed; }
-.tabla-partidas th { font-size: 0.8rem; text-align: center; }
+.tabla-partidas th { font-size: 1.1rem; text-align: center; }
 .tabla-partidas td { text-align: left; }
 
 /* Columnas numéricas pequeñas */
@@ -466,7 +432,7 @@ td { background: var(--white); }
 }
 .rentas-titulo {
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 1.3rem;
     color: #4b5563;
     margin-bottom: 8px;
     letter-spacing: 0.05em;
@@ -488,136 +454,9 @@ td { background: var(--white); }
     justify-content: center;
     align-items: center;
     gap: 8px;
-    font-size: 0.85rem;
+    font-size: 1.05rem;
     color: #4b5563;
     font-weight: 500;
-}
-
-/* ==========================================================
-   PANEL FLOTANTE DE SALDOS (WIDGET) - ESTILO IMPUTACION
-   ========================================================== */
-
-/* Contenedor principal del widget */
-.panel-saldos-widget {
-    position: fixed;
-    bottom: 20px;
-    left: 20px; /* Cambiado de 'right' a 'left' */
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start; /* Alineación a la izquierda */
-}
-
-/* --- ESTADO NORMAL (DESPLEGADO) --- */
-.panel-saldos-contenido {
-    background: #ffffff;
-    border: 1px solid #d5d5d5;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    width: 320px;
-    overflow: hidden;
-    display: block; 
-    margin-top: 10px; /* Separación si se despliega hacia abajo (opcional, dependiendo de tu diseño general) */
-}
-
-/* --- ESTILO DEL BOTÓN (ÍCONO) --- */
-.panel-saldos-icono {
-    display: none; 
-    width: 55px; /* Aumentado para que sea más grande */
-    height: 55px; /* Aumentado para que sea más grande */
-    background: #ffffff; /* Fondo blanco para resaltar la imagen */
-    border: 2px solid #2563eb; /* Borde azul llamativo y más grueso */
-    border-radius: 12px; /* Bordes ligeramente más redondeados acorde al nuevo tamaño */
-    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); /* Sombra con un tono azulado */
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-    overflow: hidden; 
-}
-
-.panel-saldos-icono:hover {
-    transform: scale(1.08); /* Crece un poquito más al pasar el mouse */
-    box-shadow: 0 6px 15px rgba(37, 99, 235, 0.5); /* Sombra más intensa en hover */
-    border-color: #1d4ed8; /* Azul más oscuro al pasar el mouse */
-}
-
-.panel-saldos-icono img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; 
-}
-
-/* --- ESTADO MINIMIZADO --- */
-.panel-saldos-widget.minimizado .panel-saldos-contenido {
-    display: none;
-}
-
-.panel-saldos-widget.minimizado .panel-saldos-icono {
-    display: flex;
-}
-
-/* --- DISEÑO INTERNO DEL PANEL (El resto se mantiene igual) --- */
-.panel-saldos-header {
-    background: #f9fafb;
-    padding: 12px 15px;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.panel-saldos-titulo {
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: #4b5563;
-}
-
-.panel-saldos-cerrar {
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    line-height: 1;
-    cursor: pointer;
-    color: #9ca3af;
-    transition: color 0.2s;
-}
-
-.panel-saldos-cerrar:hover {
-    color: #ef4444;
-}
-
-.panel-saldos-body {
-    padding: 0;
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-.tabla-saldos {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 0;
-}
-
-.tabla-saldos th {
-    background: #f9fafb;
-    font-size: 0.75rem;
-    padding: 8px 12px;
-}
-
-.tabla-saldos td {
-    padding: 10px 12px;
-    font-size: 0.85rem;
-}
-
-.saldo-rojo {
-    color: #ef4444 !important;
-    font-weight: 700;
-}
-
-.saldo-verde {
-    color: #10b981 !important;
-    font-weight: 700;
 }
 
 /* ==========================================================
@@ -807,7 +646,7 @@ td { background: var(--white); }
     border-bottom: 1px solid #bbb;
     border-radius: 0;
     background: transparent;
-    font-size: 0.88rem;
+    font-size: 1.1rem;
     font-family: inherit;
     color: #222;
     line-height: 1.5;
@@ -844,22 +683,4 @@ td { background: var(--white); }
     height: 100%;
     object-fit: contain;
     display: block;
-}
-
-/* Cancelar: como los demás botones, pero en rojo suave */
-a.btn-tool {
-    text-decoration: none;
-    box-sizing: border-box;
-}
-
-.btn-cancelar-op {
-    background: #fff5f5;
-    color: #b91c1c;
-    border-color: #fca5a5;
-}
-
-.btn-cancelar-op:hover {
-    background: #fee2e2;
-    border-color: #f87171;
-    color: #991b1b;
 }
