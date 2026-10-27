@@ -950,3 +950,120 @@
 .observaciones-box {
     margin-top: 4px;
 }
+/* ===== OBSERVACIONES EN NEGRITA ===== */
+.textarea-observaciones {
+    font-weight: bold;
+}
+
+.textarea-observaciones::placeholder {
+    font-weight: bold;
+}
+/* ===== TABLA DE EROGACIONES: selects e inputs ajustados a la celda ===== */
+.tabla-erogaciones td {
+    overflow: hidden;
+    padding: 0 !important;
+    vertical-align: middle;
+}
+
+.tabla-erogaciones select,
+.tabla-erogaciones input {
+    display: block;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 26px !important;
+    box-sizing: border-box !important;
+
+    margin: 0 !important;
+    padding: 0 1px !important;
+
+    border: none !important;
+    background: transparent !important;
+    outline: none;
+
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9px !important;
+    line-height: 26px;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* Selects chicos: sin flechita para ganar espacio, texto centrado */
+.tabla-erogaciones .celda-prog select,
+.tabla-erogaciones .celda-sp select,
+.tabla-erogaciones .celda-pto select,
+.tabla-erogaciones .celda-ao select,
+.tabla-erogaciones .celda-part select,
+.tabla-erogaciones .celda-part input {
+    -webkit-appearance: none;
+    appearance: none;
+    text-align: center;
+    text-align-last: center;
+    cursor: pointer;
+}
+
+/* Descripción: texto a la izquierda, con flecha */
+.tabla-erogaciones .celda-desc select {
+    text-align: left;
+    cursor: pointer;
+}
+
+.tabla-erogaciones .celda-importe input {
+    text-align: right;
+    padding-right: 4px !important;
+}
+
+/* La lista desplegable sí puede mostrar el texto completo */
+.tabla-erogaciones select option {
+    font-size: 11px;
+    white-space: normal;
+}
+/* ===== SOLO DURANTE LA EXPORTACIÓN A PDF ===== */
+body.exportando-pdf .btn-mini,
+body.exportando-pdf .no-print,
+body.exportando-pdf .toolbar {
+    display: none !important;
+}
+
+/* Que tampoco salgan los textos de ayuda (placeholders) */
+body.exportando-pdf input::placeholder,
+body.exportando-pdf textarea::placeholder {
+    color: transparent !important;
+    opacity: 0 !important;
+}
+#celdaTotalBeneficiario {
+    padding: 0 !important;
+    vertical-align: top !important;
+}
+
+.totales-ben-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+.fila-total-ben {
+    height: 26px;
+    box-sizing: border-box;
+}
+
+.fila-total-ben input {
+    width: 100% !important;
+    height: 26px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 4px !important;
+    border: none !important;
+    border-bottom: 1px dotted #ccc !important;
+    background: transparent !important;
+    outline: none;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10px !important;
+    font-weight: bold;
+    text-align: right;
+}

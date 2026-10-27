@@ -822,3 +822,130 @@
 .ejant-page {
     padding-top: 85px;
 }
+/* ==========================================================
+   MEJORAS: SELECTOR DE AÑOS
+   ========================================================== */
+
+.ejant-anios {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: thin;
+
+    background: var(--azul-suave);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+}
+
+.ejant-anio-btn {
+    flex: 0 0 auto;
+    height: 34px;
+    min-width: 64px;
+    padding: 0 16px;
+
+    border: 0;
+    border-right: 0;
+    border-radius: 8px;
+
+    background: transparent;
+    color: var(--gris);
+
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+
+    transition: background .2s, color .2s, box-shadow .2s;
+}
+
+.ejant-anio-btn:hover {
+    background: white;
+    color: var(--azul);
+}
+
+.ejant-anio-btn.on {
+    background: linear-gradient(135deg, var(--azul), var(--azul-2));
+    color: white;
+    box-shadow: 0 3px 10px rgba(11, 61, 145, .30);
+}
+
+.ejant-anio-btn:focus-visible {
+    outline: 2px solid var(--azul-2);
+    outline-offset: 2px;
+}
+
+
+/* ==========================================================
+   MEJORAS: TABLA SIEMPRE COMPLETA (números grandes)
+   ========================================================== */
+
+/* En vez de recortar, el wrapper hace scroll horizontal */
+.ejant-tabla-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* La tabla nunca se comprime más de este ancho */
+.ejant-tabla {
+    min-width: 980px;
+    table-layout: auto;
+}
+
+/* Los importes no se parten ni se cortan */
+.ejant-tabla td.num,
+.ejant-tabla th.num {
+    white-space: nowrap;
+    min-width: 120px;
+    font-size: clamp(11px, 0.95vw, 13px);
+}
+
+/* La denominación sí puede ocupar varias líneas */
+.ejant-denominacion {
+    min-width: 200px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* La tabla de movimientos (detalle) también */
+.ejant-detalle-contenido {
+    overflow-x: auto;
+}
+
+.ejant-mov {
+    min-width: 640px;
+}
+
+.ejant-mov td.num {
+    white-space: nowrap;
+}
+
+
+/* ==========================================================
+   MEJORAS: TARJETAS CON IMPORTES GRANDES
+   ========================================================== */
+
+.ejant-card {
+    min-width: 0;                 /* permite que el contenido se adapte */
+}
+
+.ejant-card > div:last-child {
+    min-width: 0;
+    flex: 1;
+}
+
+.ejant-card strong {
+    font-size: clamp(13px, 1.35vw, 17px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;      /* último recurso si es enorme */
+}
+
+/* Ya no hace falta el overflow solo en mobile */
+@media (max-width: 800px) {
+    .ejant-tabla-wrapper {
+        overflow-x: auto;
+    }
+}

@@ -191,7 +191,7 @@ function agregarFilaBeneficiario() {
     <input 
       type="text" 
       class="input-codigo-beneficiario" 
-      placeholder="00000"
+      
     >
   `;
 
@@ -296,47 +296,21 @@ function seleccionarFilaBeneficiario(fila) {
 * si no hay ninguna seleccionada).
 */
 function eliminarFilaBeneficiarioSeleccionada() {
-
   const contenedor = document.getElementById("beneficiariosContainer");
   const codigosContainer = document.getElementById("codigosContainer");
+  const parcialesContainer = document.getElementById("parcialesContainer");
+
   const filas = contenedor.querySelectorAll(".fila-beneficiario");
   if (filas.length === 0) return;
 
-  let filaAEliminar = contenedor.querySelector(".fila-seleccionada");
-  let indice;
+  // Siempre la última de las tres columnas
+  filas[filas.length - 1].remove();
 
-  // Si hay una seleccionada
-  if (filaAEliminar) {
-    indice = Array.from(filas).indexOf(filaAEliminar);
-  } else {
-    // Si no hay seleccionada, elimina la última
-    filaAEliminar = filas[filas.length - 1];
-    indice = filas.length - 1;
-  }
-
-  // ============================================================
-  // ELIMINAR NOMBRE
-  // ============================================================
-  filaAEliminar.remove();
-
-  // ============================================================
-  // ELIMINAR CÓDIGO CORRESPONDIENTE
-  // ============================================================
   const codigos = codigosContainer.querySelectorAll(".fila-codigo");
+  if (codigos.length) codigos[codigos.length - 1].remove();
 
-  if (codigos[indice]) {
-    codigos[indice].remove();
-  }
-
-
-  // ============================================================
-  // ELIMINAR PARCIAL CORRESPONDIENTE
-  // ============================================================
-  const parciales = document.querySelectorAll(".input-importe-parcial");
-
-  if (parciales[indice]) {
-    parciales[indice].remove();
-  }
+  const parciales = parcialesContainer.querySelectorAll(".input-importe-parcial");
+  if (parciales.length) parciales[parciales.length - 1].remove();
 
   recalcularTotales();
 }
@@ -532,17 +506,15 @@ function seleccionarFilaErogacion(fila) {
   */
 function eliminarFilaErogacionSeleccionada() {
   const cuerpoTabla = document.getElementById("erogacionesBody");
-  const filaSeleccionada = cuerpoTabla.querySelector(".fila-seleccionada");
+  const filas = cuerpoTabla.querySelectorAll("tr");
+  if (filas.length === 0) return;
 
-  if (filaSeleccionada) {
-    filaSeleccionada.remove();
-  } else {
-    const filas = cuerpoTabla.querySelectorAll("tr");
-    if (filas.length > 0) filas[filas.length - 1].remove();
-  }
+  // Siempre la última fila, aunque esté vacía
+  filas[filas.length - 1].remove();
 
   recalcularTotales();
 }
+
    
 /* ------------------------------------------------------------------------
     CÁLCULO AUTOMÁTICO DE TOTALES
@@ -835,16 +807,58 @@ function imprimirDocumento() {
   */
 function exportarAPDF() {
   const elemento = document.getElementById("hoja");
+  document.body.classList.add("exportando-pdf");
+
+  // Reemplazar cada textarea por un div con el mismo texto
+  const reemplazos = [];
+  elemento.querySelectorAll("textarea").forEach((ta) => {
+    const estilo = getComputedStyle(ta);
+
+    const div = document.createElement("div");
+    div.textContent = ta.value;
+    div.style.width = "100%";
+    div.style.boxSizing = "border-box";
+    div.style.whiteSpace = "pre-wrap";      // respeta Enter y ajusta al ancho
+    div.style.wordBreak = "normal";
+div.style.overflowWrap = "break-word";
+    div.style.fontFamily = estilo.fontFamily;
+    div.style.fontSize = estilo.fontSize;
+    div.style.fontWeight = estilo.fontWeight;
+    div.style.lineHeight = estilo.lineHeight;
+    div.style.color = estilo.color;
+    div.style.padding = estilo.padding;
+    div.style.minHeight = estilo.minHeight;
+
+    ta.style.display = "none";
+    ta.insertAdjacentElement("afterend", div);
+    reemplazos.push({ ta, div });
+  });
 
   const opciones = {
     margin: 0,
     filename: "orden-de-pago-personal.pdf",
     image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      scrollY: 0,
+      windowHeight: elemento.scrollHeight
+    },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: "avoid-all" }
   };
 
-  html2pdf().set(opciones).from(elemento).save();
+  html2pdf()
+    .set(opciones)
+    .from(elemento)
+    .save()
+    .finally(() => {
+      document.body.classList.remove("exportando-pdf");
+      reemplazos.forEach(({ ta, div }) => {
+        div.remove();
+        ta.style.display = "";
+      });
+    });
 }
 /* ------------------------------------------------------------------------
   ASIGNACIÓN DE VALIDACIONES A CAMPOS ESPECÍFICOS
@@ -953,7 +967,47 @@ if (inputImporteOP) {
     if (this.value.trim() !== '') {
       formatearInputImporte(this);
     }
+function actualizarTotalesPorBeneficiario() {
+  const cont = document.getElementById("totalesBeneficiariosContainer");
+  const par  = document.getElementById("parcialesContainer");
+  if (!cont || !par) return;
 
+  const importes = Array.from(par.querySelectorAll(".input-importe-parcial"))
+    .map((input) => parsearImporte(input.value));
+
+  // Un total por fila: solo la primera de cada grupo lleva el valor
+  const totales = new Array(importes.length).fill(null);
+
+  let i = 0;
+  while (i < importes.length) {
+    if (importes[i] > 0) {
+      const inicio = i;
+      let suma = 0;
+      while (i < importes.length && importes[i] > 0) {
+        suma += importes[i];
+        i++;
+      }
+      totales[inicio] = suma;
+    } else {
+      i++;
+    }
+  }
+
+  cont.innerHTML = "";
+  totales.forEach((total) => {
+    const fila = document.createElement("div");
+    fila.className = "fila-total-ben";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.readOnly = true;
+    input.tabIndex = -1;
+    input.value = total !== null ? formatearImporte(total) : "";
+
+    fila.appendChild(input);
+    cont.appendChild(fila);
+  });
+}
     // Actualizar totales
     recalcularTotales();
   });
