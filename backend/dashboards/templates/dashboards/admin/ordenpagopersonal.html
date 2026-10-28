@@ -205,9 +205,15 @@
 
             <!-- ===== FECHA Y PIE ===== -->
             <div class="fila-fecha-pie">
-                <div class="pie-cr">
-                    <input type="text" id="codigoCR" class="input-linea chico" placeholder="CR">
-                </div>
+    <div class="pie-cr">
+    <input
+        type="text"
+        id="codigoCR"
+        class="input-linea chico"
+        value="{{ usuario.nombre|slice:':1'|upper }}"
+        readonly
+    >
+</div>
                 <div class="fecha-box-container">
                     <input
                         type="text"
