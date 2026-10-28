@@ -120,7 +120,7 @@ ESTILO BASE: CYBER-KEY LIGHT
 .key-orange     { --key-bright-color: #ff8800; }
 
 .actions-container-xl > .cyber-key:nth-child(4) {
-    margin-left: -35px;
+    margin-left: -6px;
 }
 
 /*

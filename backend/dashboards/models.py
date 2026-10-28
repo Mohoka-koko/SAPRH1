@@ -181,11 +181,16 @@ class Imputacion(ControlModificacion):
         ('MANUAL',     'Manual'),
         ('AUTOMATICA', 'Automática'),
     ]
-    # NOTA: ajustar estos 3 estados si en el sistema real se llaman distinto.
+
     ESTADO_CHOICES = [
         ('PENDIENTE', 'Pendiente'),
         ('PARCIAL',   'Pagado parcial'),
         ('TOTAL',     'Pagado total'),
+    ]
+
+    ESTADO_FORMULARIO_CHOICES = [
+        ('REVISAR', 'Revisar'),
+        ('LISTO',   'Listo'),
     ]
 
     nro_expediente  = models.CharField(max_length=50)
@@ -193,11 +198,14 @@ class Imputacion(ControlModificacion):
     fecha           = models.DateField()
     origen          = models.CharField(max_length=20, choices=ORIGEN_CHOICES, default='MANUAL')
     observacion     = models.TextField(blank=True)
-    # usuario = quien creó la imputación (se mantiene el nombre para no romper
-    # el resto del código que ya usa "usuario"/related_name="imputaciones").
     usuario         = models.ForeignKey(UsuarioPersonalizado, on_delete=models.PROTECT, related_name='imputaciones')
     fecha_creacion  = models.DateTimeField(auto_now_add=True)
     estado          = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
+    estado_formulario = models.CharField(
+        max_length=10,
+        choices=ESTADO_FORMULARIO_CHOICES,
+        default='REVISAR',
+    )
     anulada         = models.BooleanField(default=False)
     fecha_anulacion = models.DateTimeField(null=True, blank=True)
 
@@ -208,6 +216,27 @@ class Imputacion(ControlModificacion):
 
     def __str__(self):
         return f'Imputación {self.nro_expediente} - {self.fecha}'
+    
+
+class ImputacionBorradorDetalle(models.Model):
+    imputacion           = models.ForeignKey(Imputacion, on_delete=models.CASCADE, related_name='borradores_detalle')
+    linea_presupuestaria = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, null=True, blank=True, related_name='borradores_imputacion')
+    programa_id          = models.IntegerField(null=True, blank=True)
+    proyecto_id          = models.IntegerField(null=True, blank=True)
+    actividad_id         = models.IntegerField(null=True, blank=True)
+    partida_id           = models.IntegerField(null=True, blank=True)
+    fuente_id            = models.IntegerField(null=True, blank=True)
+    proveedor_concepto   = models.CharField(max_length=300, blank=True)
+    importe              = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    orden                = models.IntegerField(default=0)
+
+    class Meta:
+        db_table     = 'imputacion_borrador_detalle'
+        ordering     = ['orden']
+        verbose_name = 'Borrador de Detalle de Imputación'
+
+    def __str__(self):
+        return f'Borrador {self.imputacion_id} fila {self.orden}'
 
 
 class ImputacionDetalle(RegistroAuditable):
@@ -225,9 +254,7 @@ class ImputacionDetalle(RegistroAuditable):
 
 
 # ─────────────────────────────────────────────
-# ORDEN DE PAGO (rediseñada: cabecera + detalle)
-# Reemplazar la clase OrdenPago existente por esto,
-# y agregar la clase OrdenPagoDetalle a continuación.
+# ORDEN DE PAGO 
 # ─────────────────────────────────────────────
 class OrdenPago(ControlModificacion):
     imputacion                = models.ForeignKey('Imputacion', on_delete=models.PROTECT, related_name='ordenes_pago', null=True, blank=True)
@@ -239,7 +266,6 @@ class OrdenPago(ControlModificacion):
     concepto                  = models.TextField()
     nro_factura               = models.CharField(max_length=50, blank=True)
     nro_resolucion            = models.CharField(max_length=50, blank=True)
-    # Resolución que corrige errores legales del decreto (distinta de nro_resolucion)
     nro_resolucion_rectificatoria = models.CharField(
         max_length=50, blank=True, default='',
         validators=[RegexValidator(r'^\d+/\d+$', 'Formato esperado: número/número (ej: 123/2026)')],

@@ -14,7 +14,7 @@ from django.contrib.auth.decorators import login_required
 from dashboards.models import (
     LineaPresupuestaria, Refuerzo, RefuerzoDetalle,
     Modificacion, ModificacionTransferente, ModificacionReceptora,
-    Imputacion, ImputacionDetalle,
+    Imputacion, ImputacionDetalle, ImputacionBorradorDetalle,
     OrdenPago, OrdenPagoBeneficiario, OrdenPagoUnidadPresupuestaria,
     MovimientoHistorial, Jurisdiccion, Programa, Subprograma, Proyecto,
     ActividadObra, Partida, FuenteFinanciamiento,
@@ -1547,6 +1547,274 @@ def api_programas(request):
         id__in=ids
     ).values('id', 'codigo_programa', 'nombre').order_by('codigo_programa')
     return JsonResponse({'programas': list(programas)})
+
+# ==========================================
+#  API — CREAR BORRADOR DE IMPUTACIÓN
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_imputacion_borrador_crear(request):
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    fecha          = body.get('fecha', '')
+    nro_expediente = body.get('nro_expediente', '').strip()
+    observacion    = body.get('observacion', '').strip()
+    detalles       = body.get('detalles', [])
+
+    try:
+        fecha_obj = date.fromisoformat(fecha) if fecha else date.today()
+    except ValueError:
+        fecha_obj = date.today()
+
+    # Asiento provisional (se recalcula al confirmar)
+    from django.db.models import Max
+    ultimo = Imputacion.objects.filter(
+        fecha__year=fecha_obj.year
+    ).aggregate(Max('asiento_nro'))['asiento_nro__max']
+    try:
+        asiento_nro = str(int(ultimo) + 1).zfill(4) if ultimo else '0001'
+    except (ValueError, TypeError):
+        asiento_nro = '0001'
+
+    with transaction.atomic():
+        imputacion = Imputacion.objects.create(
+            nro_expediente    = nro_expediente or 'BORRADOR',
+            asiento_nro       = asiento_nro,
+            fecha             = fecha_obj,
+            origen            = 'MANUAL',
+            observacion       = observacion,
+            usuario           = request.user,
+            estado_formulario = 'REVISAR',
+        )
+
+        for i, d in enumerate(detalles):
+            linea = None
+            linea_id = d.get('linea_id')
+            if linea_id:
+                try:
+                    linea = LineaPresupuestaria.objects.get(id=linea_id)
+                except LineaPresupuestaria.DoesNotExist:
+                    pass
+
+            ImputacionBorradorDetalle.objects.create(
+                imputacion           = imputacion,
+                linea_presupuestaria = linea,
+                programa_id          = d.get('programa_id'),
+                proyecto_id          = d.get('proyecto_id'),
+                actividad_id         = d.get('actividad_id'),
+                partida_id           = d.get('partida_id'),
+                fuente_id            = d.get('fuente_id'),
+                proveedor_concepto   = d.get('proveedor_concepto', ''),
+                importe              = Decimal(str(d['importe'])) if d.get('importe') else None,
+                orden                = i,
+            )
+
+    return JsonResponse({
+        'ok':            True,
+        'imputacion_id': imputacion.id,
+        'asiento_nro':   asiento_nro,
+    })
+
+
+
+# ==========================================
+#  API — ACTUALIZAR BORRADOR DE IMPUTACIÓN
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_imputacion_borrador_actualizar(request, imputacion_id):
+    try:
+        body = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    try:
+        imputacion = Imputacion.objects.get(id=imputacion_id, usuario=request.user)
+    except Imputacion.DoesNotExist:
+        return JsonResponse({'error': 'Imputación no encontrada'}, status=404)
+
+    if imputacion.estado_formulario != 'REVISAR':
+        return JsonResponse({'error': 'Solo se pueden actualizar borradores en estado REVISAR'}, status=400)
+
+    fecha          = body.get('fecha', '')
+    nro_expediente = body.get('nro_expediente', '').strip()
+    observacion    = body.get('observacion', '').strip()
+    detalles       = body.get('detalles', [])
+
+    try:
+        fecha_obj = date.fromisoformat(fecha) if fecha else imputacion.fecha
+    except ValueError:
+        fecha_obj = imputacion.fecha
+
+    with transaction.atomic():
+        imputacion.fecha          = fecha_obj
+        imputacion.nro_expediente = nro_expediente or imputacion.nro_expediente
+        imputacion.observacion    = observacion
+        imputacion.usuario_modificacion = request.user
+        imputacion.save()
+
+        # Reemplazar detalles del borrador completamente
+        imputacion.borradores_detalle.all().delete()
+
+        for i, d in enumerate(detalles):
+            linea = None
+            linea_id = d.get('linea_id')
+            if linea_id:
+                try:
+                    linea = LineaPresupuestaria.objects.get(id=linea_id)
+                except LineaPresupuestaria.DoesNotExist:
+                    pass
+
+            ImputacionBorradorDetalle.objects.create(
+                imputacion           = imputacion,
+                linea_presupuestaria = linea,
+                programa_id          = d.get('programa_id'),
+                proyecto_id          = d.get('proyecto_id'),
+                actividad_id         = d.get('actividad_id'),
+                partida_id           = d.get('partida_id'),
+                fuente_id            = d.get('fuente_id'),
+                proveedor_concepto   = d.get('proveedor_concepto', ''),
+                importe              = Decimal(str(d['importe'])) if d.get('importe') else None,
+                orden                = i,
+            )
+
+    return JsonResponse({'ok': True})
+
+
+# ==========================================
+#  API — COMPLETAR IMPUTACIÓN (REVISAR → LISTO)
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_imputacion_completar(request, imputacion_id):
+    from django.db.models import Max
+
+    try:
+        imputacion = Imputacion.objects.get(id=imputacion_id, usuario=request.user)
+    except Imputacion.DoesNotExist:
+        return JsonResponse({'error': 'Imputación no encontrada'}, status=404)
+
+    if imputacion.estado_formulario != 'REVISAR':
+        return JsonResponse({'error': 'Esta imputación ya fue completada'}, status=400)
+
+    borradores = imputacion.borradores_detalle.all()
+
+    if not borradores.exists():
+        return JsonResponse({'error': 'No hay filas de detalle cargadas'}, status=400)
+
+    # Validar que todos los borradores estén completos
+    for b in borradores:
+        if not b.linea_presupuestaria:
+            return JsonResponse({'error': 'Hay filas con línea presupuestaria incompleta'}, status=400)
+        if not b.proveedor_concepto.strip():
+            return JsonResponse({'error': 'Hay filas sin concepto/proveedor'}, status=400)
+        if not b.importe or b.importe <= 0:
+            return JsonResponse({'error': 'Hay filas con importe inválido o cero'}, status=400)
+
+    if not imputacion.nro_expediente or imputacion.nro_expediente == 'BORRADOR':
+        return JsonResponse({'error': 'El número de expediente es obligatorio'}, status=400)
+
+    if not imputacion.fecha:
+        return JsonResponse({'error': 'La fecha es obligatoria'}, status=400)
+
+    try:
+        with transaction.atomic():
+            # Recalcular asiento definitivo
+            ultimo = Imputacion.objects.filter(
+                fecha__year=imputacion.fecha.year,
+                estado_formulario='LISTO',
+            ).exclude(id=imputacion.id).aggregate(Max('asiento_nro'))['asiento_nro__max']
+            try:
+                asiento_nro = str(int(ultimo) + 1).zfill(4) if ultimo else '0001'
+            except (ValueError, TypeError):
+                asiento_nro = '0001'
+
+            imputacion.asiento_nro       = asiento_nro
+            imputacion.estado_formulario = 'LISTO'
+            imputacion.usuario_modificacion = request.user
+            imputacion.save()
+
+            importe_total = Decimal('0')
+
+            for b in borradores:
+                linea = LineaPresupuestaria.objects.select_for_update().get(
+                    id=b.linea_presupuestaria_id
+                )
+
+                if b.importe > linea.saldo_actual:
+                    raise ValueError(
+                        f'Saldo insuficiente en línea {linea.id}. '
+                        f'Disponible: ${linea.saldo_actual}, requerido: ${b.importe}'
+                    )
+
+                # Crear ImputacionDetalle real (trigger descuenta saldo_actual)
+                ImputacionDetalle.objects.create(
+                    imputacion           = imputacion,
+                    linea_presupuestaria = linea,
+                    proveedor_concepto   = b.proveedor_concepto,
+                    importe              = b.importe,
+                )
+
+                importe_total += b.importe
+
+            # Eliminar borradores — ya no se necesitan
+            borradores.delete()
+
+    except ValueError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({
+        'ok':            True,
+        'imputacion_id': imputacion.id,
+        'asiento_nro':   asiento_nro,
+        'importe_total': str(importe_total),
+    })
+
+
+# ==========================================
+#  API — OBTENER BORRADOR (para retomar)
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+def api_imputacion_borrador_obtener(request, imputacion_id):
+    try:
+        imputacion = Imputacion.objects.get(id=imputacion_id, usuario=request.user)
+    except Imputacion.DoesNotExist:
+        return JsonResponse({'error': 'Imputación no encontrada'}, status=404)
+
+    borradores = imputacion.borradores_detalle.select_related(
+        'linea_presupuestaria__programa',
+        'linea_presupuestaria__proyecto',
+        'linea_presupuestaria__actividad_obra',
+        'linea_presupuestaria__partida',
+        'linea_presupuestaria__fuente_financiamiento',
+    ).order_by('orden')
+
+    detalles = []
+    for b in borradores:
+        detalles.append({
+            'programa_id':      b.programa_id,
+            'proyecto_id':      b.proyecto_id,
+            'actividad_id':     b.actividad_id,
+            'partida_id':       b.partida_id,
+            'fuente_id':        b.fuente_id,
+            'linea_id':         b.linea_presupuestaria_id,
+            'proveedor_concepto': b.proveedor_concepto,
+            'importe':          str(b.importe) if b.importe else '',
+        })
+
+    return JsonResponse({
+        'imputacion_id':   imputacion.id,
+        'fecha':           imputacion.fecha.strftime('%Y-%m-%d'),
+        'nro_expediente':  imputacion.nro_expediente if imputacion.nro_expediente != 'BORRADOR' else '',
+        'observacion':     imputacion.observacion,
+        'estado_formulario': imputacion.estado_formulario,
+        'detalles':        detalles,
+    })
 
 # ── Variantes SIN filtrar por líneas ya cargadas ──────────────────────────
 # Las de arriba (api_programas / api_proyectos / api_actividades) sólo

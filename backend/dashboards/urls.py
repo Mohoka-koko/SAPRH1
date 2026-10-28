@@ -84,6 +84,10 @@ urlpatterns = [
     path('admin-dashboard/imputacion/ver/<int:imputacion_id>/', views.imputacion_ver, name='imputacion_ver'),
     path('api/ejercicios-anteriores/anios/', views.api_ejercicios_anios,  name='api_ejercicios_anios'),
     path('api/ejercicios-anteriores/',       views.api_ejercicios_datos,   name='api_ejercicios_datos'),
+    path('api/imputacion/borrador/crear/',                views.api_imputacion_borrador_crear,    name='api_imputacion_borrador_crear'),
+    path('api/imputacion/borrador/<int:imputacion_id>/actualizar/', views.api_imputacion_borrador_actualizar, name='api_imputacion_borrador_actualizar'),
+    path('api/imputacion/borrador/<int:imputacion_id>/obtener/',    views.api_imputacion_borrador_obtener,    name='api_imputacion_borrador_obtener'),
+    path('api/imputacion/<int:imputacion_id>/completar/', views.api_imputacion_completar,          name='api_imputacion_completar'),
 
     # ── Otros dashboards ───────────────────────────────────────────────────
     path('usuariovip-dashboard/', views.usuariovip_dashboard, name='usuariovip_dashboard'),
