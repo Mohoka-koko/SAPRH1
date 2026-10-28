@@ -45,13 +45,73 @@
 @media print {
     .botones-accion,
     .tabla-acciones,
-    #panelSaldos {
+    #panelSaldos,
+    .modal-validacion-overlay {
         display: none !important;
+    }
+
+    @page {
+        size: A4 portrait;
+        margin: 10mm;
     }
 }
 
 body.exportando-pdf .no-print {
     display: none !important;
+}
+
+body.exportando-pdf {
+    background: #ffffff;
+}
+
+body.exportando-pdf .ordenpago-page {
+    display: block;
+    padding: 0;
+}
+
+body.exportando-pdf .hoja {
+    width: 210mm;
+    max-width: 210mm;
+    min-height: 0;
+    margin: 0;
+    padding: 10mm;
+    box-sizing: border-box;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+body.exportando-pdf .marco {
+    padding: 10mm;
+    box-sizing: border-box;
+}
+
+body.exportando-pdf .encabezado,
+body.exportando-pdf .tabla-datos,
+body.exportando-pdf .fila-codigo-pago,
+body.exportando-pdf .bloque-texto-pago,
+body.exportando-pdf .bloque-concepto,
+body.exportando-pdf .bloque-resolucion,
+body.exportando-pdf .tabla-principal thead,
+body.exportando-pdf .tabla-concepto-pago thead,
+body.exportando-pdf .tabla-partidas thead,
+body.exportando-pdf .rentas-generales,
+body.exportando-pdf .pie-inferior {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+body.exportando-pdf table {
+    break-inside: auto;
+    page-break-inside: auto;
+}
+
+body.exportando-pdf tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+body.exportando-pdf thead {
+    display: table-header-group;
 }
 
 @media (max-width: 760px) {

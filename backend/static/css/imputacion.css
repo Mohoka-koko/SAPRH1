@@ -133,7 +133,12 @@
 }
 
 @media print {
-  .botones-accion { display: none !important; }
+  .botones-accion,
+  .tabla-acciones,
+  #panelSaldos,
+  .mensaje-validacion {
+    display: none !important;
+  }
 }
 
 .btn-link {
@@ -145,8 +150,16 @@
 
 @media print {
   .header,
-  .botones-accion {
+  .botones-accion,
+  .tabla-acciones,
+  #panelSaldos,
+  .mensaje-validacion {
       display: none !important;
+  }
+
+  @page {
+      size: A4 portrait;
+      margin: 10mm;
   }
 
   body {
@@ -157,9 +170,27 @@
       padding: 0;
   }
 
+  .imputacion-page {
+      gap: 0;
+      padding-bottom: 0;
+  }
+
   .form-wrap {
       box-shadow: none;
       margin: 0;
+      padding: 0;
+      border-radius: 0;
+  }
+
+  tr,
+  .compromiso-texto,
+  .compromiso-footer {
+      break-inside: avoid;
+      page-break-inside: avoid;
+  }
+
+  thead {
+      display: table-header-group;
   }
 }
 

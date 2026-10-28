@@ -244,7 +244,13 @@
   * Elimina la fila actualmente seleccionada de la tabla de beneficiarios.
   */
   function eliminarFilaBeneficiario() {
-    eliminarFilaSeleccionada("beneficiariosBody");
+    const cuerpoTabla = document.getElementById("beneficiariosBody");
+    const filas = cuerpoTabla.querySelectorAll("tr");
+    const fila = cuerpoTabla.querySelector(".fila-seleccionada") || filas[filas.length - 1];
+
+    if (!fila) return;
+
+    fila.remove();
     recalcularImporteConcepto();
   }
    
@@ -499,23 +505,37 @@
     */
    function exportarAPDF() {
      const elemento = document.getElementById("hoja");
-   
+     if (!elemento || typeof html2pdf !== "function") {
+       throw new Error("No se pudo preparar la exportación de la orden de pago.");
+     }
+
      const opciones = {
        margin: 0,
        filename: "orden-de-pago.pdf",
        image: { type: "jpeg", quality: 0.98 },
-       html2canvas: { scale: 2, useCORS: true },
+       html2canvas: {
+         scale: 2,
+         useCORS: true,
+         backgroundColor: "#ffffff",
+         scrollX: 0,
+         scrollY: 0
+       },
+       pagebreak: {
+         mode: ["css", "legacy"],
+         avoid: ["tr", ".encabezado", ".tabla-datos", ".fila-codigo-pago",
+           ".bloque-texto-pago", ".bloque-concepto", ".bloque-resolucion",
+           ".rentas-generales", ".pie-inferior"]
+       },
        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
      };
-   
-     // Ocultamos temporalmente los bordes de los inputs para que el PDF
-     // se vea igual que la versión impresa.
+
      document.body.classList.add("exportando-pdf");
-     html2pdf()
-       .set(opciones)
-       .from(elemento)
-       .save()
-       .then(() => {
+     html2pdf().set(opciones).from(elemento).save()
+       .catch((error) => {
+         console.error("Error al exportar la orden de pago a PDF:", error);
+         throw error;
+       })
+       .finally(() => {
          document.body.classList.remove("exportando-pdf");
        });
    }
