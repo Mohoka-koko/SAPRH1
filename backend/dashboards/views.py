@@ -2643,7 +2643,7 @@ def api_historial_registros(request):
     for op in ops_personal:
         registros.append({
             'id':                 f'opp-{op.id}',
-            'tipo':               'OP Personal',
+            'tipo':               'Orden de Pago Personal',
             'fecha_creacion':     timezone.localtime(op.fecha_creacion).strftime('%d/%m/%Y - %H:%M') if op.fecha_creacion else '--',
             'creado_por':         op.usuario.nombre if op.usuario else 'S/N',
             'fecha_modificacion': timezone.localtime(op.fecha_creacion).strftime('%d/%m/%Y - %H:%M') if op.fecha_creacion else '--',
