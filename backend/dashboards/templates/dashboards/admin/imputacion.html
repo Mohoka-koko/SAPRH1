@@ -16,9 +16,11 @@
             Exportar a PDF
         </button>
         <button type="button" class="btn-accion" id="guardar-imputacion-btn">
-            <i class="fa-solid fa-floppy-disk"></i>
-            Guardar imputación
+            <i class="fa-solid fa-circle-check"></i>
+            Guardar como completado
         </button>
+        <span id="autosave-estado" class="autosave-estado" aria-live="polite"></span>
+        <a href="{% url 'imputacion' %}" class="btn-accion btn-link" id="nueva-imputacion-btn" style="display:none;">Nueva imputación</a>
         <a href="{% url 'lista_imputaciones' %}" class="btn-accion btn-link">Orden de pago</a>
     </div>
 
@@ -236,6 +238,14 @@
             <span class="pagina-fija">[ 171 ]</span>
         </div>
     </div>
+
+    <dialog id="modal-completar" class="modal-confirmar">
+        <p>¿Está seguro de que desea guardar esta Imputación como completada? Una vez confirmada, se guardará con estado Listo.</p>
+        <div class="modal-confirmar-acciones">
+            <button type="button" class="btn-accion" id="modal-cancelar">Cancelar</button>
+            <button type="button" class="btn-accion" id="modal-confirmar">Confirmar</button>
+        </div>
+    </dialog>
 
     <div class="panel-saldos-widget" id="panelSaldos">
   

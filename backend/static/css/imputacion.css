@@ -987,3 +987,14 @@ select.cod:focus,
   color: #374151;
   pointer-events: none;
 }
+
+.autosave-estado { font-size: 13px; margin-left: 12px; color: #667085; }
+.autosave-estado.guardado { color: #16845d; }
+.autosave-estado.error    { color: #c0392b; font-weight: 700; }
+
+.modal-confirmar { border: 0; border-radius: 12px; padding: 24px; max-width: 440px; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+.modal-confirmar::backdrop { background: rgba(15, 23, 42, .45); }
+.modal-confirmar p { margin: 0 0 18px; line-height: 1.5; }
+.modal-confirmar-acciones { display: flex; justify-content: flex-end; gap: 10px; }
+
+@media print { .autosave-estado, .modal-confirmar { display: none; } }

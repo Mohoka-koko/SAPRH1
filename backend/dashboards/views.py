@@ -1569,20 +1569,10 @@ def api_imputacion_borrador_crear(request):
     except ValueError:
         fecha_obj = date.today()
 
-    # Asiento provisional (se recalcula al confirmar)
-    from django.db.models import Max
-    ultimo = Imputacion.objects.filter(
-        fecha__year=fecha_obj.year
-    ).aggregate(Max('asiento_nro'))['asiento_nro__max']
-    try:
-        asiento_nro = str(int(ultimo) + 1).zfill(4) if ultimo else '0001'
-    except (ValueError, TypeError):
-        asiento_nro = '0001'
-
     with transaction.atomic():
         imputacion = Imputacion.objects.create(
             nro_expediente    = nro_expediente or 'BORRADOR',
-            asiento_nro       = asiento_nro,
+            asiento_nro       = '',
             fecha             = fecha_obj,
             origen            = 'MANUAL',
             observacion       = observacion,
@@ -1615,7 +1605,6 @@ def api_imputacion_borrador_crear(request):
     return JsonResponse({
         'ok':            True,
         'imputacion_id': imputacion.id,
-        'asiento_nro':   asiento_nro,
     })
 
 
@@ -1651,7 +1640,7 @@ def api_imputacion_borrador_actualizar(request, imputacion_id):
 
     with transaction.atomic():
         imputacion.fecha          = fecha_obj
-        imputacion.nro_expediente = nro_expediente or imputacion.nro_expediente
+        imputacion.nro_expediente = nro_expediente or 'BORRADOR'
         imputacion.observacion    = observacion
         imputacion.usuario_modificacion = request.user
         imputacion.save()
@@ -1709,6 +1698,11 @@ def api_imputacion_completar(request, imputacion_id):
     for b in borradores:
         if not b.linea_presupuestaria:
             return JsonResponse({'error': 'Hay filas con línea presupuestaria incompleta'}, status=400)
+        if b.linea_presupuestaria.ejercicio != imputacion.fecha.year:
+            return JsonResponse({'error': (
+                f'La línea {b.linea_presupuestaria_id} es del ejercicio '
+                f'{b.linea_presupuestaria.ejercicio}, distinto del año de la fecha.'
+            )}, status=400)
         if not b.proveedor_concepto.strip():
             return JsonResponse({'error': 'Hay filas sin concepto/proveedor'}, status=400)
         if not b.importe or b.importe <= 0:
@@ -2153,7 +2147,8 @@ def api_proximo_asiento(request):
 def lista_imputaciones(request):
     from django.db.models import Sum
 
-    imputaciones = Imputacion.objects.select_related('usuario').prefetch_related(
+    imputaciones = Imputacion.objects.filter(estado_formulario='LISTO').select_related('usuario'
+    ).prefetch_related(
         'detalles__ordenes_pago_up',
         'detalles__linea_presupuestaria',
     ).order_by('-fecha')
@@ -2605,20 +2600,44 @@ def api_historial_registros(request):
     registros = []
 
     # ── Imputaciones ──────────────────────────────────────────────────────
-    imputaciones = Imputacion.objects.select_related('usuario').order_by('-fecha_creacion')
+    from django.urls import reverse
+
+    def _fmt(dt):
+        return timezone.localtime(dt).strftime('%d/%m/%Y - %H:%M') if dt else ''
+
+    imputaciones = Imputacion.objects.select_related(
+        'usuario', 'usuario_modificacion'
+    ).order_by('-fecha_creacion')
+
     for imp in imputaciones:
-        registros.append({
-            'id':                    f'imp-{imp.id}',
-            'tipo':                  'Imputación',
-            'fecha_creacion':        timezone.localtime(imp.fecha_creacion).strftime('%d/%m/%Y - %H:%M') if imp.fecha_creacion else '',
-            'creado_por':            imp.usuario.nombre if imp.usuario else 'S/N',
-            'fecha_modificacion':    timezone.localtime(imp.fecha_creacion).strftime('%d/%m/%Y - %H:%M') if imp.fecha_creacion else '',
-            'modificado_por':        imp.usuario.nombre if imp.usuario else 'S/N',
-            'estado':                'Listo',
-            'referencia_id':         imp.id,
-            'nro_expediente':        imp.nro_expediente,
-            'url_ver':               f'/admin-dashboard/imputacion/ver/{imp.id}/',
-        })
+        es_borrador = imp.estado_formulario == 'REVISAR'
+
+        item = {
+            'id':                 f'imp-{imp.id}',
+            'tipo':               'Imputación',
+            'fecha_creacion':     _fmt(imp.fecha_creacion),
+            'creado_por':         imp.usuario.nombre if imp.usuario else 'S/N',
+            # Para borradores la modificación es real (cada autoguardado la actualiza).
+            # Para las completadas se mantiene el comportamiento actual.
+            'fecha_modificacion': _fmt(imp.fecha_modificacion if es_borrador else imp.fecha_creacion),
+            'modificado_por':     (
+                (imp.usuario_modificacion or imp.usuario).nombre
+                if es_borrador and (imp.usuario_modificacion or imp.usuario) else
+                (imp.usuario.nombre if imp.usuario else 'S/N')
+            ),
+            'estado':             'Revisar' if es_borrador else 'Listo',
+            'referencia_id':      imp.id,
+            'nro_expediente':     '' if imp.nro_expediente == 'BORRADOR' else imp.nro_expediente,
+        }
+
+        if es_borrador:
+            # Solo quien creó el borrador puede retomarlo (las APIs de borrador filtran por usuario)
+            if imp.usuario_id == request.user.id:
+                item['url_editar'] = f"{reverse('imputacion')}?borrador={imp.id}"
+        else:
+            item['url_ver'] = f'/admin-dashboard/imputacion/ver/{imp.id}/'
+
+        registros.append(item)
 
     # ── Órdenes de Pago ───────────────────────────────────────────────────
     ordenes = OrdenPago.objects.select_related('usuario').order_by('-fecha_creacion')

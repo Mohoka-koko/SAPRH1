@@ -204,7 +204,7 @@ class Imputacion(ControlModificacion):
     estado_formulario = models.CharField(
         max_length=10,
         choices=ESTADO_FORMULARIO_CHOICES,
-        default='REVISAR',
+        default='LISTO',
     )
     anulada         = models.BooleanField(default=False)
     fecha_anulacion = models.DateTimeField(null=True, blank=True)

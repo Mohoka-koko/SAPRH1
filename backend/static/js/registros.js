@@ -78,16 +78,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (estadoLower === 'listo') claseEstado = 'badge-listo';
                 else if (estadoLower === 'revisar') claseEstado = 'badge-revisar';
 
-                // Ver: visible en todos los registros
-                const btnVer = `<a href="${reg.url_ver || '#'}" class="btn-accion btn-ver" title="Ver">
-                                    <i class="fa-solid fa-eye"></i>
-                                </a>`;
+                // Los borradores de imputación todavía no tienen detalle definitivo para "ver"
+                const esBorradorImputacion = esRevisar && reg.tipo === 'Imputación';
 
-                // Editar: solo visible si el estado es 'revisar'
-                const btnEditar = esRevisar
-                    ? `<a href="${reg.url_editar || '#'}" class="btn-accion btn-editar" title="Editar">
-                           <i class="fa-solid fa-pen-to-square"></i>
-                       </a>`
+                // Ver: visible en todos los registros, salvo borradores de imputación
+                const btnVer = esBorradorImputacion
+                    ? ''
+                    : `<a href="${reg.url_ver || '#'}" class="btn-accion btn-ver" title="Ver">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>`;
+
+                // Editar: solo si el estado es 'revisar' Y el servidor indicó adónde ir
+                // (en los borradores, url_editar viene solo para quien los creó)
+                const btnEditar = (esRevisar && reg.url_editar)
+                    ? `<a href="${reg.url_editar}" class="btn-accion btn-editar" title="Retomar borrador">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </a>`
                     : '';
 
                 // Fila principal
@@ -98,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td>
                         <span class="badge-tipo ${tipoInfo.clase}">${reg.tipo}</span>
                     </td>
-                    <td>${reg.nro_expediente}</td>
+                    <td>${reg.nro_expediente || '<em>Sin expediente</em>'}</td>
                     <td>${reg.fecha_creacion}</td>
                     <td>${reg.creado_por}</td>
                     <td>

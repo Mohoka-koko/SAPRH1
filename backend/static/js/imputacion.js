@@ -387,20 +387,22 @@ document.addEventListener("DOMContentLoaded", function () {
         setValorFijo(selectJur, "51");
         setValorFijo(selectSprg, "00");
     
-        fetch("/api/programas/")
-            .then((r) => r.json())
-            .then((data) => {
-                llenarSelect(selectPrg, data.programas, "id",
-                    (p) => String(p.codigo_programa).padStart(2, "0"),
-                    (p) => p.nombre, "Seleccionar PRG...");
-            })
-            .catch((err) => console.error("Error cargando programas:", err));
-    
-        getPartidas().then((partidas) => {
+        const cargaPrg = fetch("/api/programas/")
+        .then((r) => r.json())
+        .then((data) => {
+            llenarSelect(selectPrg, data.programas, "id",
+                (p) => String(p.codigo_programa).padStart(2, "0"),
+                (p) => p.nombre, "Seleccionar PRG...");
+        })
+        .catch((err) => console.error("Error cargando programas:", err));
+
+        const cargaPar = getPartidas().then((partidas) => {
             llenarSelect(selectPar, partidas, "id",
                 (p) => p.codigo, (p) => p.denominacion, "Seleccionar PAR...");
         });
-    
+
+        fila._cargaInicial = Promise.all([cargaPrg, cargaPar]);
+
         selectPrg.addEventListener("change", function () {
             llenarSelect(selectPry, [], "id", () => "", () => "", "Seleccionar PRY...");
             llenarSelect(selectAo, [], "id", () => "", () => "", "Seleccionar A/O...");
@@ -477,7 +479,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // ---- Guardar imputación ----
     const guardarBtn = document.getElementById("guardar-imputacion-btn");
     if (guardarBtn) {
-        guardarBtn.addEventListener("click", guardarImputacion);
+        guardarBtn.addEventListener("click", pedirCompletar);
     }
 
     const SUFIJO_EXPEDIENTE = "-GDESDE-APRH#MAMA";
@@ -651,6 +653,311 @@ document.addEventListener("DOMContentLoaded", function () {
             guardarBtn.textContent = "Guardar imputación";
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  GUARDADO AUTOMÁTICO (borrador "Revisar") + GUARDAR COMO COMPLETADO
+    // ═══════════════════════════════════════════════════════════════
+    const esModoVer         = (typeof MODO !== "undefined" && MODO === "ver");
+    const indicadorAutosave = document.getElementById("autosave-estado");
+    const modalCompletar    = document.getElementById("modal-completar");
+    const AUTOSAVE_MS       = 1500;
+
+    let imputacionId  = null;                 // id del borrador en la BD (null hasta el primer guardado)
+    let autosaveTimer = null;
+    let colaGuardado  = Promise.resolve(true); // serializa los guardados: nunca hay dos en paralelo
+    let restaurando   = false;                // true mientras se carga un borrador existente
+    let completando   = false;
+
+    const aNum     = (v) => (v ? Number(v) : null);
+    const disparar = (el) => el.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // ── Indicador visual ──────────────────────────────────────────
+    function setEstadoAutosave(estado, detalle) {
+        if (!indicadorAutosave) return;
+        indicadorAutosave.className = "autosave-estado " + estado;
+        const textos = {
+            guardando: "Guardando borrador…",
+            guardado:  "Borrador guardado (estado: Revisar)",
+            error:     "⚠ NO se pudieron guardar los cambios" + (detalle ? `: ${detalle}` : ""),
+        };
+        indicadorAutosave.textContent = textos[estado] || "";
+    }
+
+    // ── Payload del borrador (acepta datos parciales) ─────────────
+    function construirPayloadBorrador() {
+        const expedienteVariable = document.getElementById("input-expediente")?.value.trim() || "";
+        const detalles = [];
+
+        document.querySelectorAll("#filas-body tr").forEach((fila) => {
+            const cods = fila.querySelectorAll(".cod");
+            const prg = cods[1], pry = cods[3], ao = cods[4], par = cods[5], ff = cods[6];
+            const proveedor  = fila.querySelector(".proveedor-input")?.value.trim() || "";
+            const importeRaw = fila.querySelector(".importe-input")?.value.trim() || "";
+
+            // Fila totalmente vacía: no se guarda
+            if (!prg?.value && !pry?.value && !ao?.value && !par?.value && !ff?.value && !proveedor && !importeRaw) return;
+
+            const importe = parseFloat(importeRaw);
+            detalles.push({
+                programa_id:        aNum(prg?.value),
+                proyecto_id:        aNum(pry?.value),
+                actividad_id:       aNum(ao?.value),
+                partida_id:         aNum(par?.value),
+                fuente_id:          aNum(ff?.value),
+                linea_id:           aNum(ff?.selectedOptions[0]?.dataset.lineaId),
+                proveedor_concepto: proveedor,
+                importe:            isNaN(importe) ? null : importe,
+            });
+        });
+
+        return {
+            fecha:          fechaInput?.value || "",
+            nro_expediente: expedienteVariable ? `${expedienteVariable}${SUFIJO_EXPEDIENTE}` : "",
+            observacion:    "",
+            detalles,
+        };
+    }
+
+    // ── Guardado (crea la primera vez, actualiza después) ─────────
+    async function ejecutarGuardadoBorrador() {
+        try {
+            const payload = construirPayloadBorrador();
+
+            // No crear un borrador vacío solo por abrir el formulario
+            if (!imputacionId && !payload.nro_expediente && payload.detalles.length === 0) return true;
+
+            setEstadoAutosave("guardando");
+
+            const url = imputacionId
+                ? `/api/imputacion/borrador/${imputacionId}/actualizar/`
+                : "/api/imputacion/borrador/crear/";
+
+            const resp = await fetch(url, {
+                method:    "POST",
+                headers:   { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
+                body:      JSON.stringify(payload),
+                keepalive: true,
+            });
+            let data = {};
+            try { data = await resp.json(); } catch (_) {}
+            if (!resp.ok) throw new Error(data.error || `Error ${resp.status}`);
+
+            if (!imputacionId && data.imputacion_id) {
+                imputacionId = data.imputacion_id;
+                history.replaceState(null, "", `?borrador=${imputacionId}`);
+            }
+            setEstadoAutosave("guardado");
+            return true;
+        } catch (err) {
+            console.error("Error en el guardado automático:", err);
+            setEstadoAutosave("error", err.message);
+            return false;
+        }
+    }
+
+    function guardarBorrador() {
+        colaGuardado = colaGuardado.catch(() => true).then(ejecutarGuardadoBorrador);
+        return colaGuardado;
+    }
+
+    function programarAutoguardado() {
+        if (esModoVer || restaurando || completando) return;
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(() => { autosaveTimer = null; guardarBorrador(); }, AUTOSAVE_MS);
+    }
+
+    // Cambios en cualquier campo del formulario → guardado con pausa (debounce)
+    const formWrap = document.querySelector(".form-wrap");
+    ["input", "change"].forEach((tipo) => formWrap?.addEventListener(tipo, programarAutoguardado));
+    agregarFilaBtn?.addEventListener("click", programarAutoguardado);
+    borrarFilaBtn?.addEventListener("click", programarAutoguardado);
+
+    // Si el usuario cambia de pestaña o cierra, guardar de inmediato lo pendiente
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden" && autosaveTimer) {
+            clearTimeout(autosaveTimer);
+            autosaveTimer = null;
+            guardarBorrador();
+        }
+    });
+
+    // ── Validación previa a "completar" (informa qué falta) ───────
+    function validarParaCompletar() {
+        if (!document.getElementById("input-expediente")?.value.trim()) return "Te falta completar el N° de expediente.";
+        if (!fechaInput?.value) return "Te falta completar la fecha.";
+
+        const filas = document.querySelectorAll("#filas-body tr");
+        let hayFilaCompleta = false;
+
+        for (let i = 0; i < filas.length; i++) {
+            const cods      = filas[i].querySelectorAll(".cod");
+            const campos    = { PRG: cods[1], PRY: cods[3], "A/O": cods[4], PAR: cods[5], FF: cods[6] };
+            const proveedor = filas[i].querySelector(".proveedor-input")?.value.trim();
+            const importe   = parseFloat(filas[i].querySelector(".importe-input")?.value);
+
+            const vacia = Object.values(campos).every((s) => !s?.value) && !proveedor && isNaN(importe);
+            if (vacia) continue;
+
+            const faltan = Object.entries(campos).filter(([, s]) => !s?.value).map(([n]) => n);
+            if (!proveedor) faltan.push("concepto");
+            if (isNaN(importe) || importe <= 0) faltan.push("importe");
+            if (faltan.length) return `Fila ${i + 1}: te falta completar ${faltan.join(", ")}.`;
+
+            hayFilaCompleta = true;
+        }
+        return hayFilaCompleta ? null : "Agregá al menos una fila completa.";
+    }
+
+    // ── Guardar como completado ───────────────────────────────────
+    async function pedirCompletar() {
+        if (esModoVer || completando) return;
+        if (mensajeValidacion) mensajeValidacion.hidden = true;
+
+        const error = validarParaCompletar();
+        if (error) { mostrarMensajeValidacion(error); return; }
+
+        // El servidor tiene que tener exactamente lo que se ve en pantalla
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        const ok = await guardarBorrador();
+        if (!ok || !imputacionId) {
+            mostrarMensajeValidacion("No se pudieron guardar los últimos cambios en el servidor. Reintentá antes de completar.");
+            return;
+        }
+        modalCompletar.showModal();
+    }
+
+    async function confirmarCompletar() {
+        const btnConfirmar = document.getElementById("modal-confirmar");
+        completando = true;
+        btnConfirmar.disabled = true;
+        try {
+            const resp = await fetch(`/api/imputacion/${imputacionId}/completar/`, {
+                method:  "POST",
+                headers: { "X-CSRFToken": csrftoken },
+            });
+            let data = {};
+            try { data = await resp.json(); } catch (_) {}
+            modalCompletar.close();
+
+            if (!resp.ok) {
+                // Sigue en estado Revisar: el usuario corrige y vuelve a intentar
+                mostrarMensajeValidacion(data.error || "No se pudo completar la imputación.");
+                return;
+            }
+
+            const total = parseFloat(data.importe_total).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            mostrarMensajeExito(`Imputación guardada como completada (estado Listo). Asiento N° ${data.asiento_nro}. Total: $ ${total}`);
+            const preview = document.getElementById("asiento-preview");
+            if (preview) preview.textContent = data.asiento_nro;
+            setEstadoAutosave("");
+            bloquearFormularioCompletado();
+        } catch (err) {
+            console.error(err);
+            modalCompletar.close();
+            mostrarMensajeValidacion("Error de red: la imputación NO se completó. Revisá su estado en el historial de registros.");
+        } finally {
+            completando = false;
+            btnConfirmar.disabled = false;
+        }
+    }
+
+    function bloquearFormularioCompletado() {
+        document.querySelectorAll(".form-wrap select, .form-wrap input, .form-wrap textarea")
+            .forEach((el) => { el.disabled = true; });
+        [agregarFilaBtn, borrarFilaBtn, guardarBtn].forEach((b) => { if (b) b.style.display = "none"; });
+        const nueva = document.getElementById("nueva-imputacion-btn");
+        if (nueva) nueva.style.display = "";
+    }
+
+    document.getElementById("modal-cancelar")?.addEventListener("click", () => modalCompletar.close());
+    document.getElementById("modal-confirmar")?.addEventListener("click", confirmarCompletar);
+
+    // ── Retomar un borrador (?borrador=ID) ────────────────────────
+    function esperarOpciones(select, minimo = 2, timeoutMs = 5000) {
+        return new Promise((resolve) => {
+            const inicio = Date.now();
+            (function chequear() {
+                if (select.options.length >= minimo || Date.now() - inicio > timeoutMs) return resolve();
+                setTimeout(chequear, 50);
+            })();
+        });
+    }
+
+    async function poblarFilaDesdeBorrador(fila, det) {
+        await fila._cargaInicial;   // programas y partidas ya cargados en esta fila
+
+        const cods = fila.querySelectorAll(".cod");
+        const selectPrg = cods[1], selectPry = cods[3], selectAo = cods[4], selectPar = cods[5], selectFf = cods[6];
+
+        if (det.programa_id) {
+            selectPrg.value = String(det.programa_id);
+            disparar(selectPrg);                         // dispara la carga de proyectos
+            if (det.proyecto_id) {
+                await esperarOpciones(selectPry);
+                selectPry.value = String(det.proyecto_id);
+                disparar(selectPry);                     // dispara la carga de actividades
+            }
+        }
+        if (det.partida_id) {
+            selectPar.value = String(det.partida_id);
+            disparar(selectPar);
+        }
+        if (det.actividad_id) {
+            await esperarOpciones(selectAo);
+            selectAo.value = String(det.actividad_id);
+            disparar(selectAo);                          // resuelve líneas y carga las FF
+            await esperarOpciones(selectFf, 2, 3000);
+            if (det.fuente_id) {
+                selectFf.value = String(det.fuente_id);
+                disparar(selectFf);
+            }
+        }
+
+        // Se completan al final: la carga automática de FF pisa el concepto
+        const proveedorInput = fila.querySelector(".proveedor-input");
+        const importeInput   = fila.querySelector(".importe-input");
+        if (proveedorInput && det.proveedor_concepto) proveedorInput.value = det.proveedor_concepto;
+        if (importeInput && det.importe) importeInput.value = parseFloat(det.importe).toFixed(2);
+    }
+
+    async function cargarBorradorDesdeURL() {
+        const id = new URLSearchParams(location.search).get("borrador");
+        if (!id || esModoVer) return;
+
+        restaurando = true;   // evita que la carga dispare guardados automáticos
+        try {
+            const resp = await fetch(`/api/imputacion/borrador/${id}/obtener/`);
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || `Error ${resp.status}`);
+            if (data.estado_formulario !== "REVISAR") throw new Error("Esta imputación ya fue completada y no se puede editar.");
+
+            imputacionId = data.imputacion_id;
+
+            if (fechaInput && data.fecha) { fechaInput.value = data.fecha; disparar(fechaInput); }
+            const exp = data.nro_expediente || "";
+            document.getElementById("input-expediente").value =
+                exp.endsWith(SUFIJO_EXPEDIENTE) ? exp.slice(0, -SUFIJO_EXPEDIENTE.length) : exp;
+
+            const detalles = data.detalles || [];
+            for (let i = 1; i < detalles.length; i++) agregarNuevaFila();
+
+            const filas = Array.from(document.querySelectorAll("#filas-body tr"));
+            await Promise.all(detalles.map((det, i) => (filas[i] ? poblarFilaDesdeBorrador(filas[i], det) : null)));
+
+            calcularTotal();
+            setEstadoAutosave("guardado");
+        } catch (err) {
+            console.error(err);
+            imputacionId = null;
+            history.replaceState(null, "", location.pathname);
+            mostrarMensajeValidacion(`No se pudo cargar el borrador: ${err.message}`);
+        } finally {
+            restaurando = false;
+        }
+    }
+
+    cargarBorradorDesdeURL();
 
     // ─── MODO VER: deshabilitar todos los controles de forma definitiva ────
     function aplicarModoVer() {
