@@ -992,9 +992,67 @@ select.cod:focus,
 .autosave-estado.guardado { color: #16845d; }
 .autosave-estado.error    { color: #c0392b; font-weight: 700; }
 
-.modal-confirmar { border: 0; border-radius: 12px; padding: 24px; max-width: 440px; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
-.modal-confirmar::backdrop { background: rgba(15, 23, 42, .45); }
-.modal-confirmar p { margin: 0 0 18px; line-height: 1.5; }
-.modal-confirmar-acciones { display: flex; justify-content: flex-end; gap: 10px; }
+/* --- Modal de Confirmación --- */
+.modal-confirmar {
+  border: 0;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 440px;
+  width: 90%;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+  
+  /* Propiedades para centrarlo correctamente en la pantalla */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+}
 
+.modal-confirmar::backdrop {
+  background: rgba(15, 23, 42, .45);
+}
+
+.modal-confirmar p {
+  margin: 0 0 18px;
+  line-height: 1.5;
+  color: #374151;
+  font-size: 1.05rem;
+}
+
+.modal-confirmar-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Estilos específicos para los botones dentro del modal para que sean legibles */
+.modal-confirmar-acciones .btn-accion {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Botón Cancelar (Gris claro con texto oscuro) */
+#modal-cancelar {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+#modal-cancelar:hover {
+  background: #e2e8f0;
+}
+
+/* Botón Confirmar (Azul oscuro con texto blanco visible) */
+#modal-confirmar {
+  background: #1e3a8a;
+  color: #ffffff;
+  border: 1px solid #1e3a8a;
+}
+
+#modal-confirmar:hover {
+  background: #172a66;
+}
 @media print { .autosave-estado, .modal-confirmar { display: none; } }
