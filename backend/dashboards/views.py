@@ -2280,6 +2280,7 @@ def api_ups_imputacion(request, imputacion_id):
             'pry':                   linea.proyecto.codigo_proyecto,
             'ao':                    linea.actividad_obra.codigo_act_obra,
             'part':                  linea.partida.codigo,
+            'fuente_id':             linea.fuente_financiamiento_id,
             'fuente_codigo':         linea.fuente_financiamiento.codigo,
             'denominacion':          linea.partida.denominacion,
             'fuente':                linea.fuente_financiamiento.nombre,
@@ -2316,9 +2317,9 @@ def api_crear_orden_pago(request):
     nro_factura                 = body.get('nro_factura', '').strip()
     nro_resolucion              = body.get('nro_resolucion', '').strip()
     referencia_administrativa   = body.get('referencia_administrativa', '').strip()
-    licencia                    = body.get('licencia', '').strip()
+    licitacion                  = body.get('licitacion', '').strip()
     decreto                     = body.get('decreto', '').strip()
-    nro_resolucion_decreto      = body.get('nro_resolucion_decreto', '').strip()
+    nro_resolucion_rectificatoria = body.get('nro_resolucion_rectificatoria', '').strip()
     codigo_concepto_pago        = body.get('codigo_concepto_pago', 0)
     concepto_del_pago           = body.get('concepto_del_pago', '').strip()
     beneficiarios               = body.get('beneficiarios', [])
@@ -2347,8 +2348,8 @@ def api_crear_orden_pago(request):
             status=400,
         )
 
-    if not licencia or not decreto:
-        return JsonResponse({'error': 'La Licencia y el Decreto son obligatorios.'}, status=400)
+    if not licitacion or not decreto:
+        return JsonResponse({'error': 'La Licitación y el Decreto son obligatorios.'}, status=400)
     
     if not beneficiarios:
         return JsonResponse({'error': 'Debe incluir al menos un benificiario'}, status= 400)
@@ -2431,9 +2432,9 @@ def api_crear_orden_pago(request):
                 nro_factura               = nro_factura,
                 nro_resolucion            = nro_resolucion,
                 referencia_administrativa = referencia_administrativa,
-                licencia                  = licencia,
+                licitacion                = licitacion,
                 decreto                   = decreto,
-                nro_resolucion_decreto    = nro_resolucion_decreto,
+                nro_resolucion_rectificatoria = nro_resolucion_rectificatoria,
                 codigo_concepto_pago      = codigo_concepto_pago or 0,
                 concepto_del_pago         = concepto_del_pago,
                 importe_total             = importe_total,

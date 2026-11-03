@@ -592,6 +592,46 @@
   */
 
   /* ------------------------------------------------------------------------
+   FUENTES DE FINANCIAMIENTO (título del bloque inferior de la hoja)
+   Se calcula a partir de las filas actuales de #partidasBody:
+     - se identifica cada fuente por su ID (no por su descripción)
+     - se quitan duplicados con un Map (una entrada por ID)
+     - se ordena por código de fuente para que el resultado sea estable
+   La descripción proviene de la API (FuenteFinanciamiento.nombre).
+   Una fuente desaparece solo cuando ya no queda ninguna fila que la use,
+   porque el texto se reconstruye siempre desde las filas que existen.
+   ------------------------------------------------------------------------ */
+  function actualizarFuentesFinanciamiento() {
+    const destino = document.getElementById('fuentesFinanciamiento');
+    if (!destino) return;
+
+    const fuentes = new Map(); // fuente_id -> { codigo, nombre }
+    document.querySelectorAll('#partidasBody tr').forEach((fila) => {
+      const id = fila.dataset.fuenteId;
+      if (!id || fuentes.has(id)) return;   // fila sin fuente, o fuente ya registrada
+      fuentes.set(id, {
+        codigo: Number(fila.dataset.fuenteCodigo),
+        nombre: (fila.dataset.fuenteNombre || '').trim(),
+      });
+    });
+
+    destino.textContent = Array.from(fuentes.values())
+      .sort((a, b) => (a.codigo - b.codigo) || a.nombre.localeCompare(b.nombre))
+      .map((f) => f.nombre)
+      .filter(Boolean)
+      .join(' / ');
+  }
+
+  // Recalcula cuando se agregan, quitan o vacían filas de partidas (cubre
+  // carga desde la imputación, eliminarFilaPartida y limpiarFormulario).
+  function observarFuentesFinanciamiento() {
+    const cuerpo = document.getElementById('partidasBody');
+    if (!cuerpo) return;
+    new MutationObserver(actualizarFuentesFinanciamiento).observe(cuerpo, { childList: true });
+    actualizarFuentesFinanciamiento();
+  }
+
+  /* ------------------------------------------------------------------------
    AUTOCOMPLETADO DESDE IMPUTACIÓN
    Lee el parámetro imputacion_id de la URL y completa los campos.
    ------------------------------------------------------------------------ */
@@ -638,6 +678,9 @@
           fila.dataset.filaId   = contadorPartidas;
           fila.dataset.detalleId = up.imputacion_detalle_id;  // ← clave para el guardado
           fila.dataset.saldoDisponible = up.saldo_disponible;
+          fila.dataset.fuenteId     = up.fuente_id;      // identifica la fuente (no se compara por texto)
+          fila.dataset.fuenteCodigo = up.fuente_codigo;
+          fila.dataset.fuenteNombre = up.fuente;         // descripción real desde la BD
 
           fila.innerHTML = `
             <td><input type="text" class="input-cod-partida" value="${jur}"               readonly></td>
@@ -1029,10 +1072,10 @@
     const nroResolucion = document.getElementById('resolucion')?.value.trim();
     if (!nroResolucion) errores.push('El número de resolución es obligatorio.');
 
-    // ── Validación de licencia y decreto ──────────────────────────────────
-    const licencia = document.getElementById('licencia')?.value.trim();
+    // ── Validación de licitación y decreto ────────────────────────────────
+    const licitacion = document.getElementById('licitacion')?.value.trim();
     const decreto = document.getElementById('decreto')?.value.trim();
-    if (!licencia) errores.push('La licencia es obligatoria.');
+    if (!licitacion) errores.push('La licitación es obligatoria.');
     if (!decreto) errores.push('El decreto es obligatorio.');
 
     // ── Validación de fecha de Rentas Generales ───────────────────────────
@@ -1065,9 +1108,9 @@
       concepto:                  conceptoLineas,
       nro_factura:               document.getElementById('numeroFactura')?.value.trim()          || '',
       nro_resolucion:            document.getElementById('resolucion')?.value.trim()             || '',
-      licencia:                  licencia || '',
+      licitacion:                licitacion || '',
       decreto:                   decreto || '',
-      nro_resolucion_decreto:    document.getElementById('nroResolucionDecreto')?.value.trim() || '',
+      nro_resolucion_rectificatoria: document.getElementById('nroResolucionRectificatoria')?.value.trim() || '',
       codigo_concepto_pago:      parseInt(codigoConcepto) || 0,
       concepto_del_pago:         descConcepto,
       beneficiarios,
@@ -1227,7 +1270,8 @@
     recalcularImporteOrdenPago();
     recalcularImporteConcepto();
     autocompletarDesdeImputacion();
-    cargarCodigosPago(); // ← agregar
+    cargarCodigosPago(); 
+    observarFuentesFinanciamiento();
 
     // Inicializar: usar el wrapper, no el contenedor completo
     const contenedorFechaRentas = document.getElementById('fechaRentasWrapper');
@@ -1242,4 +1286,3 @@
       delegacion.value = "ADM. PCIAL. DE RECURSOS HIDRICOS";
     }
   });
-   

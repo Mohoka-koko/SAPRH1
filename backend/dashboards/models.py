@@ -274,7 +274,7 @@ class OrdenPago(ControlModificacion):
         max_length=50, blank=True, default='',
         validators=[RegexValidator(r'^\d+/\d+$', 'Formato esperado: número/número (ej: 123/2026)')],
     )
-    licencia                  = models.CharField(max_length=100, blank=True, default='')
+    licitacion                = models.CharField(max_length=100, blank=True, default='')
     referencia_administrativa = models.TextField(blank=True)
     codigo_concepto_pago      = models.IntegerField()
     concepto_del_pago         = models.TextField()
