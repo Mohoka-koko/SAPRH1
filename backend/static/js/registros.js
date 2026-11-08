@@ -15,6 +15,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     cargarRegistros();
 
+    // Fila de mensaje (cargando / error / sin resultados)
+    function filaMensaje(texto) {
+        return `<tr class="fila-mensaje"><td colspan="${COLUMNAS}" style="text-align: center;">${texto}</td></tr>`;
+    }
+
     async function cargarRegistros() {
         try {
             const response = await fetch(apiUrl);
@@ -25,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
             aplicarFiltros(); // Inicia el proceso de filtrado y renderizado
         } catch (error) {
             console.error("Error al cargar datos:", error);
-            tbody.innerHTML = `<tr><td colspan="${COLUMNAS}" style="text-align: center;">Error al cargar los datos.</td></tr>`;
+            tbody.innerHTML = filaMensaje("Error al cargar los datos.");
         }
     }
 
@@ -66,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const paginaRegistros = registrosFiltrados.slice(inicio, fin);
 
         if (paginaRegistros.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="${COLUMNAS}" style="text-align: center;">No se encontraron registros.</td></tr>`;
+            tbody.innerHTML = filaMensaje("No se encontraron registros.");
         } else {
             paginaRegistros.forEach(reg => {
                 const tipoInfo = obtenerDatosTipo(reg.tipo);
@@ -84,35 +89,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Ver: visible en todos los registros, salvo borradores de imputación
                 const btnVer = esBorradorImputacion
                     ? ''
-                    : `<a href="${reg.url_ver || '#'}" class="btn-accion btn-ver" title="Ver">
+                    : `<a href="${reg.url_ver || '#'}" class="btn-accion btn-ver" title="Ver" aria-label="Ver">
                             <i class="fa-solid fa-eye"></i>
                         </a>`;
 
                 // Editar: solo si el estado es 'revisar' Y el servidor indicó adónde ir
                 // (en los borradores, url_editar viene solo para quien los creó)
                 const btnEditar = (esRevisar && reg.url_editar)
-                    ? `<a href="${reg.url_editar}" class="btn-accion btn-editar" title="Retomar borrador">
+                    ? `<a href="${reg.url_editar}" class="btn-accion btn-editar" title="Retomar borrador" aria-label="Retomar borrador">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </a>`
                     : '';
 
-                // Fila principal
+                // Fila principal (los data-label los usa el CSS en vista móvil)
                 const trPrincipal = document.createElement('tr');
                 trPrincipal.className = 'registro-row';
 
                 trPrincipal.innerHTML = `
-                    <td>
+                    <td data-label="Tipo">
                         <span class="badge-tipo ${tipoInfo.clase}">${reg.tipo}</span>
                     </td>
-                    <td>${reg.nro_expediente || '<em>Sin expediente</em>'}</td>
-                    <td>${reg.fecha_creacion}</td>
-                    <td>${reg.creado_por}</td>
-                    <td>
+                    <td data-label="N.º de expediente">${reg.nro_expediente || '<em>Sin expediente</em>'}</td>
+                    <td data-label="Fecha de creación">${reg.fecha_creacion}</td>
+                    <td data-label="Creado por">${reg.creado_por}</td>
+                    <td data-label="Estado">
                         <span class="badge ${claseEstado}">${reg.estado}</span>
                     </td>
-                    <td class="col-acciones">${btnVer}${btnEditar}</td>
-                    <td class="expandir">
-                        <button type="button" class="btn-expandir">
+                    <td class="col-acciones" data-label="Acciones">${btnVer}${btnEditar}</td>
+                    <td class="expandir" data-label="Más información">
+                        <button type="button" class="btn-expandir" aria-label="Ver más información">
                             <i class="fa-solid fa-chevron-down"></i>
                         </button>
                     </td>
@@ -198,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Expansión de filas usando delegación de eventos
     tbody.addEventListener("click", function (e) {
-        // Si el clic fue en un botón de acción (Editar), no expandir la fila
+        // Si el clic fue en un botón de acción (Ver / Editar), no expandir la fila
         if (e.target.closest(".btn-accion")) return;
 
         const fila = e.target.closest(".registro-row");
