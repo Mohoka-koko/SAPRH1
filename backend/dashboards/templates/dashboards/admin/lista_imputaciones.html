@@ -26,7 +26,7 @@
             <option value="Pagada parcial">Pagada parcial</option>
             <option value="Pagada total">Pagada total</option>
         </select>
-        <button id="btn-limpiar-filtros" class="btn-limpiar">Limpiar filtros</button>
+        <button type="button" id="btn-limpiar-filtros" class="btn-limpiar">Limpiar filtros</button>
     </div>
 
     <!-- TABLA -->
@@ -54,20 +54,20 @@
                     data-usuario="{{ imp.usuario }}"
                     data-estado="{{ imp.estado }}"
                     data-id="{{ imp.id }}">
-                    <td>{{ imp.ejercicio }}</td>
-                    <td>{{ imp.asiento_nro }}</td>
-                    <td>{{ imp.nro_expediente }}</td>
-                    <td>{{ imp.fecha }}</td>
-                    <td>{{ imp.usuario }}</td>
-                    <td class="col-importe">
+                    <td data-label="Ejercicio">{{ imp.ejercicio }}</td>
+                    <td data-label="N° Asiento">{{ imp.asiento_nro }}</td>
+                    <td data-label="N° Expediente">{{ imp.nro_expediente }}</td>
+                    <td data-label="Fecha">{{ imp.fecha }}</td>
+                    <td data-label="Usuario">{{ imp.usuario }}</td>
+                    <td class="col-importe" data-label="Importe total">
                         $ {{ imp.importe_total|floatformat:2 }}
                     </td>
-                    <td>
+                    <td data-label="Estado">
                         <span class="badge estado-{{ imp.estado|slugify }}">
                             {{ imp.estado }}
                         </span>
                     </td>
-                    <td>
+                    <td data-label="Acciones">
                         {% if imp.estado != 'Pagada total' %}
                         <a href="{% url 'ordenpago' %}?imputacion_id={{ imp.id }}"
                            class="btn-generar-op">
@@ -79,7 +79,7 @@
                     </td>
                 </tr>
                 {% empty %}
-                <tr>
+                <tr class="fila-vacia">
                     <td colspan="8" class="sin-datos">
                         No hay imputaciones registradas.
                     </td>

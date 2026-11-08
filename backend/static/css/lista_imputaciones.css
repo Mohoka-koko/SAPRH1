@@ -1,4 +1,6 @@
-:root {
+/* Variables acotadas a esta página (antes en :root pisaban las globales:
+   --border, --radius, --text-muted, --shadow-md, etc.) */
+.lista-imp-page {
   --navy: #1e3a6f;
   --blue-accent: #2f5aa8;
   --border: #e2e5ea;
@@ -13,6 +15,8 @@
 }
 
 .lista-imp-page {
+  width: 100%;
+  min-width: 0;
   padding: 24px;
   font-family: inherit;
   color: var(--text-primary);
@@ -26,6 +30,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 20px;
 }
 
@@ -166,9 +172,11 @@ select.filtro-input {
   white-space: nowrap;
 }
 
+/* !important: anula la regla global "tbody td { font-size: 1.2rem !important }"
+   de estilos.css, que dejaba esta tabla con letra enorme */
 #tabla-imputaciones tbody td {
   padding: 13px 16px;
-  font-size: 0.85rem;
+  font-size: 0.85rem !important;
   border-bottom: 1px solid var(--border);
   color: var(--text-primary);
   overflow: hidden;
@@ -256,20 +264,110 @@ select.filtro-input {
   margin-top: 12px;
 }
 
-/* ---------- Responsive ---------- */
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+/* ---------- Tablet (hasta 1024px): scroll horizontal dentro de la tabla ---------- */
+@media (max-width: 1024px) {
+  .tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  #tabla-imputaciones { min-width: 900px; }
+}
+
+/* ---------- Filtros (hasta 900px) ---------- */
 @media (max-width: 900px) {
-  .filtros-wrap { flex-wrap: wrap; }
   .filtro-input, select.filtro-input { flex: 1 1 160px; }
 }
 
-@media (max-width: 600px) {
-  .lista-imp-header { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .filtros-wrap { flex-direction: column; align-items: stretch; }
-  #tabla-imputaciones thead th,
-  #tabla-imputaciones tbody td {
+/* ---------- Móvil (hasta 768px): cada imputación es una tarjeta ---------- */
+@media (max-width: 768px) {
+
+  .lista-imp-page { padding: 14px; }
+  .lista-imp-header h2 { font-size: 1.2rem; }
+
+  .filtros-wrap {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+  }
+  .filtro-input,
+  select.filtro-input,
+  .btn-limpiar { flex: 0 0 auto; width: 100%; }
+
+  .tabla-wrap {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  #tabla-imputaciones { min-width: 0; table-layout: auto; }
+
+  #tabla-imputaciones,
+  #tabla-imputaciones tbody,
+  #tabla-imputaciones tbody tr { display: block; width: 100%; }
+
+  #tabla-imputaciones thead { display: none; }
+
+  #tabla-imputaciones tbody tr.fila-imp,
+  #tabla-imputaciones tbody tr.fila-vacia {
+    margin-bottom: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  /* Cada celda: etiqueta a la izquierda, dato a la derecha */
+  #tabla-imputaciones tbody tr.fila-imp > td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: auto;
+    padding: 10px 14px;
+    text-align: right;
     white-space: normal;
     word-break: break-word;
-    padding: 10px 10px;
-    font-size: 0.78rem;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: 0.85rem !important;
+    border-bottom: 1px solid #f0f2f5;
   }
+
+  #tabla-imputaciones tbody tr.fila-imp > td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    text-align: left;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+  }
+
+  /* Acciones: ocupa todo el ancho, sin línea inferior */
+  #tabla-imputaciones tbody tr.fila-imp > td:last-child {
+    border-bottom: 0;
+    background: #fafbfc;
+  }
+  .btn-generar-op { padding: 9px 16px; font-size: 0.8rem; }
+
+  /* Fila "sin datos" */
+  #tabla-imputaciones tbody tr.fila-vacia > td {
+    display: block;
+    width: auto;
+    padding: 40px 16px !important;
+    font-size: 0.9rem !important;
+    white-space: normal;
+  }
+
+  #sin-resultados { padding: 40px 16px !important; }
+}
+
+/* ---------- Móvil pequeño (hasta 480px) ---------- */
+@media (max-width: 480px) {
+  .lista-imp-page { padding: 10px; }
+  #tabla-imputaciones tbody tr.fila-imp > td { padding: 9px 12px; }
 }

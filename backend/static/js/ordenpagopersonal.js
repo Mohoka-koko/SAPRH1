@@ -758,7 +758,8 @@ function imprimirDocumento() {
 
 /**
  * Exporta la hoja (#hoja) a PDF A4 con html2pdf.js.
- * - Agrega la clase "exportando-pdf" para ocultar botones y placeholders.
+ * - Agrega la clase "exportando-pdf" para ocultar botones y placeholders
+ *   y para quitar la escala responsive (ver ordenpagopersonal.css).
  * - Reemplaza cada textarea por un div para que el texto largo se vea
  *   completo y con saltos de línea (html2canvas no ajusta textareas).
  */
@@ -1030,6 +1031,61 @@ async function guardarOrdenPago() {
 }
 
 /* ------------------------------------------------------------------------
+   ESCALA RESPONSIVE DE LA HOJA
+   En pantallas angostas la hoja (#hoja) se reduce para entrar en el ancho
+   disponible. En pantallas anchas se ve normal. Durante la exportación a
+   PDF y la impresión no se aplica escala (lo fuerza el CSS).
+   ------------------------------------------------------------------------ */
+
+const ANCHO_DISENO_HOJA = 960; // ancho (px) con el que se diseña la hoja
+
+function inicializarEscalaHoja() {
+  const viewport = document.getElementById("hojaViewport");
+  const hoja = document.getElementById("hoja");
+  if (!viewport || !hoja) return;
+
+  function ajustar() {
+    // Durante la exportación a PDF la hoja va sin escala
+    if (document.body.classList.contains("exportando-pdf")) return;
+
+    const disponible = viewport.clientWidth;
+
+    // Pantalla ancha: la hoja se ve normal, como antes
+    if (disponible === 0 || disponible >= ANCHO_DISENO_HOJA) {
+      hoja.classList.remove("hoja-escalada");
+      hoja.style.transform = "";
+      viewport.style.height = "";
+      return;
+    }
+
+    // Pantalla angosta: se reduce la hoja para que entre en el ancho
+    const escala = disponible / ANCHO_DISENO_HOJA;
+    hoja.classList.add("hoja-escalada");
+    hoja.style.transform = `scale(${escala})`;
+    viewport.style.height = `${Math.ceil(hoja.offsetHeight * escala)}px`;
+  }
+
+  ajustar();
+
+  // Recalcular al cambiar el tamaño de la ventana o girar el dispositivo
+  window.addEventListener("resize", ajustar);
+  window.addEventListener("orientationchange", ajustar);
+
+  // Recalcular cuando la hoja cambia de alto (agregar / quitar filas)
+  if ("ResizeObserver" in window) {
+    const observador = new ResizeObserver(ajustar);
+    observador.observe(hoja);
+    observador.observe(viewport);
+  }
+
+  // Al terminar la exportación a PDF (se quita "exportando-pdf") se vuelve a escalar
+  new MutationObserver(ajustar).observe(document.body, {
+    attributes: true,
+    attributeFilter: ["class"]
+  });
+}
+
+/* ------------------------------------------------------------------------
    INICIALIZACIÓN AL CARGAR LA PÁGINA (una sola vez)
    ------------------------------------------------------------------------ */
 
@@ -1039,6 +1095,7 @@ document.addEventListener("DOMContentLoaded", () => {
   inicializarImporteOP();
   inicializarFilasBase();
   recalcularTotales();
+  inicializarEscalaHoja();
 
   const delegacion = document.getElementById("delegacionContable");
   if (delegacion) {

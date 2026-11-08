@@ -949,3 +949,186 @@
         overflow-x: auto;
     }
 }
+/* ==========================================================
+   RESPONSIVE EXTRA — EJERCICIOS ANTERIORES
+   ========================================================== */
+
+.ejant-page { min-width: 0; max-width: 100%; }
+
+/* Selector de años + flechas (no tenían estilos) */
+.ejant-anios-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    max-width: 100%;
+}
+.ejant-anios { min-width: 0; }
+
+.ejant-flecha-nav {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    background: white;
+    color: var(--azul);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+}
+.ejant-flecha-nav:hover:not(:disabled) {
+    background: var(--azul-claro);
+    border-color: #c7d7f7;
+}
+.ejant-flecha-nav:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ---------- Header colapsado (hamburguesa): barra fija debajo del header ---------- */
+@media (max-width: 1200px) {
+    .ejant-ejercicio-info {
+        top: 72px;        /* alto del header en este rango */
+        z-index: 90;      /* por debajo del header (100) para no tapar el menú */
+    }
+}
+
+/* ---------- Tablet / móvil (hasta 800px) ---------- */
+@media (max-width: 800px) {
+    .ejant-page { padding: 64px 14px 40px; }
+
+    .ejant-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+    .ejant-controles {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .ejant-search { width: 100%; }
+
+    .ejant-anios-wrapper { width: 100%; }
+    .ejant-anios { flex: 1 1 auto; width: auto; justify-content: center; }
+    .ejant-anio-btn { flex: 1 1 auto; }
+
+    .ejant-titulo h2 { font-size: 21px; }
+    .ejant-tabla-header { flex-wrap: wrap; gap: 10px; }
+
+    /* Barra de ejercicio más compacta */
+    .ejant-ejercicio-info { height: 52px; gap: 10px; }
+    .ejant-info-label { font-size: 10px; letter-spacing: .5px; }
+    .ejant-ejercicio-info strong { font-size: 18px; padding: 6px 16px; }
+}
+
+/* ---------- Móvil (hasta 768px): tabla como tarjetas ---------- */
+@media (max-width: 768px) {
+
+    .ejant-tabla-wrapper {
+        overflow: visible;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+    }
+    .ejant-tabla { min-width: 0; }
+
+    .ejant-tabla,
+    .ejant-tabla > tbody,
+    .ejant-tabla > tfoot,
+    .ejant-tabla > tbody > tr,
+    .ejant-tabla > tfoot > tr { display: block; }
+
+    .ejant-tabla > thead { display: none; }
+
+    /* Cada unidad presupuestaria = una tarjeta */
+    .ejant-tabla > tbody > tr.ejant-up {
+        margin-top: 10px;
+        background: white;
+        border: 1px solid var(--borde);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(20, 40, 80, .05);
+    }
+    .ejant-tabla > tbody > tr.ejant-up.abierta {
+        border-radius: 12px 12px 0 0;
+    }
+
+    .ejant-tabla > tbody > tr.ejant-up > td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        padding: 9px 14px;
+        text-align: right;
+        border-bottom: 1px solid #edf0f4;
+        font-size: 13px !important;   /* anula tbody td {1.2rem !important} */
+        white-space: normal;
+        word-break: break-word;
+    }
+    .ejant-tabla > tbody > tr.ejant-up > td:last-child { border-bottom: 0; }
+
+    /* Etiqueta de cada dato (viene de data-label) */
+    .ejant-tabla > tbody > tr.ejant-up > td::before,
+    .ejant-tabla > tfoot > tr > td::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        text-align: left;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--gris);
+    }
+
+    /* Detalle de movimientos, pegado debajo de su tarjeta */
+    .ejant-tabla > tbody > tr.ejant-detalle:not([hidden]) {
+        border: 1px solid var(--borde);
+        border-top: 0;
+        border-radius: 0 0 12px 12px;
+        overflow: hidden;
+    }
+    .ejant-tabla > tbody > tr.ejant-detalle > td { display: block; }
+    .ejant-detalle-contenido { padding: 14px; }
+    .ejant-detalle-titulo { flex-wrap: wrap; gap: 8px; }
+    .ejant-mov { min-width: 520px; }
+    .ejant-page .ejant-mov tbody td { font-size: 12px !important; }
+
+    /* Total del ejercicio como tarjeta final */
+    .ejant-tabla > tfoot > tr {
+        margin-top: 12px;
+        background: #f2f5fa;
+        border: 1px solid var(--borde);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .ejant-tabla > tfoot > tr > td {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 14px;
+        text-align: right;
+        border-top: 0;
+    }
+    .ejant-tabla > tfoot > tr > td:first-child {
+        justify-content: flex-start;
+        text-align: left;
+    }
+    .ejant-tabla > tfoot > tr > td:first-child::before { display: none; }
+}
+
+/* ---------- Móvil pequeño (hasta 480px) ---------- */
+@media (max-width: 480px) {
+    .ejant-ejercicio-info { top: 64px; }   /* header más bajo en este rango */
+    .ejant-page { padding: 64px 10px 40px; }
+    .ejant-anio-btn { min-width: 52px; padding: 0 10px; }
+    .ejant-flecha-nav { width: 30px; }
+    .ejant-card { padding: 12px 14px; min-height: 80px; }
+}

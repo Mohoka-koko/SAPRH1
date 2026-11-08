@@ -3,6 +3,11 @@
    Requiere: estilos.css cargado antes
 ============================================ */
 
+.main-wrapper {
+    width: 100%;
+    min-width: 0;
+}
+
 /* ===== CARDS ===== */
 .card {
     background: #ffffff;
@@ -411,6 +416,10 @@ ESTILO BASE: CYBER-KEY LIGHT
 }
 
 /* ===== PAGINACIÓN ===== */
+.pagination-bar {
+    margin-top: 1rem;
+}
+
 .pagination-info {
     color: #64748b;
     font-size: 0.875rem;
@@ -460,4 +469,164 @@ ESTILO BASE: CYBER-KEY LIGHT
     cursor: not-allowed;
     box-shadow: none;
     opacity: 0.7;
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+/* ---------- Tablet (hasta 1024px) ---------- */
+@media (max-width: 1024px) {
+
+    .card { padding: 1.5rem; }
+    .card h2 { margin-bottom: 1.75rem; }
+
+    .actions-container-xl { padding: 0 0 1rem; column-gap: 20px; row-gap: 32px; }
+    /* El margen negativo solo servía para la fila de 5 botones en escritorio */
+    .actions-container-xl > .cyber-key:nth-child(4) { margin-left: 0; }
+
+    .filter-container { padding: 0 0 1.25rem; }
+    .filter-bar { grid-template-columns: repeat(2, 1fr); }
+    .filter-label { border-right: 0; }
+    .filter-bar select { height: 40px; }
+
+    .table-container { padding: 0 0 1.5rem; }
+
+    /* La tabla se desliza de costado dentro de su contenedor */
+    .history-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .history-table { min-width: 900px; }
+    .history-table td { white-space: nowrap; font-size: 0.95rem !important; }
+}
+
+/* ---------- Móvil (hasta 768px): cada registro es una tarjeta ---------- */
+@media (max-width: 768px) {
+
+    .card { padding: 1.1rem; border-radius: 12px; }
+    .card h2 { font-size: 1.15rem; margin-bottom: 1.25rem; }
+
+    /* Botones de acción: uno debajo del otro, ancho completo */
+    .actions-container-xl {
+        flex-direction: column;
+        align-items: stretch;
+        row-gap: 24px;
+        padding: 0 0 0.75rem;
+    }
+    .cyber-key { width: 100%; padding: 16px 18px; }
+    .cyber-key .label { text-align: center; white-space: normal; font-size: 0.85rem; }
+
+    /* Filtros en columna */
+    .filter-bar { grid-template-columns: 1fr; }
+    .filter-label { border-bottom: 1px solid var(--border); }
+    .filter-bar select,
+    .filter-bar input { width: 100%; box-sizing: border-box; }
+
+    /* Tabla -> tarjetas */
+    .history-table-wrapper {
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .history-table { min-width: 0; }
+
+    .history-table,
+    .history-table tbody,
+    .history-table tbody tr { display: block; width: 100%; }
+
+    .history-table thead { display: none; }
+
+    .history-table tbody tr.registro-row {
+        margin-bottom: 12px;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .history-table tbody tr.registro-row.abierto {
+        margin-bottom: 0;
+        background: #e3fcfa;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .history-table tbody tr.registro-row > td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: auto;
+        padding: 10px 14px;
+        text-align: right;
+        white-space: normal;
+        word-break: break-word;
+        font-size: 0.9rem !important;
+        border-bottom: 1px solid #f0f2f5;
+    }
+
+    .history-table tbody tr.registro-row > td::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        text-align: left;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+    }
+
+    .history-table tbody tr.registro-row > td:last-child { border-bottom: 0; }
+
+    .history-table tbody tr.registro-row.abierto > td:first-child { box-shadow: none; }
+    .history-table tbody tr.registro-row.abierto { box-shadow: inset 4px 0 0 #2b6f8e; }
+
+    .history-table td.expandir {
+        width: auto;
+        padding: 10px 14px;
+        text-align: right;
+    }
+
+    .badge-tipo { min-width: 0; }
+
+    /* Detalle pegado debajo de su tarjeta */
+    .history-table tbody tr.detalle-row.mostrar {
+        display: block;
+        margin-bottom: 12px;
+        background: #eef8fa;
+        border: 1px solid var(--border);
+        border-top: 0;
+        border-left: 4px solid #5bc0be;
+        border-radius: 0 0 12px 12px;
+        overflow: hidden;
+    }
+
+    .history-table tbody tr.detalle-row > td { display: block; padding: 12px !important; border: 0; }
+
+    .detalle-contenido { gap: 12px 24px; padding: 12px 14px; }
+
+    /* Mensajes (cargando / sin resultados / error) */
+    .history-table tbody tr.fila-mensaje {
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+    }
+    .history-table tbody tr.fila-mensaje > td {
+        display: block;
+        padding: 28px 14px;
+        font-size: 0.9rem !important;
+        white-space: normal;
+        border: 0;
+    }
+
+    /* Paginación apilada y centrada */
+    .pagination-bar { flex-direction: column; align-items: center; text-align: center; }
+    .pagination-buttons { flex-wrap: wrap; justify-content: center; }
+    .page-number-text { width: 100%; text-align: center; margin: 0 0 4px; }
+}
+
+/* ---------- Móvil pequeño (hasta 480px) ---------- */
+@media (max-width: 480px) {
+    .card { padding: 0.9rem; }
+    .history-table tbody tr.registro-row > td { padding: 9px 12px; }
 }

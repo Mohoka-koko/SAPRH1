@@ -2,6 +2,30 @@
    USUARIOS.JS — lógica exclusiva de Usuarios
 ============================================ */
 
+// Lee la cookie CSRF sin romper si no existe
+function getCsrfToken() {
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? match[1] : '';
+}
+
+// Crea el botón de la columna "Acción" sin insertar el nombre en HTML
+function crearBotonAccion(tipo, usuarioId, nombre) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    if (tipo === 'baja') {
+        btn.className = 'btn-icon btn-baja';
+        btn.title = 'Dar de baja';
+        btn.textContent = '✖';
+        btn.addEventListener('click', () => confirmarBaja(usuarioId, nombre));
+    } else {
+        btn.className = 'btn-icon btn-reactivar';
+        btn.title = 'Reactivar usuario';
+        btn.textContent = '↺';
+        btn.addEventListener('click', () => confirmarReactivar(usuarioId, nombre));
+    }
+    return btn;
+}
+
 function confirmarBaja(usuarioId, nombreUsuario) {
     document.getElementById('modal-titulo').textContent = 'Confirmar baja';
     document.getElementById('modal-mensaje').textContent =
@@ -22,12 +46,20 @@ function cerrarModal() {
     document.getElementById('modal-baja').style.display = 'none';
 }
 
+// Cerrar el modal con Escape o haciendo clic fuera de la caja
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cerrarModal();
+});
+document.getElementById('modal-baja')?.addEventListener('click', (e) => {
+    if (e.target.id === 'modal-baja') cerrarModal();
+});
+
 function ejecutarBaja(usuarioId, nombreUsuario) {
     cerrarModal();
     fetch(`/admin-dashboard/usuarios-baja/${usuarioId}/`, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)[1],
+            'X-CSRFToken': getCsrfToken(),
             'Content-Type': 'application/json',
         },
     })
@@ -42,8 +74,7 @@ function ejecutarBaja(usuarioId, nombreUsuario) {
             const fila = document.getElementById(`fila-usuario-${usuarioId}`);
             fila.classList.add('usuario-inactivo');
             const btnTd = fila.querySelector('.btn-baja').parentElement;
-            btnTd.innerHTML = `<button class="btn-icon btn-reactivar" title="Reactivar usuario"
-                onclick="confirmarReactivar(${usuarioId}, '${data.nombre}')">↺</button>`;
+            btnTd.replaceChildren(crearBotonAccion('reactivar', usuarioId, data.nombre || nombreUsuario));
         }
     })
     .catch(() => alert('Error de conexión. Intentá de nuevo.'));
@@ -54,7 +85,7 @@ function ejecutarReactivar(usuarioId, nombreUsuario) {
     fetch(`/admin-dashboard/usuarios-reactivar/${usuarioId}/`, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)[1],
+            'X-CSRFToken': getCsrfToken(),
             'Content-Type': 'application/json',
         },
     })
@@ -69,8 +100,7 @@ function ejecutarReactivar(usuarioId, nombreUsuario) {
             const fila = document.getElementById(`fila-usuario-${usuarioId}`);
             fila.classList.remove('usuario-inactivo');
             const btnTd = fila.querySelector('.btn-reactivar').parentElement;
-            btnTd.innerHTML = `<button class="btn-icon btn-baja" title="Dar de baja"
-                onclick="confirmarBaja(${usuarioId}, '${data.nombre}')">✖</button>`;
+            btnTd.replaceChildren(crearBotonAccion('baja', usuarioId, data.nombre || nombreUsuario));
         }
     })
     .catch(() => alert('Error de conexión. Intentá de nuevo.'));
@@ -79,18 +109,22 @@ function ejecutarReactivar(usuarioId, nombreUsuario) {
 /* ===== ROL → ÁREA AUTOMÁTICO ===== */
 const selectRol  = document.getElementById('nuevo-rol');
 const selectArea = document.getElementById('select-area');
+const areaHidden = document.getElementById('area-hidden');
 
 if (selectRol && selectArea) {
     selectRol.addEventListener('change', function () {
         const rolesAdmin = ['admin', 'adminprincipal', 'usuariovip'];
         if (rolesAdmin.includes(this.value)) {
+            // El select deshabilitado no se envía: lo reemplaza el campo oculto
             selectArea.value    = 'todas';
             selectArea.disabled = true;
-            document.getElementById('area-hidden').value = 'todas';
+            areaHidden.value    = 'todas';
+            areaHidden.disabled = false;
         } else {
+            // El select se envía solo; el oculto se desactiva para no duplicar "area"
             selectArea.disabled = false;
             selectArea.value    = '';
-            document.getElementById('area-hidden').value = '';
+            areaHidden.disabled = true;
         }
     });
 }

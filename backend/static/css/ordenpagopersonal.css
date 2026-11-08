@@ -6,6 +6,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
+    min-width: 0;
     gap: 1rem;
     padding-right: 140px;
 }
@@ -90,65 +91,7 @@
 .toolbar button:active {
     background: #e2e2e2;
 }
-/* =========================================================
-   RESPONSIVE
-   ========================================================= */
 
-@media (max-width: 900px) {
-
-    .toolbar {
-        top: auto;
-        bottom: 12px;
-        right: 50%;
-
-        transform: translateX(50%);
-
-        width: auto;
-
-        flex-direction: row;
-
-        padding: 8px;
-    }
-
-    .toolbar-group {
-        flex-direction: row;
-
-        border-bottom: none;
-        border-right: 1px solid #e5e5e5;
-
-        padding: 0 6px;
-    }
-
-    .toolbar-group:last-child {
-        border-right: none;
-    }
-
-    .toolbar button {
-        width: auto;
-        min-width: 90px;
-    }
-}
-/* En pantallas chicas, que no tape contenido: la volvemos horizontal abajo */
-@media (max-width: 900px) {
-  .toolbar {
-    top: auto;
-    bottom: 12px;
-    right: 50%;
-    transform: translateX(50%);
-    flex-direction: row;
-  }
-  .toolbar-group {
-    flex-direction: row;
-    border-bottom: none;
-    border-right: 1px solid #555;
-    padding: 0 6px;
-  }
-  .toolbar-group:last-child {
-    border-right: none;
-  }
-}
-
-  /* ===================== HOJA A4 (Responsive en Pantalla) ===================== */
 /* ========================================================= */
 /*   REGLAS EXCLUSIVAS PARA IMPRESIÓN Y VISTA PREVIA (PDF)   */
 /* ========================================================= */
@@ -173,7 +116,7 @@
   }
 
   /* 3. Hacer que el contenedor contenedor de la hoja escale al alto total */
-  #hoja, .hoja-container, .orden-pago-container { 
+  #hoja, .hoja-container, .orden-pago-container {
     width: 100% !important;
     min-height: 100vh !important;
     height: 100% !important;
@@ -190,7 +133,7 @@
     width: 100% !important;
   }
 }
-  
+
   .marco {
     border: 1.5px solid #000;
     padding: 15px;
@@ -198,18 +141,18 @@
     display: flex;
     flex-direction: column;
   }
-  
+
   /* ===================== ENCABEZADO ===================== */
   .encabezado {
     display: flex;
     align-items: flex-start;
     margin-bottom: 10px;
   }
-  
+
   .enc-logo {
     flex: 0 0 70px;
   }
-  
+
   .logo-img {
     width: 60px;
     height: 60px;
@@ -217,53 +160,53 @@
     filter: grayscale(100%);
     opacity: 0.85;
   }
-  
+
   .enc-titulo {
     flex: 1;
     text-align: center;
     padding-top: 6px;
   }
-  
+
   .titulo-texto {
     font-size: 14px;
     font-weight: normal;
     margin-right: 8px;
   }
-  
+
   .enc-espaciador {
     flex: 0 0 70px;
   }
-  
+
   .organismo-linea {
     display: flex;
     flex-direction: column;
     margin-bottom: 12px;
     margin-top: -4px;
   }
-  
+
   .organismo-nombre {
     font-weight: bold;
     font-size: 12px;
     text-transform: uppercase;
   }
-  
+
   .organismo-provincia {
     font-size: 12px;
     margin-left: 12px;
   }
-  
+
   .input-linea-inline {
     outline: none;
     border-bottom: 1px dotted transparent;
     min-width: 260px;
     display: inline-block;
   }
-  
+
   .input-linea-inline:empty::before {
     content: attr(data-placeholder);
     color: #aaa;
   }
-  
+
   /* ===================== INPUTS GENERALES ===================== */
   input[type="text"] {
     font-family: Arial, Helvetica, sans-serif;
@@ -275,68 +218,68 @@
     padding: 1px 3px;
     font-size: 11px;
   }
-  
+
   .input-linea {
     width: 100%;
   }
-  
+
   .input-linea.full {
     width: 100%;
   }
-  
+
   .input-linea.chico {
     width: 140px;
     font-size: 10px;
   }
-  
+
   .input-caja {
     border: 1px solid #000 !important;
     padding: 2px 4px;
     font-size: 11px;
   }
-  
+
   .input-caja.numero-orden {
     width: 130px;
     text-align: center;
     font-weight: bold;
   }
-  
+
   .input-caja.importe-op {
     width: 160px;
     text-align: right;
     font-weight: bold;
   }
-  
+
   .input-caja.fecha {
     width: 100px;
     text-align: center;
   }
-  
+
   .input-caja.mini {
     width: 28px;
     text-align: center;
     margin: 0 3px;
   }
-  
+
   .input-caja.mini-codigo {
     width: 45px;
     text-align: center;
   }
-  
+
   .input-plano {
     border: none;
     width: 100%;
     font-size: 10px;
     background: transparent;
   }
-  
+
   .etiqueta-inline {
     font-weight: bold;
     font-size: 11px;
     white-space: nowrap;
     margin-right: 4px;
   }
-  
+
   /* ===================== DATOS ADMINISTRATIVOS ===================== */
   .datos-admin {
     display: flex;
@@ -345,27 +288,27 @@
     margin-bottom: 12px;
     gap: 12px;
   }
-  
+
   .datos-admin-izq {
     flex: 1;
   }
-  
+
   .dato-fila {
     display: flex;
     align-items: baseline;
     gap: 6px;
     margin-bottom: 4px;
   }
-  
+
   .dato-fila .etiqueta-inline {
     width: 110px;
     flex-shrink: 0;
   }
-  
+
   .codigo-chico-box {
     margin-top: 4px;
   }
-  
+
   .datos-admin-der {
     display: flex;
     align-items: center;
@@ -373,7 +316,7 @@
     padding-top: 30px;
     white-space: nowrap;
   }
-  
+
   /* ===================== TEXTO CENTRAL ===================== */
   .bloque-texto-central {
     border-top: 1px solid #000;
@@ -381,13 +324,13 @@
     margin-bottom: 8px;
     font-size: 11px;
   }
-  
+
   .texto-senor {
     font-weight: bold;
     margin: 0 0 4px 0;
     text-decoration: underline;
   }
-  
+
   .texto-parrafo,
   .texto-parrafo-corto {
     margin: 0 0 4px 0;
@@ -396,13 +339,13 @@
     min-height: 14px;
     line-height: 1.35;
   }
-  
+
   .texto-parrafo:empty::before,
   .texto-parrafo-corto:empty::before {
     content: attr(data-placeholder);
     color: #aaa;
   }
-  
+
   /* ===================== TABLA PRINCIPAL ===================== */
   .tabla-principal {
     width: 100%;
@@ -410,7 +353,7 @@
     flex: 1;
     table-layout: fixed;
   }
-  
+
   .tabla-principal th,
   .tabla-principal td {
     border: 1px solid #000;
@@ -418,7 +361,7 @@
     padding: 3px 3px;
     vertical-align: top;
   }
-  
+
   .tabla-principal thead th {
   text-align: center;
   font-weight: bold;
@@ -429,7 +372,7 @@
   white-space: normal !important;
   min-height: 24px;
 }
-  
+
   /* Lado izquierdo intacto */
 .col-codigo       { width: 6%; }
 .col-nomina       { width: 24%; }
@@ -444,9 +387,9 @@
   padding: 0 !important;
 }
 /* Anchos del sector derecho ajustados */
-.col-prog, 
-.col-sp, 
-.col-pto, 
+.col-prog,
+.col-sp,
+.col-pto,
 .col-ao           { width: 3.5%; }
 .col-part         { width: 4%; }
 .col-desc         { width: 21%; }
@@ -460,7 +403,7 @@
   margin: 0 !important;
   padding: 0 !important;
 }
-  
+
   .fila-beneficiario,
 .parciales-container input,
 .tabla-erogaciones tr,
@@ -487,13 +430,13 @@
   border: none !important;
   background: transparent !important;
 }
-  
+
   .observaciones-box {
     margin-top: 4px;
     border-top: 1px dashed #999;
     padding-top: 4px;
   }
-  
+
   .textarea-observaciones {
     width: 100%;
     min-height: 210px;
@@ -505,13 +448,13 @@
     color: #000;
     line-height: 1.5;
   }
-  
+
   .parciales-container {
     display: flex;
     flex-direction: column;
     gap: 1px;
   }
-  
+
   .parciales-container input {
     width: 100%;
     text-align: right;
@@ -519,24 +462,24 @@
     border-bottom: 1px dotted #ccc;
     margin-bottom: 1px;
   }
-  
+
   .total-beneficiario-valor input {
     text-align: right;
     font-weight: bold;
   }
-  
+
   /* Sector derecho - imputación de erogaciones */
   .col-imputacion-body {
     padding: 0 !important;
     vertical-align: top;
   }
-  
+
   .tabla-erogaciones {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
   }
-  
+
   .tabla-erogaciones td {
     border: none;
     border-bottom: 1px dotted #ccc;
@@ -544,15 +487,15 @@
     font-size: 10px;
     padding: 2px 1px;
   }
-  
+
   .tabla-erogaciones td:last-child {
     border-right: none;
   }
-  
+
   .tabla-erogaciones tr.fila-seleccionada {
     background: #d6e9ff;
   }
-  
+
   .tabla-erogaciones input {
   width: 100%;
   box-sizing: border-box; /* OBLIGATORIO para incluir paddings dentro del ancho */
@@ -563,8 +506,8 @@
   margin: 0;
   outline: none;
 }
-  
-  
+
+
 
 .tabla-erogaciones .celda-prog    { width: 6.48%; text-align: center; } /* 3.5 / 54 */
 .tabla-erogaciones .celda-sp      { width: 6.48%; text-align: center; } /* 3.5 / 54 */
@@ -573,7 +516,7 @@
 .tabla-erogaciones .celda-part    { width: 7.41%; text-align: center; } /* 4.0 / 54 */
 .tabla-erogaciones .celda-desc    { width: 38.89%; text-align: left; }  /* 21.0 / 54 */
 .tabla-erogaciones .celda-importe { width: 27.78%; text-align: right; } /* 15.0 / 54 */
-  
+
   /* Alineaciones explícitas de los inputs */
 .tabla-erogaciones .celda-prog input,
 .tabla-erogaciones .celda-sp input,
@@ -590,19 +533,19 @@
 .tabla-erogaciones .celda-importe input {
   text-align: right;
 }
-  
+
   /* ===================== TOTALES (pie de tabla) ===================== */
   .tabla-principal tfoot td {
     font-weight: bold;
     font-size: 11px;
     padding: 4px 4px;
   }
-  
+
   .total-label,
   .total-label-derecha {
     text-align: right;
   }
-  
+
   .total-valor input,
   .total-valor-derecha input {
     width: 100%;
@@ -611,20 +554,20 @@
     border: none;
     font-size: 11px;
   }
-  
-  
+
+
   .tabla-concepto {
     width: 100%;
     border-collapse: collapse;
     margin-top: 6px;
   }
-  
+
   .tabla-concepto td {
     border: 1px solid #000;
     padding: 4px 5px;
     font-size: 11px;
   }
-  
+
   .concepto-codigo-label,
   .concepto-titulo-label {
     font-weight: bold;
@@ -632,37 +575,37 @@
     background: transparent;
     width: 8%;
   }
-  
+
   .concepto-titulo-label {
     width: auto;
     text-align: left;
   }
-  
+
   .concepto-codigo-valor {
     text-align: center;
   }
-  
+
   .son-pesos-label {
     font-weight: bold;
     white-space: nowrap;
     width: 8%;
   }
-  
-  
+
+
   .fila-fecha-pie {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-top: 8px;
   }
-  
+
   .fecha-box-container {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
   }
-  
-  
+
+
   .pie-inferior {
     display: flex;
     justify-content: space-between;
@@ -672,27 +615,27 @@
     margin-top: 10px;
     font-size: 10px;
   }
-  
+
   .pie-centro {
     display: flex;
     align-items: center;
     gap: 3px;
   }
-  
-  
-  
-  
-  
+
+
+
+
+
   .input-valido {
     border-color: #2e7d32 !important;
     background-color: #f1fbf1;
   }
-  
+
   .input-invalido {
     border-color: #c62828 !important;
     background-color: #fdf2f2;
   }
-  
+
   .error-msg {
     color: #c62828;
     font-size: 9px;
@@ -704,20 +647,20 @@
     color: #dc3545 !important;
     background-color: #fff5f5 !important;
 }
-  
+
   @media print {
     body {
       background: #fff;
       padding: 0;
       margin: 0;
     }
-  
+
     .no-print,
     .toolbar,
     .btn-mini {
       display: none !important;
     }
-  
+
     .hoja {
     width: 100%;
     max-width: 1200px;
@@ -730,34 +673,34 @@
     border-radius: var(--radius);
     border: 1px solid var(--border);
   }
-  
+
     input[type="text"] {
       border: none !important;
       background: transparent !important;
       color: #000 !important;
     }
-  
+
     .input-caja {
       border: 1px solid #000 !important;
     }
-  
+
     .input-invalido,
     .input-valido {
       background: transparent !important;
     }
-  
+
     .error-msg {
       display: none !important;
     }
-  
+
     .fila-seleccionada {
       background: transparent !important;
     }
-  
+
     .textarea-observaciones {
       min-height: 180px;
     }
-  
+
     @page {
       size: A4 portrait;
       margin: 0;
@@ -1066,4 +1009,107 @@ body.exportando-pdf textarea::placeholder {
     font-size: 10px !important;
     font-weight: bold;
     text-align: right;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   (reemplaza los dos bloques @media (max-width: 900px) que
+   estaban duplicados junto a la barra de herramientas)
+
+   La hoja es un documento A4 que se exporta a PDF, así que no se
+   reorganiza en tarjetas: en pantallas angostas se mantiene con su
+   ancho de diseño (960px) y se ESCALA para entrar en el ancho
+   disponible. El factor lo calcula el JS (ver final de
+   ordenpagopersonal.js).
+   ========================================================= */
+
+/* Contenedor que reserva el espacio de la hoja escalada */
+.hoja-viewport {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Hoja escalada (la clase la agrega el JS solo cuando hace falta) */
+.hoja.hoja-escalada {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 960px;
+    max-width: none;
+    transform-origin: top left;
+}
+
+/* ---------- Barra de herramientas: abajo, en 3 columnas ---------- */
+@media (max-width: 900px) {
+
+    .oppersonal-page {
+        padding-right: 0;
+        padding-bottom: 125px;   /* espacio para la barra inferior */
+    }
+
+    .toolbar {
+        top: auto;
+        bottom: 8px;
+        left: 8px;
+        right: 8px;
+        transform: none;
+        width: auto;
+        flex-direction: row;
+        gap: 0;
+        padding: 8px;
+    }
+
+    .toolbar .toolbar-group {
+        flex: 1 1 0;
+        min-width: 0;
+        flex-direction: column;
+        gap: 6px;
+        padding: 0 6px;
+        border-bottom: none;
+        border-right: 1px solid #e2e2e2;
+    }
+
+    .toolbar .toolbar-group:last-child {
+        border-right: none;
+        padding-bottom: 0;
+    }
+
+    .toolbar button {
+        width: 100%;
+        min-width: 0;
+        padding: 9px 4px;
+        font-size: 10px;
+        line-height: 1.2;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 480px) {
+    .toolbar { left: 4px; right: 4px; bottom: 4px; padding: 6px 4px; }
+    .toolbar .toolbar-group { padding: 0 4px; }
+    .toolbar button { font-size: 9.5px; }
+}
+
+/* ---------- Impresión: sin escala ---------- */
+@media print {
+    .hoja-viewport { height: auto !important; }
+
+    .hoja.hoja-escalada {
+        position: static !important;
+        transform: none !important;
+        width: 100% !important;
+    }
+}
+
+/* ---------- Exportación a PDF: sin escala ---------- */
+body.exportando-pdf .hoja-viewport { height: auto !important; }
+
+body.exportando-pdf .hoja.hoja-escalada {
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    left: auto !important;
+    top: auto !important;
 }

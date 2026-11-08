@@ -23,6 +23,9 @@
         </div>
     </div>
 
+    <!-- Contenedor que reserva el espacio de la hoja cuando se escala en pantallas angostas -->
+    <div class="hoja-viewport" id="hojaViewport">
+
     <!-- ============ HOJA A4 ============ -->
     <div class="hoja" id="hoja">
         <div class="marco">
@@ -54,7 +57,7 @@
                         <span class="etiqueta-inline">EXPEDIENTE Nº</span>
                         <input type="text" id="expediente" class="input-linea full" placeholder="EX-AAAA-XXXXXXX">
                     </div>
-                   <div class="dato-fila">
+                    <div class="dato-fila">
                         <span class="etiqueta-inline">JURISDICCIÓN:</span>
                         <input
                             type="text"
@@ -102,7 +105,7 @@
                     <col style="width: 24%">  <!-- NÓMINA -->
                     <col style="width: 8%">   <!-- PARCIAL -->
                     <col style="width: 8%">   <!-- TOTAL -->
-                    
+
                     <!-- Sector Derecho -->
                     <col style="width: 3.5%"> <!-- PROG -->
                     <col style="width: 3.5%"> <!-- SP -->
@@ -134,7 +137,7 @@
                 <tbody>
                     <tr>
                         <!-- Sector izquierdo: beneficiarios -->
-                       <td class="col-codigo" id="celdaCodigoBeneficiario">
+                        <td class="col-codigo" id="celdaCodigoBeneficiario">
                             <div id="codigosContainer" class="codigos-container">
                                 <!-- Códigos de beneficiarios dinámicos -->
                             </div>
@@ -205,15 +208,15 @@
 
             <!-- ===== FECHA Y PIE ===== -->
             <div class="fila-fecha-pie">
-    <div class="pie-cr">
-    <input
-        type="text"
-        id="codigoCR"
-        class="input-linea chico"
-        value="{{ usuario.nombre|slice:':1'|upper }}"
-        readonly
-    >
-</div>
+                <div class="pie-cr">
+                    <input
+                        type="text"
+                        id="codigoCR"
+                        class="input-linea chico"
+                        value="{{ usuario.nombre|slice:':1'|upper }}"
+                        readonly
+                    >
+                </div>
                 <div class="fecha-box-container">
                     <input
                         type="text"
@@ -223,13 +226,15 @@
                         maxlength="10"
                         inputmode="numeric"
                         autocomplete="off"
-                    >                    
+                    >
                     <div class="error-msg" id="err-fechaOrden"></div>
                 </div>
             </div>
 
         </div>
     </div>
+
+    </div><!-- /hoja-viewport -->
 </div>
 {% endblock %}
 

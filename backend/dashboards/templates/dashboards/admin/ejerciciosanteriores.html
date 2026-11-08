@@ -36,11 +36,11 @@
             </div>
 
             <div class="ejant-anios-wrapper">
-                <button class="ejant-flecha-nav" id="ejantFlechaAnterior">&#8249;</button>
+                <button type="button" class="ejant-flecha-nav" id="ejantFlechaAnterior" aria-label="Años anteriores">&#8249;</button>
                 <div class="ejant-anios" id="ejantBotones">
                     <!-- Se generan dinámicamente -->
                 </div>
-                <button class="ejant-flecha-nav" id="ejantFlechaSiguiente">&#8250;</button>
+                <button type="button" class="ejant-flecha-nav" id="ejantFlechaSiguiente" aria-label="Años siguientes">&#8250;</button>
             </div>
 
         </div>
@@ -102,7 +102,7 @@
         </div>
 
         <div class="ejant-contador">
-            <strong id="cantidadUP">5</strong>
+            <strong id="cantidadUP">0</strong>
             unidades
         </div>
 
@@ -129,25 +129,11 @@
 
             <tfoot>
                 <tr>
-                    <td colspan="2">
-                        TOTAL DEL EJERCICIO
-                    </td>
-
-                    <td class="num" id="totIni">
-                        
-                    </td>
-
-                    <td class="num positivo" id="totMod">
-                        
-                    </td>
-
-                    <td class="num" id="totEj">
-                        
-                    </td>
-
-                    <td class="num saldo-final" id="totFin">
-                        
-                    </td>
+                    <td colspan="2">TOTAL DEL EJERCICIO</td>
+                    <td class="num" id="totIni" data-label="Inicial"></td>
+                    <td class="num positivo" id="totMod" data-label="Modificaciones"></td>
+                    <td class="num" id="totEj" data-label="Ejecutado"></td>
+                    <td class="num saldo-final" id="totFin" data-label="Saldo final"></td>
                 </tr>
             </tfoot>
 

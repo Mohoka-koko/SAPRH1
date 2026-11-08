@@ -16,7 +16,7 @@
           <span class="icono-pulgar">👍</span>
           <span class="texto-alerta">Usuario creado exitosamente</span>
         </div>
-        <button class="btn-cerrar-alerta" onclick="cerrarAlertaFlotante()" title="Cerrar">X</button>
+        <button type="button" class="btn-cerrar-alerta" onclick="cerrarAlertaFlotante()" title="Cerrar" aria-label="Cerrar">X</button>
       </div>
     {% endif %}
   {% endfor %}
@@ -33,24 +33,24 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label>Nombre de Usuario:</label>
+          <label for="nuevo-nombre">Nombre de Usuario:</label>
           <input type="text" id="nuevo-nombre" name="nombre" required>
         </div>
 
         <div class="form-group">
-          <label>Correo Electrónico:</label>
+          <label for="nuevo-email">Correo Electrónico:</label>
           <input type="email" id="nuevo-email" name="email" required>
         </div>
 
         <div class="form-group">
-          <label>Contraseña:</label>
+          <label for="nuevo-password">Contraseña:</label>
           <input type="password" id="nuevo-password" name="password" required>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label>Rol:</label>
+          <label for="nuevo-rol">Rol:</label>
           <select id="nuevo-rol" name="rol" required>
             <option value="">Seleccionar</option>
             <option value="adminprincipal">Administrador Principal</option>
@@ -61,7 +61,7 @@
         </div>
 
         <div class="form-group">
-          <label>Área:</label>
+          <label for="select-area">Área:</label>
           <select name="area" id="select-area" required>
             <option value="">Seleccionar</option>
             <option value="construccion">Construcción</option>
@@ -69,7 +69,8 @@
             <option value="mantenimiento">Mantenimiento</option>
             <option value="todas">Todas</option>
           </select>
-          <input type="hidden" name="area" id="area-hidden" value="todas">
+          <!-- Solo se envía cuando el select de área está deshabilitado (roles con acceso a todas) -->
+          <input type="hidden" name="area" id="area-hidden" value="todas" disabled>
         </div>
       </div>
 
@@ -84,66 +85,70 @@
   <div class="card">
     <h2>Usuarios registrados</h2>
 
-    <table class="tabla" id="tabla-usuarios">
-      <thead>
-        <tr>
-          <th>Usuario</th>
-          <th>Correo</th>
-          <th>Rol</th>
-          <th>Fecha de Alta</th>
-          <th>Fecha de Baja</th>
-          <th>Acción</th>
-          <th>Estado</th>
-        </tr>
-      </thead>
+    <div class="tabla-wrap">
+      <table class="tabla" id="tabla-usuarios">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Correo</th>
+            <th>Rol</th>
+            <th>Fecha de Alta</th>
+            <th>Fecha de Baja</th>
+            <th>Acción</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
 
-      <tbody>
-        {% for u in usuarios %}
-        <tr id="fila-usuario-{{ u.id }}" class="{% if not u.is_active %}usuario-inactivo{% endif %}">
-          <td>{{ u.nombre }}</td>
-          <td>{{ u.email }}</td>
-          <td>{{ u.get_rol_display }}</td>
-          <td>{{ u.fecha_creacion|date:"d/m/Y" }}</td>
+        <tbody>
+          {% for u in usuarios %}
+          <tr id="fila-usuario-{{ u.id }}" class="fila-usuario{% if not u.is_active %} usuario-inactivo{% endif %}">
+            <td data-label="Usuario">{{ u.nombre }}</td>
+            <td data-label="Correo">{{ u.email }}</td>
+            <td data-label="Rol">{{ u.get_rol_display }}</td>
+            <td data-label="Fecha de alta">{{ u.fecha_creacion|date:"d/m/Y" }}</td>
 
-          <td id="fecha-baja-{{ u.id }}">
-            {% if u.fecha_baja %}
-              {{ u.fecha_baja|date:"d/m/Y" }}
-            {% else %}
-              —
-            {% endif %}
-          </td>
+            <td id="fecha-baja-{{ u.id }}" data-label="Fecha de baja">
+              {% if u.fecha_baja %}
+                {{ u.fecha_baja|date:"d/m/Y" }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
 
-          <td>
-            {% if u.is_active %}
-              <!-- Botón dar de baja -->
-              <button
-                class="btn-icon btn-baja"
-                title="Dar de baja"
-                onclick="confirmarBaja({{ u.id }}, '{{ u.nombre|escapejs }}')"
-              >✖</button>
-            {% else %}
-              <!-- Botón reactivar -->
-              <button
-                class="btn-icon btn-reactivar"
-                title="Reactivar usuario"
-                onclick="confirmarReactivar({{ u.id }}, '{{ u.nombre|escapejs }}')"
-              >↺</button>
-            {% endif %}
-          </td>
+            <td data-label="Acción">
+              {% if u.is_active %}
+                <!-- Botón dar de baja -->
+                <button
+                  type="button"
+                  class="btn-icon btn-baja"
+                  title="Dar de baja"
+                  onclick="confirmarBaja({{ u.id }}, '{{ u.nombre|escapejs }}')"
+                >✖</button>
+              {% else %}
+                <!-- Botón reactivar -->
+                <button
+                  type="button"
+                  class="btn-icon btn-reactivar"
+                  title="Reactivar usuario"
+                  onclick="confirmarReactivar({{ u.id }}, '{{ u.nombre|escapejs }}')"
+                >↺</button>
+              {% endif %}
+            </td>
 
-          <td>
-            <span
-              id="estado-{{ u.id }}"
-              class="estado {% if u.is_active %}verde{% else %}rojo{% endif %}"
-              title="{% if u.is_active %}Activo{% else %}Dado de baja{% endif %}"
-            ></span>
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="7">No hay usuarios registrados.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+            <td data-label="Estado">
+              <span
+                id="estado-{{ u.id }}"
+                class="estado {% if u.is_active %}verde{% else %}rojo{% endif %}"
+                title="{% if u.is_active %}Activo{% else %}Dado de baja{% endif %}"
+              ></span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr class="fila-vacia"><td colspan="7">No hay usuarios registrados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 
 </div>
@@ -154,8 +159,8 @@
     <h3 id="modal-titulo">Confirmar baja</h3>
     <p id="modal-mensaje"></p>
     <div class="modal-acciones">
-      <button class="btn btn-confirmar" id="btn-confirmar-accion">Confirmar</button>
-      <button class="btn btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+      <button type="button" class="btn btn-confirmar" id="btn-confirmar-accion">Confirmar</button>
+      <button type="button" class="btn btn-cancelar" onclick="cerrarModal()">Cancelar</button>
     </div>
   </div>
 </div>

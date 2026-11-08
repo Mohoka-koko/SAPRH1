@@ -3,6 +3,11 @@
    Requiere: estilos.css cargado antes
 ============================================ */
 
+.main-wrapper {
+    width: 100%;
+    min-width: 0;
+}
+
 /* ===== CARDS ===== */
 .card {
     background: #ffffff;
@@ -28,6 +33,7 @@
 
 .form-group {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
 }
@@ -42,6 +48,8 @@
 .form-group input,
 .form-group select {
     height: 40px;
+    width: 100%;
+    box-sizing: border-box;
     border: 1.5px solid var(--border);
     border-radius: var(--radius-sm);
     padding: 0 0.9rem;
@@ -85,6 +93,10 @@
 }
 
 /* ── Tabla de usuarios ── */
+.tabla-wrap {
+    width: 100%;
+}
+
 .tabla {
     width: 100%;
     border-collapse: collapse;
@@ -165,6 +177,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 1rem;
+    box-sizing: border-box;
     z-index: 1000;
 }
 
@@ -173,6 +187,8 @@
     border-radius: var(--radius);
     padding: 2.5rem;
     width: 420px;
+    max-width: 100%;
+    box-sizing: border-box;
     box-shadow: 0 20px 60px rgba(0,0,0,0.15);
     text-align: center;
 }
@@ -189,6 +205,7 @@
     margin-bottom: 24px;
     line-height: 1.5;
     font-size: 0.95rem;
+    word-break: break-word;
 }
 
 .modal-acciones {
@@ -302,4 +319,125 @@
         opacity: 1;
         transform: translate(-50%, 0);
     }
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+/* ---------- Tablet (hasta 1024px) ---------- */
+@media (max-width: 1024px) {
+
+    .card { padding: 1.5rem; }
+
+    /* La fila de 3 campos pasa a envolverse */
+    .form-row { flex-wrap: wrap; }
+    .form-group { flex: 1 1 220px; }
+
+    /* La tabla se desliza de costado dentro de su contenedor */
+    .tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tabla { min-width: 820px; }
+    .tabla td { white-space: nowrap; }
+}
+
+/* ---------- Móvil (hasta 768px) ---------- */
+@media (max-width: 768px) {
+
+    .card { padding: 1.1rem; border-radius: 12px; }
+    .card h2 { font-size: 1.15rem; }
+
+    /* Formulario en una columna */
+    .form-row { flex-direction: column; gap: 14px; margin-bottom: 14px; }
+    .form-group { flex: 0 0 auto; }
+    .form-actions { text-align: stretch; }
+    .form-actions .btn { width: 100%; }
+
+    /* Tabla -> tarjetas */
+    .tabla-wrap { overflow: visible; }
+    .tabla { min-width: 0; margin-top: 12px; }
+
+    .tabla,
+    .tabla tbody,
+    .tabla tbody tr { display: block; width: 100%; }
+
+    .tabla thead { display: none; }
+
+    .tabla tbody tr.fila-usuario {
+        margin-bottom: 12px;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .tabla tbody tr.fila-usuario > td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px;
+        text-align: right;
+        white-space: normal;
+        word-break: break-word;
+        font-size: 0.9rem !important;
+        border-bottom: 1px solid #f0f2f5;
+    }
+
+    .tabla tbody tr.fila-usuario > td::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        text-align: left;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748b;
+    }
+
+    .tabla tbody tr.fila-usuario > td:last-child { border-bottom: 0; }
+
+    /* Inactivo: sin tachado (rompería las etiquetas); se atenúa la tarjeta */
+    .tabla tbody tr.usuario-inactivo { opacity: 0.75; background: #fafafa; }
+    .tabla tbody tr.usuario-inactivo > td { text-decoration: none; }
+
+    .tabla tbody tr.fila-vacia {
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+    }
+    .tabla tbody tr.fila-vacia > td {
+        display: block;
+        padding: 28px 14px;
+        text-align: center;
+        font-size: 0.9rem !important;
+        border: 0;
+    }
+
+    /* Modal */
+    .modal-box { padding: 1.5rem; }
+    .modal-acciones { flex-direction: column-reverse; }
+    .modal-acciones .btn { width: 100%; }
+
+    /* Toast: ancho de pantalla */
+    .toast { left: 1rem; right: 1rem; bottom: 1rem; text-align: center; }
+
+    /* Alerta flotante superior */
+    .alerta-flotante-exito {
+        top: 12px;
+        min-width: 0;
+        width: calc(100% - 2rem);
+        max-width: none;
+        padding: 14px 16px;
+        gap: 12px;
+        font-size: 1rem;
+    }
+    .icono-pulgar { font-size: 1.25rem; }
+}
+
+/* ---------- Móvil pequeño (hasta 480px) ---------- */
+@media (max-width: 480px) {
+    .card { padding: 0.9rem; }
+    .tabla tbody tr.fila-usuario > td { padding: 9px 12px; }
 }

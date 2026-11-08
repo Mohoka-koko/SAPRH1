@@ -16,6 +16,7 @@ let anioSeleccionado = null;
 const contenedorBotones = document.getElementById("ejantBotones");
 const btnFlecha1        = document.getElementById("ejantFlechaAnterior");
 const btnFlecha2        = document.getElementById("ejantFlechaSiguiente");
+const buscador          = document.getElementById("ejantBuscador");
 
 // ── Renderizar botones de años ────────────────────────────────
 function renderBotones() {
@@ -26,6 +27,7 @@ function renderBotones() {
     contenedorBotones.innerHTML = "";
     pagina.forEach(anio => {
         const btn = document.createElement("button");
+        btn.type           = "button";
         btn.className      = "ejant-anio-btn" + (anio === anioSeleccionado ? " on" : "");
         btn.dataset.anio   = anio;
         btn.textContent    = anio;
@@ -55,6 +57,7 @@ async function cargarDatos(anio) {
         if (!resp.ok) throw new Error(`Error ${resp.status}`);
         const data = await resp.json();
         renderTabla(data.lineas, anio);
+        aplicarFiltro();   // mantiene el texto del buscador al cambiar de año
     } catch (err) {
         console.error(err);
         body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#e53e3e;padding:20px;">Error al cargar los datos.</td></tr>`;
@@ -85,19 +88,19 @@ function renderTabla(lista, anio) {
         const fila = document.createElement("tr");
         fila.className = "ejant-up";
         fila.innerHTML = `
-            <td>
+            <td data-label="Unidad">
                 <div class="ejant-up-code">
                     <span class="ejant-flecha">›</span>
                     ${up.up}
                 </div>
             </td>
-            <td class="ejant-denominacion">${up.denominacion}</td>
-            <td class="num">$ ${formato(up.inicial)}</td>
-            <td class="num ${up.modificaciones >= 0 ? 'positivo' : 'negativo'}">
+            <td class="ejant-denominacion" data-label="Denominación">${up.denominacion}</td>
+            <td class="num" data-label="Inicial">$ ${formato(up.inicial)}</td>
+            <td class="num ${up.modificaciones >= 0 ? 'positivo' : 'negativo'}" data-label="Modificaciones">
                 ${up.modificaciones >= 0 ? '+' : ''}$ ${formato(up.modificaciones)}
             </td>
-            <td class="num">$ ${formato(up.ejecutado)}</td>
-            <td class="num saldo-final">$ ${formato(parseFloat(up.saldo_final))}</td>
+            <td class="num" data-label="Ejecutado">$ ${formato(up.ejecutado)}</td>
+            <td class="num saldo-final" data-label="Saldo final">$ ${formato(parseFloat(up.saldo_final))}</td>
         `;
 
         const detalle = document.createElement("tr");
@@ -186,6 +189,21 @@ function actualizarTotalesYTarjetas(cantidad, inicial, modificaciones, ejecutado
     setEl("totFin",  formato(saldo));
 }
 
+// ── Buscador ──────────────────────────────────────────────────
+function aplicarFiltro() {
+    const texto = (buscador?.value || "").toLowerCase();
+    document.querySelectorAll("#ejantBody .ejant-up").forEach(fila => {
+        const coincide = fila.textContent.toLowerCase().includes(texto);
+        fila.style.display = coincide ? "" : "none";
+
+        // CORREGIDO: el detalle se restablece cuando la fila vuelve a coincidir
+        const detalle = fila.nextElementSibling;
+        if (detalle) detalle.style.display = coincide ? "" : "none";
+    });
+}
+
+buscador?.addEventListener("input", aplicarFiltro);
+
 // ── Inicializar ───────────────────────────────────────────────
 async function inicializar() {
     try {
@@ -223,17 +241,6 @@ if (btnFlecha2) {
         }
     });
 }
-
-// ── Buscador ──────────────────────────────────────────────────
-document.getElementById("ejantBuscador")?.addEventListener("input", function () {
-    const texto = this.value.toLowerCase();
-    document.querySelectorAll("#ejantBody .ejant-up").forEach(fila => {
-        const coincide = fila.textContent.toLowerCase().includes(texto);
-        fila.style.display = coincide ? "" : "none";
-        const detalle = fila.nextElementSibling;
-        if (!coincide && detalle) detalle.style.display = "none";
-    });
-});
 
 // ── Volver ────────────────────────────────────────────────────
 document.getElementById("btnVolver")?.addEventListener("click", () => history.back());
