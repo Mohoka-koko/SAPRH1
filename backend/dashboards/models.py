@@ -1,7 +1,15 @@
 #dashboards/models.py
+import django
 from django.db import models
+from django.db.models import Q
 from accounts.models import UsuarioPersonalizado
 from django.core.validators import RegexValidator
+
+
+def _check(condicion):
+    """Argumento de CheckConstraint compatible con cualquier versión de Django:
+    a partir de 5.1 se llama 'condition' y 'check' quedó deprecado."""
+    return {'condition' if django.VERSION >= (5, 1) else 'check': condicion}
 
 
 # ─────────────────────────────────────────────
@@ -326,23 +334,58 @@ class OrdenPagoUnidadPresupuestaria(RegistroAuditable):
 # Pegar esta sección DESPUÉS de OrdenPagoDetalle y ANTES de "# REFUERZO"
 # ─────────────────────────────────────────────
 class OrdenPagoPersonal(ControlModificacion):
+    ESTADO_FORMULARIO_CHOICES = [
+        ('REVISAR', 'Revisar'),
+        ('LISTO',   'Listo'),
+    ]
+
     nro_orden_pago  = models.CharField(max_length=50)
     nro_expediente  = models.CharField(max_length=50)
     importe_total   = models.DecimalField(max_digits=18, decimal_places=2)
     codigo          = models.CharField(max_length=20)
     concepto        = models.TextField()
-    fecha           = models.DateField()
-    # Se completa una vez que el sistema genera la imputación automáticamente
+    fecha           = models.DateField(null=True, blank=True)
+    observaciones   = models.TextField(blank=True, default='')
+    u_presupuestaria = models.CharField(max_length=30, blank=True, default='')
     imputacion      = models.ForeignKey(Imputacion, on_delete=models.PROTECT, null=True, blank=True, related_name='ordenes_pago_personal')
     usuario         = models.ForeignKey(UsuarioPersonalizado, on_delete=models.PROTECT, related_name='ordenes_pago_personal')
     fecha_creacion  = models.DateTimeField(auto_now_add=True)
     anulada         = models.BooleanField(default=False)
     fecha_anulacion = models.DateTimeField(null=True, blank=True)
+    estado_formulario = models.CharField(
+        max_length=10,
+        choices=ESTADO_FORMULARIO_CHOICES,
+        default='LISTO',
+    )
+    # UUID generado por el navegador para el primer guardado: si la respuesta se pierde
+    # y el cliente reintenta, el servidor devuelve el mismo borrador en lugar de crear otro.
+    clave_idempotencia = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         db_table     = 'orden_pago_personal'
         ordering     = ['-fecha']
         verbose_name = 'Orden de Pago Personal'
+        constraints  = [
+            # Un borrador NUNCA tiene imputación y una OP Personal LISTO SIEMPRE la tiene.
+            models.CheckConstraint(
+                name='opp_estado_formulario_valido',
+                **_check(Q(estado_formulario__in=['REVISAR', 'LISTO'])),
+            ),
+            models.CheckConstraint(
+                name='opp_revisar_sin_imputacion',
+                **_check(Q(estado_formulario='LISTO') | Q(imputacion__isnull=True)),
+            ),
+            models.CheckConstraint(
+                name='opp_listo_con_imputacion',
+                **_check(Q(estado_formulario='REVISAR') | Q(imputacion__isnull=False)),
+            ),
+            # Una imputación no puede pertenecer a dos OP Personal.
+            models.UniqueConstraint(
+                fields=['imputacion'],
+                condition=Q(imputacion__isnull=False),
+                name='opp_imputacion_unica',
+            ),
+        ]
 
     def __str__(self):
         return f'OP Personal {self.nro_orden_pago} - {self.importe_total}'
@@ -377,6 +420,31 @@ class OrdenPagoPersonalPartida(RegistroAuditable):
 
     def __str__(self):
         return f'{self.orden_pago_personal} - {self.descripcion} - {self.importe}'
+
+
+class OrdenPagoPersonalBorradorPartida(models.Model):
+    # Filas de erogación de una OP Personal en estado REVISAR. Es una tabla aparte de
+    # OrdenPagoPersonalPartida a propósito: las partidas reales se crean junto con la
+    # ImputacionDetalle (cuyo trigger descuenta saldo y registra movimientos), así que un
+    # borrador, que solo escribe acá, nunca mueve el presupuesto.
+    # Al completar la OP Personal estas filas se convierten en partidas reales y se borran.
+    orden_pago_personal  = models.ForeignKey(OrdenPagoPersonal, on_delete=models.CASCADE, related_name='borradores_partida')
+    linea_presupuestaria = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, null=True, blank=True, related_name='borradores_op_personal')
+    programa_id          = models.IntegerField(null=True, blank=True)
+    proyecto_id          = models.IntegerField(null=True, blank=True)
+    actividad_id         = models.IntegerField(null=True, blank=True)
+    partida_id           = models.IntegerField(null=True, blank=True)
+    fuente_id            = models.IntegerField(null=True, blank=True)
+    importe              = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    orden                = models.IntegerField(default=0)
+
+    class Meta:
+        db_table     = 'orden_pago_personal_borrador_partida'
+        ordering     = ['orden']
+        verbose_name = 'Borrador de Partida de OP Personal'
+
+    def __str__(self):
+        return f'Borrador {self.orden_pago_personal_id} fila {self.orden}'
 
 # ─────────────────────────────────────────────
 # REFUERZO
@@ -458,6 +526,11 @@ class Modificacion(ControlModificacion):
         ('imputacion', 'UP de una Imputación'),
     ]
 
+    ESTADO_FORMULARIO_CHOICES = [
+        ('REVISAR', 'Revisar'),
+        ('LISTO',   'Listo'),
+    ]
+
     fecha                = models.DateField()
     nro_expediente       = models.CharField(max_length=50)
     nro_decreto          = models.CharField(max_length=255)
@@ -471,6 +544,11 @@ class Modificacion(ControlModificacion):
     fecha_creacion       = models.DateTimeField(auto_now_add=True)
     anulada              = models.BooleanField(default=False)
     fecha_anulacion      = models.DateTimeField(null=True, blank=True)
+    estado_formulario    = models.CharField(
+        max_length=10,
+        choices=ESTADO_FORMULARIO_CHOICES,
+        default='LISTO',
+    )
 
     class Meta:
         db_table     = 'modificacion'
@@ -505,6 +583,41 @@ class ModificacionReceptora(RegistroAuditable):
     class Meta:
         db_table     = 'modificacion_receptora'
         verbose_name = 'Receptora de Modificación'
+
+
+class ModificacionBorradorDetalle(models.Model):
+    # Filas de una Modificación en estado REVISAR. Es una tabla aparte de
+    # ModificacionTransferente / ModificacionReceptora a propósito: los triggers de
+    # PostgreSQL (saldo_actual y movimientos) solo se disparan con INSERT en esas dos
+    # tablas, así que un borrador nunca mueve el presupuesto.
+    # Al completar la Modificación estas filas se convierten en transferentes y
+    # receptoras reales y se borran.
+    ROL_CHOICES = [
+        ('TRANSFERENTE', 'Transferente'),
+        ('RECEPTORA',    'Receptora'),
+    ]
+
+    modificacion         = models.ForeignKey(Modificacion, on_delete=models.CASCADE, related_name='borradores_detalle')
+    rol                  = models.CharField(max_length=12, choices=ROL_CHOICES)
+    linea_presupuestaria = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, null=True, blank=True, related_name='borradores_modificacion')
+    programa_id          = models.IntegerField(null=True, blank=True)
+    proyecto_id          = models.IntegerField(null=True, blank=True)
+    actividad_id         = models.IntegerField(null=True, blank=True)
+    partida_id           = models.IntegerField(null=True, blank=True)
+    fuente_id            = models.IntegerField(null=True, blank=True)
+    # Solo se usa en transferentes de modalidad B. Si el detalle de imputación se borra,
+    # la referencia queda vacía y al completar se pide volver a elegirla.
+    imputacion_detalle   = models.ForeignKey(ImputacionDetalle, on_delete=models.SET_NULL, null=True, blank=True, related_name='borradores_modificacion')
+    importe              = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    orden                = models.IntegerField(default=0)
+
+    class Meta:
+        db_table     = 'modificacion_borrador_detalle'
+        ordering     = ['rol', 'orden']
+        verbose_name = 'Borrador de Detalle de Modificación'
+
+    def __str__(self):
+        return f'Borrador {self.modificacion_id} {self.rol} fila {self.orden}'
 
 
 # ─────────────────────────────────────────────

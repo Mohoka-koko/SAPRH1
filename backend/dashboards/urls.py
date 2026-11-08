@@ -58,7 +58,11 @@ urlpatterns = [
     path('api/fuentes/',        views.api_fuentes,        name='api_fuentes'),
     path('api/imputaciones-por-linea/', views.api_imputaciones_por_linea, name='api_imputaciones_por_linea'),
     path('api/historial-registros/', views.api_historial_registros, name='api_historial_registros'),
-    path('api/op-personal/crear/', views.api_crear_op_personal, name='api_crear_op_personal'),
+    path('ordenpagopersonal/editar/<int:opp_id>/', views.ordenpagopersonal_editar, name='ordenpagopersonal_editar'),
+    path('ordenpagopersonal/ver/<int:opp_id>/',    views.ordenpagopersonal_ver,    name='ordenpagopersonal_ver'),
+    path('api/op-personal/borrador/crear/',                          views.api_op_personal_borrador_crear,      name='api_op_personal_borrador_crear'),
+    path('api/op-personal/borrador/<int:opp_id>/actualizar/',        views.api_op_personal_borrador_actualizar, name='api_op_personal_borrador_actualizar'),
+    path('api/op-personal/<int:opp_id>/completar/',                  views.api_op_personal_completar,           name='api_op_personal_completar'),
 
 
     # ── Carga de catálogos (CRUD genérico) ─────────────────────────────────

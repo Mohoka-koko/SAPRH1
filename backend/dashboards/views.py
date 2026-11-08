@@ -8,7 +8,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from accounts.decorators import rol_requerido
 from accounts.models import UsuarioPersonalizado
 import json
-from django.db import transaction
+import uuid
+from django.db import transaction, connection, IntegrityError
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from dashboards.models import (
@@ -19,6 +21,7 @@ from dashboards.models import (
     MovimientoHistorial, Jurisdiccion, Programa, Subprograma, Proyecto,
     ActividadObra, Partida, FuenteFinanciamiento,
     OrdenPagoPersonal, OrdenPagoPersonalBeneficiario, OrdenPagoPersonalPartida,
+    OrdenPagoPersonalBorradorPartida,
 )
 from django.db.models.deletion import ProtectedError
 from decimal import Decimal, InvalidOperation
@@ -176,7 +179,14 @@ def ordenpago(request):
 
 @rol_requerido('admin', 'adminprincipal')
 def ordenpagopersonal(request):
-    context = {'usuario': request.user}
+    # Formulario en blanco: abrirlo NO crea nada. El borrador se crea recién con la primera
+    # edición real (api_op_personal_borrador_crear).
+    context = {
+        'usuario':    request.user,
+        'modo':       'crear',
+        'opp_datos':  'null',
+        'inicial_cr': _inicial_usuario(request.user),
+    }
     return render(request, 'dashboards/admin/ordenpagopersonal.html', context)
 
 @rol_requerido('admin', 'adminprincipal')
@@ -3030,21 +3040,40 @@ def api_historial_registros(request):
 
     # ── Órdenes de Pago Personal ──────────────────────────────────────────────
     ops_personal = OrdenPagoPersonal.objects.select_related(
-        'usuario'
+        'usuario', 'usuario_modificacion'
     ).order_by('-fecha_creacion')
 
     for op in ops_personal:
-        registros.append({
+        es_borrador = op.estado_formulario == 'REVISAR'
+
+        # Si fue editada desde el formulario (borrador o completada) se informa quién y cuándo
+        # fue la última edición. Las OP Personal anteriores al guardado automático no tienen
+        # usuario_modificacion y conservan el comportamiento de siempre.
+        if op.usuario_modificacion_id:
+            fecha_mod      = _fmt(op.fecha_modificacion) or '--'
+            modificado_por = op.usuario_modificacion.nombre
+        else:
+            fecha_mod      = _fmt(op.fecha_creacion) or '--'
+            modificado_por = op.usuario.nombre if op.usuario else 'S/N'
+
+        item = {
             'id':                 f'opp-{op.id}',
             'tipo':               'Orden de Pago Personal',
-            'fecha_creacion':     timezone.localtime(op.fecha_creacion).strftime('%d/%m/%Y - %H:%M') if op.fecha_creacion else '--',
+            'fecha_creacion':     _fmt(op.fecha_creacion) or '--',
             'creado_por':         op.usuario.nombre if op.usuario else 'S/N',
-            'fecha_modificacion': timezone.localtime(op.fecha_creacion).strftime('%d/%m/%Y - %H:%M') if op.fecha_creacion else '--',
-            'modificado_por':     op.usuario.nombre if op.usuario else 'S/N',
-            'estado':             'Listo',
+            'fecha_modificacion': fecha_mod,
+            'modificado_por':     modificado_por,
+            'estado':             'Revisar' if es_borrador else 'Listo',
             'referencia_id':      op.id,
             'nro_expediente':     op.nro_expediente,
-        })
+            'url_ver':            reverse('ordenpagopersonal_ver', args=[op.id]),
+        }
+
+        if es_borrador:
+            # Cualquier admin / adminprincipal puede retomar el borrador
+            item['url_editar'] = reverse('ordenpagopersonal_editar', args=[op.id])
+
+        registros.append(item)
 
     # ── Modificaciones ────────────────────────────────────────────────────
     modificaciones = Modificacion.objects.select_related('usuario').order_by('-fecha_creacion')
@@ -3154,181 +3183,644 @@ def api_eliminar_linea(request, linea_id):
 
 
 # ==========================================
-#  API — CREAR ORDEN DE PAGO PERSONAL
+#  ORDEN DE PAGO PERSONAL — GUARDADO AUTOMÁTICO (BORRADOR "REVISAR") Y COMPLETADO
+# ==========================================
+# Una OP Personal en estado REVISAR es solo información guardada: su cabecera vive en
+# orden_pago_personal, sus beneficiarios en orden_pago_personal_beneficiario (sin efecto
+# presupuestario) y sus erogaciones en OrdenPagoPersonalBorradorPartida, una tabla sin
+# triggers. Por eso un borrador NUNCA genera imputaciones, movimientos ni descuenta saldos.
+#
+# Todo lo presupuestario ocurre en api_op_personal_completar (REVISAR → LISTO), dentro de
+# una única transacción: se crean la Imputación y sus detalles; el trigger
+# trg_imputacion_detalle_movimiento descuenta saldo_actual y registra el movimiento por línea
+# al insertar cada ImputacionDetalle, por eso acá NO se toca saldo_actual (igual que en
+# api_imputacion_completar). Si algo falla, el rollback deja la OP Personal en REVISAR y sin
+# imputación. Además, los CHECK de PostgreSQL impiden que un borrador tenga imputación o que
+# una OP Personal LISTO no la tenga.
+
+OPP_ROLES_EDICION       = ('admin', 'adminprincipal')
+OPP_MAX_FILAS_BORRADOR  = 200
+OPP_LOCK_ASIENTO        = 7410021   # clave del advisory lock que serializa el N° de asiento
+
+
+# ── Permisos ──────────────────────────────────────────────────────────────────
+def _puede_editar_opp(user, opp):
+    """Editar = rol autorizado Y OP Personal en REVISAR. Se comprueba en el servidor en
+    cada API de escritura; los botones del frontend son solo comodidad visual."""
+    return (
+        user.is_authenticated
+        and getattr(user, 'rol', None) in OPP_ROLES_EDICION
+        and opp.estado_formulario == 'REVISAR'
+    )
+
+
+def _obtener_opp_bloqueada(user, opp_id):
+    """Bloquea la fila (debe llamarse dentro de transaction.atomic()). El bloqueo serializa
+    guardados simultáneos y evita que dos pedidos completen la misma OP Personal a la vez."""
+    try:
+        opp = OrdenPagoPersonal.objects.select_for_update().get(id=opp_id)
+    except OrdenPagoPersonal.DoesNotExist:
+        raise _RefuerzoError('OP Personal no encontrada', 404)
+    if getattr(user, 'rol', None) not in OPP_ROLES_EDICION:
+        raise _RefuerzoError('No tenés permiso para editar esta OP Personal', 403)
+    if not _puede_editar_opp(user, opp):
+        raise _RefuerzoError(
+            'Esta OP Personal ya fue completada y no se puede modificar desde el formulario',
+            409, {'completado': True},
+        )
+    return opp
+
+
+# ── Lectura / validación parcial del cuerpo (acepta datos incompletos) ───────
+def _opp_importe(valor, etiqueta):
+    num = _decimal_o_none(valor, etiqueta)
+    if num is not None and num < 0:
+        raise _RefuerzoError(f'{etiqueta}: el importe no puede ser negativo')
+    return num
+
+
+def _opp_cabecera(body):
+    def texto(clave, maximo, etiqueta):
+        valor = str(body.get(clave) or '').strip()
+        if len(valor) > maximo:
+            raise _RefuerzoError(f'{etiqueta} supera los {maximo} caracteres permitidos')
+        return valor
+
+    fecha = None
+    valor = body.get('fecha')
+    if valor:
+        try:
+            fecha = date.fromisoformat(str(valor))
+        except ValueError:
+            fecha = None
+
+    importe_op = _opp_importe(body.get('importe_op'), 'Importe O.P.')
+    return {
+        'nro_orden_pago':   texto('nro_orden_pago', 50, 'El número de orden de pago'),
+        'nro_expediente':   texto('nro_expediente', 50, 'El número de expediente'),
+        'u_presupuestaria': texto('u_presupuestaria', 30, 'La unidad presupuestaria'),
+        'codigo':           texto('codigo', 20, 'El código del concepto'),
+        'concepto':         texto('concepto', 2000, 'El concepto'),
+        'observaciones':    texto('observaciones', 20000, 'Las observaciones'),
+        'fecha':            fecha,
+        'importe_total':    importe_op if importe_op is not None else Decimal('0.00'),
+    }
+
+
+def _opp_beneficiarios(body):
+    lista = body.get('beneficiarios', [])
+    if not isinstance(lista, list):
+        raise _RefuerzoError('La nómina de beneficiarios es inválida')
+    if len(lista) > OPP_MAX_FILAS_BORRADOR:
+        raise _RefuerzoError(f'No puede haber más de {OPP_MAX_FILAS_BORRADOR} beneficiarios')
+
+    filas = []
+    for i, b in enumerate(lista):
+        if not isinstance(b, dict):
+            raise _RefuerzoError('La nómina de beneficiarios es inválida')
+        codigo = str(b.get('codigo') or '').strip()
+        nomina = str(b.get('nomina') or '').strip()
+        if len(codigo) > 20:
+            raise _RefuerzoError(f'Beneficiario {i + 1}: el código supera los 20 caracteres permitidos')
+        if len(nomina) > 1000:
+            raise _RefuerzoError(f'Beneficiario {i + 1}: el nombre supera los 1000 caracteres permitidos')
+        parcial = _opp_importe(b.get('importe_parcial'), f'Beneficiario {i + 1}')
+        if not codigo and not nomina and parcial is None:
+            continue   # fila vacía: no se guarda
+        filas.append({'codigo': codigo, 'nomina': nomina, 'importe_parcial': parcial})
+    return filas
+
+
+def _opp_erogaciones(body):
+    lista = body.get('erogaciones', [])
+    if not isinstance(lista, list):
+        raise _RefuerzoError('El detalle de erogaciones es inválido')
+    if len(lista) > OPP_MAX_FILAS_BORRADOR:
+        raise _RefuerzoError(f'No puede haber más de {OPP_MAX_FILAS_BORRADOR} erogaciones')
+
+    filas = []
+    for i, d in enumerate(lista):
+        if not isinstance(d, dict):
+            raise _RefuerzoError('El detalle de erogaciones es inválido')
+        filas.append({
+            'linea_id':     _entero_o_none(d.get('linea_id')),
+            'programa_id':  _entero_o_none(d.get('programa_id')),
+            'proyecto_id':  _entero_o_none(d.get('proyecto_id')),
+            'actividad_id': _entero_o_none(d.get('actividad_id')),
+            'partida_id':   _entero_o_none(d.get('partida_id')),
+            'fuente_id':    _entero_o_none(d.get('fuente_id')),
+            'importe':      _opp_importe(d.get('importe'), f'Erogación {i + 1}'),
+            'orden':        i,
+        })
+
+    # Un linea_id que ya no existe no debe romper el guardado parcial: se descarta.
+    ids = {f['linea_id'] for f in filas if f['linea_id']}
+    if ids:
+        existentes = set(LineaPresupuestaria.objects.filter(id__in=ids).values_list('id', flat=True))
+        for f in filas:
+            if f['linea_id'] and f['linea_id'] not in existentes:
+                f['linea_id'] = None
+    return filas
+
+
+def _opp_clave(body):
+    valor = body.get('clave_idempotencia')
+    if not valor:
+        return None
+    try:
+        return uuid.UUID(str(valor))
+    except ValueError:
+        raise _RefuerzoError('La clave de idempotencia es inválida')
+
+
+# ── Escritura del borrador ────────────────────────────────────────────────────
+def _opp_asignar_cabecera(opp, cab):
+    opp.nro_orden_pago    = cab['nro_orden_pago']
+    opp.nro_expediente    = cab['nro_expediente']
+    opp.u_presupuestaria  = cab['u_presupuestaria']
+    opp.codigo            = cab['codigo']
+    opp.concepto          = cab['concepto']
+    opp.observaciones     = cab['observaciones']
+    opp.fecha             = cab['fecha']
+    opp.importe_total     = cab['importe_total']
+
+
+def _opp_reemplazar_filas(opp, beneficiarios, erogaciones, user):
+    """Reemplaza por completo beneficiarios y erogaciones del borrador (dentro de una
+    transacción). Ninguna de estas dos tablas tiene triggers presupuestarios."""
+    opp.beneficiarios.all().delete()
+    OrdenPagoPersonalBeneficiario.objects.bulk_create([
+        OrdenPagoPersonalBeneficiario(
+            orden_pago_personal  = opp,
+            codigo               = f['codigo'],
+            nomina_beneficiarios = f['nomina'],
+            importe_parcial      = f['importe_parcial'] if f['importe_parcial'] is not None else Decimal('0.00'),
+            importe_total        = f['importe_parcial'] if f['importe_parcial'] is not None else Decimal('0.00'),
+            usuario_creacion     = user,
+            usuario_modificacion = user,
+        )
+        for f in beneficiarios
+    ])
+
+    opp.borradores_partida.all().delete()
+    OrdenPagoPersonalBorradorPartida.objects.bulk_create([
+        OrdenPagoPersonalBorradorPartida(
+            orden_pago_personal     = opp,
+            linea_presupuestaria_id = f['linea_id'],
+            programa_id             = f['programa_id'],
+            proyecto_id             = f['proyecto_id'],
+            actividad_id            = f['actividad_id'],
+            partida_id              = f['partida_id'],
+            fuente_id               = f['fuente_id'],
+            importe                 = f['importe'],
+            orden                   = f['orden'],
+        )
+        for f in erogaciones
+    ])
+
+
+def _opp_contenido_igual(opp, cab, beneficiarios, erogaciones):
+    """True si lo recibido es idéntico a lo ya guardado. Así un guardado sin cambios reales
+    no toca la fila: no cambia 'Editado por' ni la fecha de modificación."""
+    actual_cab = (
+        opp.nro_orden_pago, opp.nro_expediente, opp.u_presupuestaria, opp.codigo,
+        opp.concepto, opp.observaciones, opp.fecha, opp.importe_total,
+    )
+    nueva_cab = (
+        cab['nro_orden_pago'], cab['nro_expediente'], cab['u_presupuestaria'], cab['codigo'],
+        cab['concepto'], cab['observaciones'], cab['fecha'], cab['importe_total'],
+    )
+    if actual_cab != nueva_cab:
+        return False
+
+    cero = Decimal('0.00')
+    actual_ben = [
+        (b.codigo, b.nomina_beneficiarios, b.importe_parcial)
+        for b in opp.beneficiarios.order_by('id')
+    ]
+    nueva_ben = [
+        (f['codigo'], f['nomina'], f['importe_parcial'] if f['importe_parcial'] is not None else cero)
+        for f in beneficiarios
+    ]
+    if actual_ben != nueva_ben:
+        return False
+
+    actual_ero = [
+        (b.linea_presupuestaria_id, b.programa_id, b.proyecto_id, b.actividad_id,
+         b.partida_id, b.fuente_id, b.importe)
+        for b in opp.borradores_partida.order_by('orden')
+    ]
+    nueva_ero = [
+        (f['linea_id'], f['programa_id'], f['proyecto_id'], f['actividad_id'],
+         f['partida_id'], f['fuente_id'], f['importe'])
+        for f in erogaciones
+    ]
+    return actual_ero == nueva_ero
+
+
+# ── Datos para repoblar el formulario (misma forma que arma el JS al guardar) ─
+def _opp_datos(opp):
+    beneficiarios = [
+        {
+            'codigo':          b.codigo,
+            'nomina':          b.nomina_beneficiarios,
+            'importe_parcial': str(b.importe_parcial) if b.importe_parcial else None,
+        }
+        for b in opp.beneficiarios.order_by('id')
+    ]
+
+    if opp.estado_formulario == 'REVISAR':
+        erogaciones = [
+            {
+                'linea_id':     b.linea_presupuestaria_id,
+                'programa_id':  b.programa_id,
+                'proyecto_id':  b.proyecto_id,
+                'actividad_id': b.actividad_id,
+                'partida_id':   b.partida_id,
+                'fuente_id':    b.fuente_id,
+                'importe':      str(b.importe) if b.importe is not None else None,
+            }
+            for b in opp.borradores_partida.order_by('orden')
+        ]
+    else:
+        partidas = opp.partidas.select_related('linea_presupuestaria__fuente_financiamiento').order_by('id')
+        erogaciones = [
+            {
+                'linea_id':     p.linea_presupuestaria_id,
+                'programa_id':  p.linea_presupuestaria.programa_id,
+                'proyecto_id':  p.linea_presupuestaria.proyecto_id,
+                'actividad_id': p.linea_presupuestaria.actividad_obra_id,
+                'partida_id':   p.linea_presupuestaria.partida_id,
+                'fuente_id':    p.linea_presupuestaria.fuente_financiamiento_id,
+                'importe':      str(p.importe),
+                'descripcion':  p.descripcion,
+                'fuente':       (
+                    f'{p.linea_presupuestaria.fuente_financiamiento.codigo} - '
+                    f'{p.linea_presupuestaria.fuente_financiamiento.nombre}'
+                ),
+            }
+            for p in partidas
+        ]
+
+    return {
+        'id':               opp.id,
+        'estado':           opp.estado_formulario,
+        'version':          _version(opp),
+        'nro_orden_pago':   opp.nro_orden_pago,
+        'nro_expediente':   opp.nro_expediente,
+        'u_presupuestaria': opp.u_presupuestaria,
+        'fecha':            opp.fecha.strftime('%Y-%m-%d') if opp.fecha else None,
+        'importe_op':       str(opp.importe_total) if opp.importe_total else None,
+        'codigo':           opp.codigo,
+        'concepto':         opp.concepto,
+        'observaciones':    opp.observaciones,
+        'asiento_nro':      opp.imputacion.asiento_nro if opp.imputacion_id else None,
+        'beneficiarios':    beneficiarios,
+        'erogaciones':      erogaciones,
+    }
+
+
+def _inicial_usuario(usuario):
+    nombre = (getattr(usuario, 'nombre', '') or '').strip()
+    return nombre[:1].upper()
+
+
+# ==========================================
+#  PÁGINAS — RETOMAR (EDITAR) Y CONSULTAR (VER) UNA OP PERSONAL
+# ==========================================
+# Son solo lectura sobre la base: abrir una OP Personal nunca escribe nada (ni "Editado por").
+@rol_requerido('admin', 'adminprincipal')
+def ordenpagopersonal_editar(request, opp_id):
+    opp = get_object_or_404(OrdenPagoPersonal.objects.select_related('usuario', 'imputacion'), id=opp_id)
+
+    if not _puede_editar_opp(request.user, opp):
+        return redirect('ordenpagopersonal_ver', opp_id=opp.id)
+
+    context = {
+        'usuario':    request.user,
+        'modo':       'editar',
+        'opp_datos':  _json_para_script(_opp_datos(opp)),
+        'inicial_cr': _inicial_usuario(opp.usuario),
+    }
+    return render(request, 'dashboards/admin/ordenpagopersonal.html', context)
+
+
+@rol_requerido('admin', 'adminprincipal')
+def ordenpagopersonal_ver(request, opp_id):
+    opp = get_object_or_404(OrdenPagoPersonal.objects.select_related('usuario', 'imputacion'), id=opp_id)
+
+    if opp.estado_formulario == 'REVISAR':
+        return redirect('ordenpagopersonal_editar', opp_id=opp.id)
+
+    context = {
+        'usuario':    request.user,
+        'modo':       'ver',
+        'opp_datos':  _json_para_script(_opp_datos(opp)),
+        'inicial_cr': _inicial_usuario(opp.usuario),
+    }
+    return render(request, 'dashboards/admin/ordenpagopersonal.html', context)
+
+
+# ==========================================
+#  API — CREAR BORRADOR DE OP PERSONAL (primer guardado automático)
+# ==========================================
+def _opp_respuesta_existente(opp):
+    if opp.estado_formulario != 'REVISAR':
+        raise _RefuerzoError(
+            'Esta OP Personal ya fue completada y no se puede modificar desde el formulario',
+            409, {'completado': True},
+        )
+    return JsonResponse({
+        'ok':         True,
+        'opp_id':     opp.id,
+        'version':    _version(opp),
+        'existente':  True,   # el cliente debe reenviar su contenido como actualización
+        'url_editar': reverse('ordenpagopersonal_editar', args=[opp.id]),
+    })
+
+
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_op_personal_borrador_crear(request):
+    try:
+        body          = _json_body(request)
+        clave         = _opp_clave(body)
+        cab           = _opp_cabecera(body)
+        beneficiarios = _opp_beneficiarios(body)
+        erogaciones   = _opp_erogaciones(body)
+
+        # Reintento de un primer guardado cuya respuesta se perdió: mismo borrador, sin duplicar.
+        if clave:
+            existente = OrdenPagoPersonal.objects.filter(clave_idempotencia=clave).first()
+            if existente:
+                return _opp_respuesta_existente(existente)
+
+        try:
+            with transaction.atomic():
+                opp = OrdenPagoPersonal(
+                    usuario              = request.user,   # creador: no se reasigna nunca
+                    usuario_modificacion = request.user,
+                    estado_formulario    = 'REVISAR',
+                    imputacion           = None,
+                    clave_idempotencia   = clave,
+                )
+                _opp_asignar_cabecera(opp, cab)
+                opp.save()
+                _opp_reemplazar_filas(opp, beneficiarios, erogaciones, request.user)
+        except IntegrityError:
+            # Dos pedidos simultáneos con la misma clave: gana el primero.
+            existente = (
+                OrdenPagoPersonal.objects.filter(clave_idempotencia=clave).first() if clave else None
+            )
+            if existente:
+                return _opp_respuesta_existente(existente)
+            raise
+
+    except _RefuerzoError as e:
+        return _respuesta_error(e)
+    except Exception:
+        _logger.exception('Error al crear el borrador de OP Personal')
+        return JsonResponse({'error': 'Error interno al guardar el borrador'}, status=500)
+
+    return JsonResponse({
+        'ok':         True,
+        'opp_id':     opp.id,
+        'version':    _version(opp),
+        'url_editar': reverse('ordenpagopersonal_editar', args=[opp.id]),
+    })
+
+
+# ==========================================
+#  API — ACTUALIZAR BORRADOR DE OP PERSONAL (guardado automático)
 # ==========================================
 @rol_requerido('admin', 'adminprincipal')
 @require_POST
-def api_crear_op_personal(request):
-    from django.db.models import Max, Sum
-
+def api_op_personal_borrador_actualizar(request, opp_id):
     try:
-        body = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'JSON inválido'}, status=400)
+        body          = _json_body(request)
+        cab           = _opp_cabecera(body)
+        beneficiarios = _opp_beneficiarios(body)
+        erogaciones   = _opp_erogaciones(body)
 
-    nro_orden_pago = body.get('nro_orden_pago', '').strip()
-    nro_expediente = body.get('nro_expediente', '').strip()
-    fecha          = body.get('fecha', '').strip()
-    codigo         = body.get('codigo', '').strip()
-    concepto       = body.get('concepto', '').strip()
-    beneficiarios  = body.get('beneficiarios', [])
-    erogaciones    = body.get('erogaciones', [])
-    # beneficiarios: [{codigo, nomina, importe_parcial, importe_total}]
-    # erogaciones:   [{linea_id, descripcion, importe}]
-
-    if not all([nro_orden_pago, nro_expediente, fecha, concepto]):
-        return JsonResponse({'error': 'Faltan campos obligatorios'}, status=400)
-
-    if not beneficiarios:
-        return JsonResponse({'error': 'Debe incluir al menos un beneficiario'}, status=400)
-
-    if not erogaciones:
-        return JsonResponse({'error': 'Debe incluir al menos una erogación'}, status=400)
-
-    try:
-        fecha_obj = date.fromisoformat(fecha)
-    except ValueError:
-        return JsonResponse({'error': 'Fecha inválida. Usar formato YYYY-MM-DD'}, status=400)
-
-    try:
         with transaction.atomic():
-            # ── Parsear importes ──────────────────────────────────────────
-            try:
-                total_beneficiarios = sum(
-                    Decimal(str(b['importe_total'])) for b in beneficiarios
-                )
-                total_erogaciones = sum(
-                    Decimal(str(e['importe'])) for e in erogaciones
-                )
-            except Exception:
-                raise ValueError('Importe inválido en beneficiarios o erogaciones')
+            opp = _obtener_opp_bloqueada(request.user, opp_id)
 
-            if total_beneficiarios != total_erogaciones:
-                raise ValueError(
-                    f'El total de beneficiarios (${total_beneficiarios}) '
-                    f'no coincide con el total de erogaciones (${total_erogaciones})'
-                )
+            # Sin cambios reales: no se escribe nada, así "Editado por" no se altera.
+            if _opp_contenido_igual(opp, cab, beneficiarios, erogaciones):
+                return JsonResponse({'ok': True, 'version': _version(opp), 'sin_cambios': True})
 
-            importe_total = total_erogaciones
+            _verificar_version(opp, body.get('version'))
 
-            # ── Validar líneas y saldo ────────────────────────────────────
-            lineas_validas = []
-            for e in erogaciones:
-                linea_id = e.get('linea_id')
-                importe  = Decimal(str(e.get('importe', 0)))
-                desc     = e.get('descripcion', '').strip()
+            _opp_asignar_cabecera(opp, cab)
+            opp.usuario_modificacion = request.user
+            # auto_now solo se aplica a los campos incluidos en update_fields.
+            opp.save(update_fields=[
+                'nro_orden_pago', 'nro_expediente', 'u_presupuestaria', 'codigo', 'concepto',
+                'observaciones', 'fecha', 'importe_total',
+                'usuario_modificacion', 'fecha_modificacion',
+            ])
+            _opp_reemplazar_filas(opp, beneficiarios, erogaciones, request.user)
 
-                if not linea_id or importe <= 0:
-                    raise ValueError('Cada erogación debe tener linea_id e importe mayor a cero')
+    except _RefuerzoError as e:
+        return _respuesta_error(e)
+    except Exception:
+        _logger.exception('Error al actualizar el borrador de OP Personal %s', opp_id)
+        return JsonResponse({'error': 'Error interno al guardar el borrador'}, status=500)
 
-                try:
-                    linea = LineaPresupuestaria.objects.select_for_update().get(id=linea_id)
-                except LineaPresupuestaria.DoesNotExist:
-                    raise ValueError(f'Línea presupuestaria {linea_id} no encontrada')
+    return JsonResponse({'ok': True, 'version': _version(opp)})
 
-                if linea.saldo_actual < importe:
-                    raise ValueError(
-                        f'Saldo insuficiente en línea {linea_id}. '
-                        f'Disponible: ${linea.saldo_actual}, requerido: ${importe}'
-                    )
 
-                lineas_validas.append({
-                    'linea':       linea,
-                    'importe':     importe,
-                    'descripcion': desc or linea.partida.denominacion,
-                })
+# ==========================================
+#  API — COMPLETAR OP PERSONAL (REVISAR → LISTO)
+# ==========================================
+# ÚNICO camino a LISTO y ÚNICO punto donde se generan las imputaciones. El servidor
+# confirma lo que está guardado en la base (no lo que llegue en el cuerpo): el cliente solo
+# envía la versión que vio. Los saldos y movimientos por línea los resuelve el trigger de
+# imputacion_detalle, por eso acá NO se modifica saldo_actual.
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_op_personal_completar(request, opp_id):
+    from django.db.models import Max
 
-            # ── Crear OP Personal ─────────────────────────────────────────
-            op_personal = OrdenPagoPersonal.objects.create(
-                nro_orden_pago = nro_orden_pago,
-                nro_expediente = nro_expediente,
-                importe_total  = importe_total,
-                codigo         = codigo,
-                concepto       = concepto,
-                fecha          = fecha_obj,
-                imputacion     = None,
-                usuario        = request.user,
+    try:
+        body = _json_body(request)
+
+        with transaction.atomic():
+            # Una segunda confirmación (doble clic, reintento) espera este bloqueo, ve
+            # estado LISTO y recibe 409: no puede generar imputaciones duplicadas.
+            opp = _obtener_opp_bloqueada(request.user, opp_id)
+            _verificar_version(opp, body.get('version'))
+
+            beneficiarios = list(opp.beneficiarios.order_by('id'))
+            borradores    = list(opp.borradores_partida.order_by('orden'))
+
+            # ── Validación definitiva ─────────────────────────────────────
+            faltan = []
+            if not opp.nro_orden_pago.strip(): faltan.append('el número de orden de pago')
+            if not opp.nro_expediente.strip(): faltan.append('el expediente')
+            if not opp.fecha:                  faltan.append('la fecha')
+            if not opp.concepto.strip():       faltan.append('el concepto')
+            if faltan:
+                raise _RefuerzoError('Falta completar: ' + ', '.join(faltan))
+
+            if not beneficiarios:
+                raise _RefuerzoError('Debe incluir al menos un beneficiario')
+            if not borradores:
+                raise _RefuerzoError('Debe incluir al menos una erogación')
+
+            total_beneficiarios = sum(
+                (b.importe_parcial or Decimal('0')) for b in beneficiarios
             )
 
-            # ── Crear beneficiarios ───────────────────────────────────────
-            for b in beneficiarios:
-                OrdenPagoPersonalBeneficiario.objects.create(
-                    orden_pago_personal  = op_personal,
-                    codigo               = b.get('codigo', ''),
-                    nomina_beneficiarios = b.get('nomina', ''),
-                    importe_parcial      = Decimal(str(b.get('importe_parcial', 0))),
-                    importe_total        = Decimal(str(b.get('importe_total', 0))),
+            fila_de_linea = {}
+            total_erogaciones = Decimal('0')
+            for n, b in enumerate(borradores, start=1):
+                if not b.linea_presupuestaria_id:
+                    raise _RefuerzoError(
+                        f'Erogación {n}: falta completar la línea presupuestaria (programa, '
+                        f'proyecto, actividad, partida y, si corresponde, la fuente de financiamiento)'
+                    )
+                if b.importe is None or b.importe <= 0:
+                    raise _RefuerzoError(f'Erogación {n}: el importe debe ser mayor a cero')
+                if b.linea_presupuestaria_id in fila_de_linea:
+                    raise _RefuerzoError(
+                        f'Erogación {n}: la línea presupuestaria está repetida (ya figura en la '
+                        f'erogación {fila_de_linea[b.linea_presupuestaria_id]}). Cada línea solo '
+                        f'puede aparecer una vez'
+                    )
+                fila_de_linea[b.linea_presupuestaria_id] = n
+                total_erogaciones += b.importe
+
+            if total_beneficiarios != total_erogaciones:
+                raise _RefuerzoError(
+                    f'El total de beneficiarios (${total_beneficiarios}) no coincide con el '
+                    f'total de erogaciones (${total_erogaciones})'
+                )
+            if not opp.importe_total or opp.importe_total <= 0:
+                raise _RefuerzoError('El Importe O.P. es obligatorio y debe ser mayor a cero')
+            if opp.importe_total != total_erogaciones:
+                raise _RefuerzoError(
+                    f'El Importe O.P. (${opp.importe_total}) no coincide con el total de '
+                    f'erogaciones (${total_erogaciones})'
                 )
 
-            # ── Generar Imputación automática ─────────────────────────────
-            ultimo_asiento = Imputacion.objects.filter(
-                fecha__year=fecha_obj.year
-            ).aggregate(Max('asiento_nro'))['asiento_nro__max']
+            # Bloquear las líneas (siempre ordenadas por id para no generar interbloqueos)
+            ids_lineas = sorted(fila_de_linea)
+            lineas = {
+                l.id: l for l in
+                LineaPresupuestaria.objects.select_for_update(of=('self',))
+                .select_related('partida')
+                .filter(id__in=ids_lineas).order_by('id')
+            }
+            if len(lineas) != len(ids_lineas):
+                raise _RefuerzoError('Alguna de las líneas presupuestarias ya no existe')
 
+            for n, b in enumerate(borradores, start=1):
+                linea = lineas[b.linea_presupuestaria_id]
+                elegida  = (b.programa_id, b.proyecto_id, b.actividad_id, b.partida_id, b.fuente_id)
+                esperada = (linea.programa_id, linea.proyecto_id, linea.actividad_obra_id,
+                            linea.partida_id, linea.fuente_financiamiento_id)
+                if elegida != esperada:
+                    raise _RefuerzoError(
+                        f'Erogación {n}: la línea presupuestaria no coincide con el programa, '
+                        f'proyecto, actividad, partida y fuente seleccionados. Volvé a elegirlos'
+                    )
+                if linea.saldo_actual < b.importe:
+                    raise _RefuerzoError(
+                        f'Saldo insuficiente en línea {linea.id}. '
+                        f'Disponible: ${linea.saldo_actual}, requerido: ${b.importe}'
+                    )
+
+            # ── Número de asiento: el advisory lock evita que dos confirmaciones
+            #    simultáneas calculen el mismo número ────────────────────────────
+            with connection.cursor() as cur:
+                cur.execute('SELECT pg_advisory_xact_lock(%s, %s)', [OPP_LOCK_ASIENTO, opp.fecha.year])
+
+            ultimo = Imputacion.objects.filter(
+                fecha__year=opp.fecha.year,
+                estado_formulario='LISTO',
+            ).aggregate(Max('asiento_nro'))['asiento_nro__max']
             try:
-                asiento_nro = str(int(ultimo_asiento) + 1).zfill(4) if ultimo_asiento else '0001'
+                asiento_nro = str(int(ultimo) + 1).zfill(4) if ultimo else '0001'
             except (ValueError, TypeError):
                 asiento_nro = '0001'
 
+            # ── Imputación automática ─────────────────────────────────────
             imputacion = Imputacion.objects.create(
-                nro_expediente = nro_expediente,
-                asiento_nro    = asiento_nro,
-                fecha          = fecha_obj,
-                origen         = 'AUTOMATICA',
-                observacion    = f'Generada automáticamente por OP Personal {nro_orden_pago}',
-                usuario        = request.user,
+                nro_expediente       = opp.nro_expediente,
+                asiento_nro          = asiento_nro,
+                fecha                = opp.fecha,
+                origen               = 'AUTOMATICA',
+                observacion          = f'Generada automáticamente por OP Personal {opp.nro_orden_pago}',
+                usuario              = request.user,
+                usuario_modificacion = request.user,
+                estado_formulario    = 'LISTO',
             )
 
-            # ── Crear erogaciones, detalles de imputación y descontar saldo
-            for lv in lineas_validas:
+            # ── Detalles de imputación (el trigger descuenta saldo y registra el movimiento
+            #    IMPUTACION) y partidas reales de la OP Personal ────────────────────────
+            for b in borradores:
+                linea       = lineas[b.linea_presupuestaria_id]
+                descripcion = linea.partida.denominacion[:300]
+
                 det = ImputacionDetalle.objects.create(
                     imputacion           = imputacion,
-                    linea_presupuestaria = lv['linea'],
-                    proveedor_concepto   = lv['descripcion'],
-                    importe              = lv['importe'],
+                    linea_presupuestaria = linea,
+                    proveedor_concepto   = descripcion,
+                    importe              = b.importe,
+                    usuario_creacion     = request.user,
+                    usuario_modificacion = request.user,
                 )
 
                 OrdenPagoPersonalPartida.objects.create(
-                    orden_pago_personal  = op_personal,
-                    linea_presupuestaria = lv['linea'],
-                    descripcion          = lv['descripcion'],
-                    importe              = lv['importe'],
+                    orden_pago_personal  = opp,
+                    linea_presupuestaria = linea,
+                    descripcion          = descripcion,
+                    importe              = b.importe,
                     imputacion_detalle   = det,
+                    usuario_creacion     = request.user,
+                    usuario_modificacion = request.user,
                 )
 
-                # La imputación descuenta el saldo — solo una vez
-                lv['linea'].saldo_actual -= lv['importe']
-                lv['linea'].save()
-
                 MovimientoHistorial.objects.create(
-                    linea_presupuestaria = lv['linea'],
+                    linea_presupuestaria = linea,
                     tipo                 = 'ORDEN_PAGO_PERSONAL',
-                    referencia_id        = op_personal.id,
+                    referencia_id        = opp.id,
                     usuario              = request.user,
-                    monto                = -lv['importe'],
+                    monto                = -b.importe,
                     descripcion          = (
-                        f'OP Personal {nro_orden_pago} — '
-                        f'exp. {nro_expediente} — '
-                        f'{lv["descripcion"][:80]}'
+                        f'OP Personal {opp.nro_orden_pago} — '
+                        f'exp. {opp.nro_expediente} — '
+                        f'{descripcion[:80]}'
                     ),
                 )
 
-            # ── Vincular imputación a la OP Personal ──────────────────────
-            op_personal.imputacion = imputacion
-            op_personal.save()
+            # ── Pasa a LISTO: imputación y estado en un solo UPDATE (lo exigen los CHECK) ──
+            opp.importe_total         = total_erogaciones
+            opp.imputacion            = imputacion
+            opp.estado_formulario     = 'LISTO'
+            opp.usuario_modificacion  = request.user
+            opp.save()
 
-    except ValueError as e:
-        return JsonResponse({'error': str(e)}, status=400)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+            # El borrador de erogaciones ya no hace falta
+            opp.borradores_partida.all().delete()
+
+    except _RefuerzoError as e:
+        return _respuesta_error(e)
+    except Exception:
+        _logger.exception('Error al completar la OP Personal %s', opp_id)
+        return JsonResponse({'error': 'Error interno: la OP Personal NO se completó'}, status=500)
 
     return JsonResponse({
-        'ok':              True,
-        'op_personal_id':  op_personal.id,
-        'imputacion_id':   imputacion.id,
-        'asiento_nro':     asiento_nro,
-        'importe_total':   str(importe_total),
+        'ok':            True,
+        'opp_id':        opp.id,
+        'imputacion_id': imputacion.id,
+        'asiento_nro':   asiento_nro,
+        'importe_total': str(total_erogaciones),
+        'version':       _version(opp),
+        'url_ver':       reverse('ordenpagopersonal_ver', args=[opp.id]),
     })
+
 
 # ==========================================
 #  API — EJERCICIOS ANTERIORES: AÑOS
