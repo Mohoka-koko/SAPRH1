@@ -12,7 +12,7 @@ from django.db import transaction
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from dashboards.models import (
-    LineaPresupuestaria, Refuerzo, RefuerzoDetalle,
+    LineaPresupuestaria, Refuerzo, RefuerzoDetalle, RefuerzoBorradorDetalle,
     Modificacion, ModificacionTransferente, ModificacionReceptora,
     Imputacion, ImputacionDetalle, ImputacionBorradorDetalle,
     OrdenPago, OrdenPagoBeneficiario, OrdenPagoUnidadPresupuestaria,
@@ -21,8 +21,10 @@ from dashboards.models import (
     OrdenPagoPersonal, OrdenPagoPersonalBeneficiario, OrdenPagoPersonalPartida,
 )
 from django.db.models.deletion import ProtectedError
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from datetime import date
+from datetime import datetime as _dt
+import logging
 
 Usuario = get_user_model()
 
@@ -36,7 +38,7 @@ def obtener_modificaciones_y_refuerzos(request):
         'receptoras__linea_destino',
     ).all()
 
-    refuerzos = Refuerzo.objects.select_related('usuario').all()
+    refuerzos = Refuerzo.objects.select_related('usuario').filter(estado_formulario='LISTO')
 
     registros_combinados = []
 
@@ -786,7 +788,7 @@ def api_crear_refuerzo(request):
 def api_listar_refuerzos(request):
     refuerzos = Refuerzo.objects.select_related('usuario').prefetch_related(
         'detalles__linea_destino',
-    ).order_by('-fecha_creacion')
+    ).filter(estado_formulario='LISTO').order_by('-fecha_creacion')
 
     data = []
     for r in refuerzos:
@@ -809,6 +811,8 @@ def api_listar_refuerzos(request):
 def refuerzo_ver(request, refuerzo_id):
     import json as _json
     refuerzo = get_object_or_404(Refuerzo, id=refuerzo_id)
+    if refuerzo.estado_formulario == 'REVISAR':
+        return redirect('refuerzo_editar', refuerzo_id=refuerzo.id)
     detalles = RefuerzoDetalle.objects.filter(refuerzo=refuerzo).select_related(
         'linea_destino__programa', 'linea_destino__proyecto',
         'linea_destino__actividad_obra', 'linea_destino__partida',
@@ -840,6 +844,411 @@ def refuerzo_ver(request, refuerzo_id):
     }
     return render(request, 'dashboards/admin/refuerzo_form.html', context)
 
+
+# ==========================================
+#  REFUERZO — GUARDADO AUTOMÁTICO (BORRADOR "REVISAR") Y COMPLETADO
+# ==========================================
+# Un Refuerzo en estado REVISAR es solo información guardada: sus filas viven en
+# RefuerzoBorradorDetalle, una tabla sin triggers, por lo que NUNCA modifica
+# saldos ni genera movimientos. Los movimientos presupuestarios los producen los
+# triggers de PostgreSQL al hacer INSERT en refuerzo_detalle, y eso solo ocurre
+# en api_refuerzo_completar (REVISAR → LISTO).
+
+_logger = logging.getLogger(__name__)
+
+REFUERZO_EXPEDIENTE_PLACEHOLDER = 'BORRADOR'   # valor de relleno de la cabecera mientras es borrador
+REFUERZO_MAX_FILAS_BORRADOR     = 200
+
+
+class _RefuerzoError(Exception):
+    """Error de validación o de estado controlado: se responde con su status."""
+    def __init__(self, mensaje, status=400, extra=None):
+        super().__init__(mensaje)
+        self.mensaje = mensaje
+        self.status  = status
+        self.extra   = extra or {}
+
+
+def _respuesta_error(e):
+    data = {'error': e.mensaje}
+    data.update(e.extra)
+    return JsonResponse(data, status=e.status)
+
+
+def _json_body(request):
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise _RefuerzoError('JSON inválido')
+    if not isinstance(body, dict):
+        raise _RefuerzoError('JSON inválido')
+    return body
+
+
+def _decimal_o_none(valor, etiqueta):
+    """Vacío → None. Número válido → Decimal con 2 decimales (cabe en NUMERIC(18,2)).
+    Cualquier otra cosa → error claro, en lugar de perder el dato en silencio."""
+    if valor is None or (isinstance(valor, str) and not valor.strip()):
+        return None
+    try:
+        num = Decimal(str(valor))
+        if not num.is_finite():
+            raise InvalidOperation
+        num = num.quantize(Decimal('0.01'))
+    except InvalidOperation:
+        raise _RefuerzoError(f'{etiqueta}: el importe no es un número válido')
+    if abs(num) >= Decimal(10) ** 16:
+        raise _RefuerzoError(f'{etiqueta}: el importe es demasiado grande')
+    return num
+
+
+def _entero_o_none(valor):
+    try:
+        return int(valor) if valor not in (None, '') else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _cabecera_borrador(body):
+    """Cabecera tal como llega: acepta datos parciales. fecha None = no informada."""
+    fecha = None
+    valor = body.get('fecha')
+    if valor:
+        try:
+            fecha = date.fromisoformat(str(valor))
+        except ValueError:
+            fecha = None
+
+    expediente = str(body.get('nro_expediente') or '').strip()
+    decreto    = str(body.get('nro_decreto') or '').strip()
+    if len(expediente) > 50:
+        raise _RefuerzoError('El número de expediente supera los 50 caracteres permitidos')
+    if len(decreto) > 255:
+        raise _RefuerzoError('El nombre del decreto/resolución supera los 255 caracteres permitidos')
+
+    importe_total = _decimal_o_none(body.get('importe_total'), 'Importe total del refuerzo')
+
+    return {
+        'fecha':          fecha,
+        'nro_expediente': expediente,
+        'nro_decreto':    decreto,
+        'importe_total':  importe_total if importe_total is not None else Decimal('0.00'),
+    }
+
+
+def _filas_borrador(body):
+    """Filas del borrador: acepta filas incompletas (líneas sin resolver, sin importe)."""
+    detalles = body.get('detalles', [])
+    if not isinstance(detalles, list):
+        raise _RefuerzoError('El detalle del refuerzo es inválido')
+    if len(detalles) > REFUERZO_MAX_FILAS_BORRADOR:
+        raise _RefuerzoError(f'Un refuerzo no puede tener más de {REFUERZO_MAX_FILAS_BORRADOR} filas')
+
+    filas = []
+    for i, d in enumerate(detalles):
+        if not isinstance(d, dict):
+            raise _RefuerzoError('El detalle del refuerzo es inválido')
+        filas.append({
+            'linea_id':     _entero_o_none(d.get('linea_id')),
+            'programa_id':  _entero_o_none(d.get('programa_id')),
+            'proyecto_id':  _entero_o_none(d.get('proyecto_id')),
+            'actividad_id': _entero_o_none(d.get('actividad_id')),
+            'partida_id':   _entero_o_none(d.get('partida_id')),
+            'fuente_id':    _entero_o_none(d.get('fuente_id')),
+            'importe':      _decimal_o_none(d.get('importe'), f'Fila {i + 1}'),
+            'orden':        i,
+        })
+
+    # Un linea_id que ya no existe no debe romper el guardado parcial: se descarta.
+    ids = {f['linea_id'] for f in filas if f['linea_id']}
+    if ids:
+        existentes = set(LineaPresupuestaria.objects.filter(id__in=ids).values_list('id', flat=True))
+        for f in filas:
+            if f['linea_id'] and f['linea_id'] not in existentes:
+                f['linea_id'] = None
+    return filas
+
+
+def _reemplazar_borradores(refuerzo, filas):
+    """Reemplaza por completo las filas del borrador (dentro de una transacción)."""
+    refuerzo.borradores_detalle.all().delete()
+    RefuerzoBorradorDetalle.objects.bulk_create([
+        RefuerzoBorradorDetalle(
+            refuerzo               = refuerzo,
+            linea_presupuestaria_id = f['linea_id'],
+            programa_id            = f['programa_id'],
+            proyecto_id            = f['proyecto_id'],
+            actividad_id           = f['actividad_id'],
+            partida_id             = f['partida_id'],
+            fuente_id              = f['fuente_id'],
+            importe                = f['importe'],
+            orden                  = f['orden'],
+        )
+        for f in filas
+    ])
+
+
+def _obtener_refuerzo_bloqueado(refuerzo_id):
+    """Bloquea la fila del Refuerzo (debe llamarse dentro de transaction.atomic())
+    y exige que siga siendo un borrador. El bloqueo serializa guardados simultáneos
+    y evita que dos pedidos completen el mismo Refuerzo a la vez."""
+    try:
+        refuerzo = Refuerzo.objects.select_for_update().get(id=refuerzo_id)
+    except Refuerzo.DoesNotExist:
+        raise _RefuerzoError('Refuerzo no encontrado', 404)
+    if refuerzo.estado_formulario != 'REVISAR':
+        raise _RefuerzoError(
+            'Este Refuerzo ya fue completado y no se puede modificar desde el formulario',
+            409, {'completado': True},
+        )
+    return refuerzo
+
+
+def _version(refuerzo):
+    """Token de versión del borrador: su fecha_modificacion. El cliente lo devuelve en
+    cada guardado; si cambió (otra persona u otra pestaña guardó), se rechaza con 409
+    en lugar de pisar los cambios ajenos."""
+    return refuerzo.fecha_modificacion.isoformat()
+
+
+def _verificar_version(refuerzo, enviada):
+    if not enviada:
+        raise _RefuerzoError('Falta la versión del borrador. Recargá la página.', 400)
+    try:
+        enviada_dt = _dt.fromisoformat(str(enviada))
+    except ValueError:
+        raise _RefuerzoError('La versión del borrador es inválida. Recargá la página.', 400)
+    if enviada_dt != refuerzo.fecha_modificacion:
+        raise _RefuerzoError(
+            'Otro usuario (u otra pestaña) modificó este borrador mientras lo editabas. '
+            'Recargá la página para ver los cambios antes de seguir.',
+            409, {'conflicto': True},
+        )
+
+
+def _json_para_script(datos):
+    """JSON seguro para incrustar dentro de un <script> (escapa < > & para que un texto
+    como "</script>" escrito por el usuario no pueda cerrar la etiqueta)."""
+    return (json.dumps(datos)
+            .replace('<', '\\u003c')
+            .replace('>', '\\u003e')
+            .replace('&', '\\u0026'))
+
+
+def _datos_borrador(refuerzo):
+    """Datos del borrador para volver a poblar el formulario (misma forma que usa el JS)."""
+    filas = refuerzo.borradores_detalle.order_by('orden')
+    return {
+        'id':             refuerzo.id,
+        'estado':         refuerzo.estado_formulario,
+        'version':        _version(refuerzo),
+        'fecha':          refuerzo.fecha.strftime('%Y-%m-%d'),
+        'nro_expediente': '' if refuerzo.nro_expediente == REFUERZO_EXPEDIENTE_PLACEHOLDER else refuerzo.nro_expediente,
+        'nro_decreto':    refuerzo.nro_decreto_resolucion,
+        'importe_total':  str(refuerzo.importe_total) if refuerzo.importe_total else None,
+        'receptoras': [
+            {
+                'linea_id':     b.linea_presupuestaria_id,
+                'importe':      str(b.importe) if b.importe is not None else None,
+                'programa_id':  b.programa_id,
+                'proyecto_id':  b.proyecto_id,
+                'actividad_id': b.actividad_id,
+                'partida_id':   b.partida_id,
+                'fuente_id':    b.fuente_id,
+            }
+            for b in filas
+        ],
+    }
+
+
+# ==========================================
+#  PÁGINA — RETOMAR / EDITAR UN BORRADOR DE REFUERZO
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+def refuerzo_editar(request, refuerzo_id):
+    refuerzo = get_object_or_404(Refuerzo, id=refuerzo_id)
+
+    # La edición de Refuerzos ya completados está fuera de alcance: se muestran solo lectura.
+    if refuerzo.estado_formulario != 'REVISAR':
+        return redirect('refuerzo_ver', refuerzo_id=refuerzo.id)
+
+    context = {
+        'usuario':  request.user,
+        'modo':     'editar',
+        'refuerzo': _json_para_script(_datos_borrador(refuerzo)),
+    }
+    return render(request, 'dashboards/admin/refuerzo_form.html', context)
+
+
+# ==========================================
+#  API — CREAR BORRADOR DE REFUERZO (primer guardado automático)
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_refuerzo_borrador_crear(request):
+    try:
+        body     = _json_body(request)
+        cabecera = _cabecera_borrador(body)
+        filas    = _filas_borrador(body)
+
+        with transaction.atomic():
+            refuerzo = Refuerzo.objects.create(
+                fecha                  = cabecera['fecha'] or date.today(),
+                nro_expediente         = cabecera['nro_expediente'] or REFUERZO_EXPEDIENTE_PLACEHOLDER,
+                nro_decreto_resolucion = cabecera['nro_decreto'],
+                importe_total          = cabecera['importe_total'],
+                usuario                = request.user,
+                usuario_modificacion   = request.user,
+                estado_formulario      = 'REVISAR',
+            )
+            _reemplazar_borradores(refuerzo, filas)
+
+    except _RefuerzoError as e:
+        return _respuesta_error(e)
+    except Exception:
+        _logger.exception('Error al crear el borrador de Refuerzo')
+        return JsonResponse({'error': 'Error interno al guardar el borrador'}, status=500)
+
+    return JsonResponse({'ok': True, 'refuerzo_id': refuerzo.id, 'version': _version(refuerzo)})
+
+
+# ==========================================
+#  API — ACTUALIZAR BORRADOR DE REFUERZO (guardado automático)
+# ==========================================
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_refuerzo_borrador_actualizar(request, refuerzo_id):
+    try:
+        body     = _json_body(request)
+        cabecera = _cabecera_borrador(body)
+        filas    = _filas_borrador(body)
+
+        with transaction.atomic():
+            refuerzo = _obtener_refuerzo_bloqueado(refuerzo_id)
+            _verificar_version(refuerzo, body.get('version'))
+
+            if cabecera['fecha']:
+                refuerzo.fecha = cabecera['fecha']
+            refuerzo.nro_expediente         = cabecera['nro_expediente'] or REFUERZO_EXPEDIENTE_PLACEHOLDER
+            refuerzo.nro_decreto_resolucion = cabecera['nro_decreto']
+            refuerzo.importe_total          = cabecera['importe_total']
+            refuerzo.usuario_modificacion   = request.user
+            refuerzo.save()
+
+            _reemplazar_borradores(refuerzo, filas)
+
+    except _RefuerzoError as e:
+        return _respuesta_error(e)
+    except Exception:
+        _logger.exception('Error al actualizar el borrador de Refuerzo %s', refuerzo_id)
+        return JsonResponse({'error': 'Error interno al guardar el borrador'}, status=500)
+
+    return JsonResponse({'ok': True, 'version': _version(refuerzo)})
+
+
+# ==========================================
+#  API — COMPLETAR REFUERZO (REVISAR → LISTO)
+# ==========================================
+# ÚNICO punto donde un Refuerzo mueve el presupuesto. Los saldos y los movimientos
+# por línea los resuelven los triggers de PostgreSQL al insertar en refuerzo_detalle
+# (trg_refuerzo_detalle_movimiento), por eso acá NO se toca saldo_actual.
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_refuerzo_completar(request, refuerzo_id):
+    try:
+        body = _json_body(request)
+
+        with transaction.atomic():
+            refuerzo = _obtener_refuerzo_bloqueado(refuerzo_id)
+            _verificar_version(refuerzo, body.get('version'))
+
+            borradores = list(refuerzo.borradores_detalle.order_by('orden'))
+
+            # ── Validación definitiva ─────────────────────────────────────
+            if refuerzo.nro_expediente in ('', REFUERZO_EXPEDIENTE_PLACEHOLDER):
+                raise _RefuerzoError('El número de expediente es obligatorio')
+            if not refuerzo.nro_decreto_resolucion.strip():
+                raise _RefuerzoError('El decreto/resolución es obligatorio')
+            if not refuerzo.importe_total or refuerzo.importe_total <= 0:
+                raise _RefuerzoError('El importe total del refuerzo es obligatorio y debe ser mayor a cero')
+            if not borradores:
+                raise _RefuerzoError('Debe incluir al menos una línea presupuestaria')
+
+            fila_de_linea = {}
+            total = Decimal('0')
+            for n, b in enumerate(borradores, start=1):
+                if not b.linea_presupuestaria_id:
+                    raise _RefuerzoError(
+                        f'Fila {n}: falta completar la línea presupuestaria '
+                        f'(programa, proyecto, actividad, partida y fuente)'
+                    )
+                if b.importe is None or b.importe <= 0:
+                    raise _RefuerzoError(f'Fila {n}: el importe debe ser mayor a cero')
+                if b.linea_presupuestaria_id in fila_de_linea:
+                    raise _RefuerzoError(
+                        f'Fila {n}: la línea presupuestaria está repetida (ya figura en la fila '
+                        f'{fila_de_linea[b.linea_presupuestaria_id]}). Cada línea solo puede aparecer una vez'
+                    )
+                fila_de_linea[b.linea_presupuestaria_id] = n
+                total += b.importe
+
+            if total > refuerzo.importe_total:
+                raise _RefuerzoError(
+                    f'El total asignado (${total}) supera el importe total del refuerzo (${refuerzo.importe_total})'
+                )
+
+            # Bloquear las líneas (siempre ordenadas por id para no generar interbloqueos)
+            ids_lineas = sorted(fila_de_linea)
+            bloqueadas = list(
+                LineaPresupuestaria.objects.select_for_update()
+                .filter(id__in=ids_lineas).order_by('id').values_list('id', flat=True)
+            )
+            if len(bloqueadas) != len(ids_lineas):
+                raise _RefuerzoError('Alguna de las líneas presupuestarias ya no existe')
+
+            # ── Cabecera definitiva ANTES de insertar los detalles: el trigger lee el
+            #    expediente y el usuario de la fila refuerzo al momento del INSERT. ──
+            refuerzo.importe_total        = total
+            refuerzo.estado_formulario    = 'LISTO'
+            refuerzo.usuario_modificacion = request.user
+            refuerzo.save()
+
+            # ── Detalles reales: acá los triggers actualizan saldo_actual y movimientos ──
+            for b in borradores:
+                RefuerzoDetalle.objects.create(
+                    refuerzo         = refuerzo,
+                    linea_destino_id = b.linea_presupuestaria_id,
+                    importe          = b.importe,
+                )
+
+            # ── Un único registro de historial para TODO el Refuerzo (como siempre) ──
+            MovimientoHistorial.objects.create(
+                linea_presupuestaria = None,
+                tipo                 = 'REFUERZO',
+                referencia_id        = refuerzo.id,
+                usuario              = request.user,
+                monto                = total,
+                descripcion          = (
+                    f'Refuerzo por decreto {refuerzo.nro_decreto_resolucion} — '
+                    f'expediente {refuerzo.nro_expediente}'
+                ),
+            )
+
+            # El borrador ya no hace falta
+            refuerzo.borradores_detalle.all().delete()
+
+    except _RefuerzoError as e:
+        return _respuesta_error(e)
+    except Exception:
+        _logger.exception('Error al completar el Refuerzo %s', refuerzo_id)
+        return JsonResponse({'error': 'Error interno: el Refuerzo NO se completó'}, status=500)
+
+    return JsonResponse({
+        'ok':            True,
+        'refuerzo_id':   refuerzo.id,
+        'importe_total': str(total),
+        'version':       _version(refuerzo),
+    })
 
 
 import json
@@ -1263,42 +1672,6 @@ def api_resolver_lineas_modificacion(request):
 @rol_requerido('admin', 'adminprincipal')
 def refuerzo_crear(request):
     context = {'usuario': request.user, 'modo': 'crear', 'refuerzo': 'null'}
-    return render(request, 'dashboards/admin/refuerzo_form.html', context)
-
-@rol_requerido('admin', 'adminprincipal')
-def refuerzo_editar(request, refuerzo_id):
-    import json as _json
-    from dashboards.models import Refuerzo, RefuerzoDetalle
-    refuerzo  = get_object_or_404(Refuerzo, id=refuerzo_id)
-    detalles  = RefuerzoDetalle.objects.filter(refuerzo=refuerzo).select_related(
-        'linea_destino__programa', 'linea_destino__proyecto',
-        'linea_destino__actividad_obra', 'linea_destino__partida',
-        'linea_destino__fuente_financiamiento'
-    )
-    datos = {
-        'id':             refuerzo.id,
-        'fecha':          refuerzo.fecha.strftime('%Y-%m-%d'),
-        'nro_expediente': refuerzo.nro_expediente,
-        'nro_decreto':    refuerzo.nro_decreto_resolucion,
-        'importe_total':  str(refuerzo.importe_total),
-        'receptoras': [
-            {
-                'linea_id':     d.linea_destino.id,
-                'importe':      str(d.importe),
-                'programa_id':  d.linea_destino.programa.id,
-                'proyecto_id':  d.linea_destino.proyecto.id,
-                'actividad_id': d.linea_destino.actividad_obra.id,
-                'partida_id':   d.linea_destino.partida.id,
-                'fuente_id':    d.linea_destino.fuente_financiamiento.id,
-            }
-            for d in detalles
-        ],
-    }
-    context = {
-        'usuario':  request.user,
-        'modo':     'editar',
-        'refuerzo': _json.dumps(datos),
-    }
     return render(request, 'dashboards/admin/refuerzo_form.html', context)
 
 
@@ -2690,20 +3063,41 @@ def api_historial_registros(request):
         })
 
     # ── Refuerzos ─────────────────────────────────────────────────────────
-    refuerzos = Refuerzo.objects.select_related('usuario').order_by('-fecha_creacion')
+    refuerzos = Refuerzo.objects.select_related(
+        'usuario', 'usuario_modificacion'
+    ).order_by('-fecha_creacion')
     for ref in refuerzos:
-        registros.append({
-            'id':                    f'ref-{ref.id}',
-            'tipo':                  'Refuerzo',
-            'fecha_creacion':        timezone.localtime(ref.fecha_creacion).strftime('%d/%m/%Y - %H:%M') if ref.fecha_creacion else '',
-            'creado_por':            ref.usuario.nombre if ref.usuario else 'S/N',
-            'fecha_modificacion':    timezone.localtime(ref.fecha_creacion).strftime('%d/%m/%Y - %H:%M') if ref.fecha_creacion else '',
-            'modificado_por':        ref.usuario.nombre if ref.usuario else 'S/N',
-            'estado':                'Listo',
-            'referencia_id':         ref.id,
-            'nro_expediente':        ref.nro_expediente,
-            'url_ver':               f'/refuerzo/ver/{ref.id}/',
-        })
+        es_borrador = ref.estado_formulario == 'REVISAR'
+
+        # Si el registro fue editado desde el formulario (borrador o completado) se informa
+        # quién y cuándo fue la última edición. Los Refuerzos anteriores al guardado
+        # automático no tienen usuario_modificacion y conservan el comportamiento de siempre.
+        if ref.usuario_modificacion_id:
+            fecha_mod      = _fmt(ref.fecha_modificacion)
+            modificado_por = ref.usuario_modificacion.nombre
+        else:
+            fecha_mod      = _fmt(ref.fecha_creacion)
+            modificado_por = ref.usuario.nombre if ref.usuario else 'S/N'
+
+        item = {
+            'id':                 f'ref-{ref.id}',
+            'tipo':               'Refuerzo',
+            'fecha_creacion':     _fmt(ref.fecha_creacion),
+            'creado_por':         ref.usuario.nombre if ref.usuario else 'S/N',
+            'fecha_modificacion': fecha_mod,
+            'modificado_por':     modificado_por,
+            'estado':             'Revisar' if es_borrador else 'Listo',
+            'referencia_id':      ref.id,
+            'nro_expediente':     '' if ref.nro_expediente == REFUERZO_EXPEDIENTE_PLACEHOLDER else ref.nro_expediente,
+        }
+
+        if es_borrador:
+            # Cualquier admin / adminprincipal puede retomar el borrador
+            item['url_editar'] = reverse('refuerzo_editar', args=[ref.id])
+        else:
+            item['url_ver'] = f'/refuerzo/ver/{ref.id}/'
+
+        registros.append(item)
 
     # Ordenar por fecha de creación más reciente
     registros.sort(key=lambda x: x['fecha_creacion'], reverse=True)

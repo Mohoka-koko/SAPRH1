@@ -924,3 +924,103 @@ span.mf-total-input.error-total {
         display: none !important;
     }
 }
+
+/* ============================================================
+   REFUERZO — guardado automático (borrador "Revisar")
+   Clases propias (mf-autosave, mf-msg, mf-modal, mf-btn-completar):
+   no modifican ninguna regla existente de otros formularios.
+   ============================================================ */
+
+/* Indicador: Guardando / Guardado / Error */
+.mf-autosave {
+    position: sticky;
+    top: 8px;
+    z-index: 900;
+    width: fit-content;
+    margin: 0 0 12px auto;
+    padding: 6px 14px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.3;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.mf-autosave:empty { display: none; }
+.mf-autosave.guardando { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.mf-autosave.guardado  { background: #ecfdf5; color: #166534; border-color: #a7f3d0; }
+.mf-autosave.error     { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
+
+.mf-autosave.guardando::before {
+    content: "";
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 8px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    vertical-align: -1px;
+    animation: mf-giro 0.8s linear infinite;
+}
+@keyframes mf-giro { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .mf-autosave.guardando::before { animation: none; }
+}
+
+/* Mensajes de validación / éxito */
+.mf-msg {
+    margin: 0 0 16px;
+    padding: 12px 16px;
+    border-left: 4px solid transparent;
+    border-radius: var(--mf-radius);
+    font-size: 0.95rem;
+    line-height: 1.45;
+    white-space: pre-line;
+}
+.mf-msg[hidden] { display: none; }
+.mf-msg.error { background: #fef2f2; color: #991b1b; border-left-color: var(--mf-error); }
+.mf-msg.exito { background: #ecfdf5; color: #166534; border-left-color: var(--mf-total-green); }
+
+/* El texto del botón "Guardar como completado" es más largo que el de los demás */
+.mf-btn-completar:hover .mf-btn-texto { max-width: 260px; }
+.mf-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.mf-btn:disabled:hover { transform: none; box-shadow: none; padding: 0 16px; }
+.mf-btn:disabled:hover .mf-btn-texto { max-width: 0; opacity: 0; margin-left: 0; }
+
+/* Ventana de confirmación */
+.mf-modal {
+    width: min(460px, calc(100vw - 32px));
+    padding: 24px 28px;
+    border: none;
+    border-radius: 14px;
+    color: var(--mf-header-text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+.mf-modal::backdrop { background: rgba(15, 23, 42, 0.55); }
+.mf-modal-titulo { margin: 0 0 12px; font-size: 1.15rem; font-weight: 700; }
+.mf-modal-texto  { margin: 0 0 10px; font-size: 1rem; }
+.mf-modal-nota   { margin: 0 0 20px; font-size: 0.85rem; color: var(--mf-label-text); line-height: 1.45; }
+.mf-modal-acciones { display: flex; justify-content: flex-end; gap: 10px; }
+.mf-modal-btn {
+    padding: 9px 18px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.mf-modal-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.mf-modal-btn-secundario { background: #ffffff; color: #334155; border-color: #cbd5e1; }
+.mf-modal-btn-secundario:hover:not(:disabled) { background: #f1f5f9; }
+.mf-modal-btn-primario { background: #2563eb; color: #ffffff; }
+.mf-modal-btn-primario:hover:not(:disabled) { background: #1d4ed8; box-shadow: 0 0 12px rgba(37, 99, 235, 0.5); }
+
+/* Nada de esto debe salir en la impresión / PDF */
+@media print {
+    .mf-autosave,
+    .mf-msg,
+    .mf-modal { display: none !important; }
+}

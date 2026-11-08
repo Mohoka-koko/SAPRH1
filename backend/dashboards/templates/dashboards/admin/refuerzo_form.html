@@ -14,6 +14,12 @@
             {% if modo == 'crear' %}NUEVO REFUERZO{% elif modo == 'editar' %}EDITAR REFUERZO{% else %}VER REFUERZO{% endif %}
         </div>
 
+        {% if modo != 'ver' %}
+        <!-- ESTADO DEL GUARDADO AUTOMÁTICO + MENSAJES -->
+        <div id="autosave-estado" class="mf-autosave" role="status" aria-live="polite"></div>
+        <div id="mf-mensaje" class="mf-msg" role="alert" hidden></div>
+        {% endif %}
+
         <!-- ENCABEZADO INSTITUCIONAL -->
         <div class="mf-encabezado-institucional">
             <img src="{% static 'img/logo1.png' %}" alt="Logo Institucional" class="mf-encabezado-logo" />
@@ -120,14 +126,14 @@
     
         <!-- ACCIONES FLOTANTES -->
         <div class="mf-acciones">
-            <a href="{% url 'refuerzo' %}" class="mf-btn mf-btn-cancelar">
+            <a href="{% url 'refuerzo' %}" class="mf-btn mf-btn-cancelar"{% if modo != 'ver' %} title="Los cambios ya están guardados como borrador"{% endif %}>
                 <span class="mf-btn-icono"><i class="fa-solid fa-xmark"></i></span>
-                <span class="mf-btn-texto">Cancelar</span>
+                <span class="mf-btn-texto">{% if modo == 'ver' %}Volver{% else %}Salir{% endif %}</span>
             </a>
             {% if modo != 'ver' %}
-            <button type="button" id="btn-guardar" class="mf-btn mf-btn-guardar">
-                <span class="mf-btn-icono"><i class="fa-solid fa-floppy-disk"></i></span>
-                <span class="mf-btn-texto">Guardar</span>
+            <button type="button" id="btn-completar" class="mf-btn mf-btn-guardar mf-btn-completar">
+                <span class="mf-btn-icono"><i class="fa-solid fa-circle-check"></i></span>
+                <span class="mf-btn-texto">Guardar como completado</span>
             </button>
             {% endif %}
             <button type="button" id="btn-exportar" class="mf-btn mf-btn-exportar">
@@ -135,6 +141,22 @@
                 <span class="mf-btn-texto">Exportar PDF</span>
             </button>
         </div>
+
+        {% if modo != 'ver' %}
+        <!-- CONFIRMACIÓN DE "GUARDAR COMO COMPLETADO" -->
+        <dialog id="modal-completar" class="mf-modal" aria-labelledby="modal-completar-titulo">
+            <h3 id="modal-completar-titulo" class="mf-modal-titulo">Guardar como completado</h3>
+            <p class="mf-modal-texto">¿Está seguro de que desea guardar este Refuerzo como completado?</p>
+            <p class="mf-modal-nota">
+                Se verificarán todos los datos y los importes se sumarán al saldo de las unidades
+                presupuestarias receptoras. Una vez completado, el Refuerzo ya no podrá editarse desde este formulario.
+            </p>
+            <div class="mf-modal-acciones">
+                <button type="button" id="modal-cancelar" class="mf-modal-btn mf-modal-btn-secundario">Cancelar</button>
+                <button type="button" id="modal-confirmar" class="mf-modal-btn mf-modal-btn-primario">Confirmar</button>
+            </div>
+        </dialog>
+        {% endif %}
     
     </div>
 

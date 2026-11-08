@@ -382,6 +382,11 @@ class OrdenPagoPersonalPartida(RegistroAuditable):
 # REFUERZO
 # ─────────────────────────────────────────────
 class Refuerzo(ControlModificacion):
+    ESTADO_FORMULARIO_CHOICES = [
+        ('REVISAR', 'Revisar'),
+        ('LISTO',   'Listo'),
+    ]
+
     fecha                  = models.DateField()
     nro_expediente         = models.CharField(max_length=50)
     nro_decreto_resolucion = models.CharField(max_length=255)
@@ -390,6 +395,13 @@ class Refuerzo(ControlModificacion):
     fecha_creacion         = models.DateTimeField(auto_now_add=True)
     anulada                = models.BooleanField(default=False)
     fecha_anulacion        = models.DateTimeField(null=True, blank=True)
+    # REVISAR = borrador (guardado automático, sin movimientos presupuestarios).
+    # LISTO   = completado. El default protege a los registros ya existentes.
+    estado_formulario      = models.CharField(
+        max_length=10,
+        choices=ESTADO_FORMULARIO_CHOICES,
+        default='LISTO',
+    )
 
     class Meta:
         db_table     = 'refuerzo'
@@ -411,6 +423,30 @@ class RefuerzoDetalle(RegistroAuditable):
 
     def __str__(self):
         return f'{self.refuerzo} → {self.linea_destino} - {self.importe}'
+
+
+class RefuerzoBorradorDetalle(models.Model):
+    # Filas de un Refuerzo en estado REVISAR. Es una tabla aparte de RefuerzoDetalle
+    # a propósito: los triggers de refuerzo_detalle (saldo y movimientos) solo se
+    # disparan con INSERT en esa tabla, así que un borrador nunca mueve el presupuesto.
+    # Al completar el Refuerzo estas filas se convierten en RefuerzoDetalle y se borran.
+    refuerzo             = models.ForeignKey(Refuerzo, on_delete=models.CASCADE, related_name='borradores_detalle')
+    linea_presupuestaria = models.ForeignKey(LineaPresupuestaria, on_delete=models.PROTECT, null=True, blank=True, related_name='borradores_refuerzo')
+    programa_id          = models.IntegerField(null=True, blank=True)
+    proyecto_id          = models.IntegerField(null=True, blank=True)
+    actividad_id         = models.IntegerField(null=True, blank=True)
+    partida_id           = models.IntegerField(null=True, blank=True)
+    fuente_id            = models.IntegerField(null=True, blank=True)
+    importe              = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    orden                = models.IntegerField(default=0)
+
+    class Meta:
+        db_table     = 'refuerzo_borrador_detalle'
+        ordering     = ['orden']
+        verbose_name = 'Borrador de Detalle de Refuerzo'
+
+    def __str__(self):
+        return f'Borrador {self.refuerzo_id} fila {self.orden}'
 
 
 # ─────────────────────────────────────────────
