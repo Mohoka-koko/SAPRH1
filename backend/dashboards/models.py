@@ -2,6 +2,7 @@
 import django
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 from accounts.models import UsuarioPersonalizado
 from django.core.validators import RegexValidator
 
@@ -216,6 +217,10 @@ class Imputacion(ControlModificacion):
     )
     anulada         = models.BooleanField(default=False)
     fecha_anulacion = models.DateTimeField(null=True, blank=True)
+    # Token de concurrencia (bloqueo optimista). Se incrementa solo cuando un
+    # usuario guarda cambios reales o confirma la imputación. El cliente lo envía
+    # de vuelta: si no coincide con el de la BD, otro usuario modificó el borrador.
+    version         = models.PositiveIntegerField(default=1)
 
     class Meta:
         db_table     = 'imputacion'
@@ -259,6 +264,43 @@ class ImputacionDetalle(RegistroAuditable):
 
     def __str__(self):
         return f'{self.imputacion} - {self.linea_presupuestaria} - {self.importe}'
+
+
+class ImputacionAuditoria(models.Model):
+    """
+    Bitácora de solo inserción de quién hizo qué sobre una Imputación.
+    NO es un movimiento presupuestario (por eso no usa MovimientoHistorial, que
+    alimenta el Home): nunca toca saldos.
+
+    - imputacion_id es un entero sin FK a propósito: el registro de una
+      eliminación de borrador debe sobrevivir al borrado de la Imputación.
+    - Las ediciones consecutivas del mismo usuario se agrupan en una sola fila
+      (cantidad / fecha_ultima) para no generar una fila por cada autoguardado.
+    - Nunca se registra nada por consultas, aperturas ni guardados sin cambios.
+    """
+    TIPO_CHOICES = [
+        ('CREACION',     'Creación'),
+        ('EDICION',      'Edición'),
+        ('CONFIRMACION', 'Confirmación (Listo)'),
+        ('ELIMINACION',  'Eliminación de borrador'),
+    ]
+
+    imputacion_id = models.IntegerField(db_index=True)
+    tipo          = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    usuario       = models.ForeignKey(UsuarioPersonalizado, on_delete=models.PROTECT, related_name='auditoria_imputaciones')
+    fecha         = models.DateTimeField(auto_now_add=True)
+    fecha_ultima  = models.DateTimeField(null=True, blank=True)
+    cantidad      = models.PositiveIntegerField(default=1)
+    version       = models.PositiveIntegerField(null=True, blank=True)
+    detalle       = models.TextField(blank=True)
+
+    class Meta:
+        db_table     = 'imputacion_auditoria'
+        ordering     = ['id']
+        verbose_name = 'Auditoría de Imputación'
+
+    def __str__(self):
+        return f'{self.tipo} imputación {self.imputacion_id} - {self.usuario_id}'
 
 
 # ─────────────────────────────────────────────
@@ -515,6 +557,49 @@ class RefuerzoBorradorDetalle(models.Model):
 
     def __str__(self):
         return f'Borrador {self.refuerzo_id} fila {self.orden}'
+
+
+class RefuerzoAuditoria(models.Model):
+    """
+    Historial de INTERVENCIONES sobre un Refuerzo (quién hizo qué y cuándo).
+
+    NO es un movimiento presupuestario: no toca saldos ni se mezcla con
+    MovimientoHistorial (que el Home usa para la "última modificación del presupuesto").
+
+    - 'refuerzo_id' es un entero SIN FK a propósito: así el rastro de una eliminación
+      sobrevive al borrado del borrador.
+    - Las ediciones consecutivas del MISMO usuario dentro de una ventana de tiempo se
+      agrupan en una sola fila (el autosave guarda cada pocos segundos): 'fecha' es el
+      inicio, 'fecha_ultima' el último guardado y 'cantidad' cuántos guardados hubo.
+    - Las consultas / aperturas del formulario NO generan filas.
+    """
+    OPERACION_CHOICES = [
+        ('CREAR',     'Creación del borrador'),
+        ('EDITAR',    'Edición del borrador'),
+        ('COMPLETAR', 'Confirmación como Listo'),
+        ('ELIMINAR',  'Eliminación del borrador'),
+    ]
+
+    refuerzo_id       = models.IntegerField(db_index=True)
+    operacion         = models.CharField(max_length=12, choices=OPERACION_CHOICES)
+    usuario           = models.ForeignKey(
+                            UsuarioPersonalizado,
+                            on_delete=models.PROTECT,
+                            related_name='auditoria_refuerzos',
+                        )
+    fecha             = models.DateTimeField(default=timezone.now)
+    fecha_ultima      = models.DateTimeField(default=timezone.now)
+    cantidad          = models.PositiveIntegerField(default=1)
+    estado_resultante = models.CharField(max_length=10)
+    detalle           = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = 'refuerzo_auditoria'
+        ordering = ['fecha', 'id']
+        indexes  = [models.Index(fields=['refuerzo_id', 'fecha'], name='refuerzo_aud_ref_fecha_idx')]
+
+    def __str__(self):
+        return f'Refuerzo {self.refuerzo_id} — {self.operacion} por {self.usuario_id}'
 
 
 # ─────────────────────────────────────────────

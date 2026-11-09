@@ -36,11 +36,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ─── LÓGICA DE FILTROS SOBRE EL ARRAY ───────────────────────────────
     function aplicarFiltros() {
+        registrosFiltrados = calcularFiltrados();
+
+        // Reiniciar a la primera página cada vez que se filtra
+        paginaActual = 1;
+        renderTabla();
+    }
+
+    function calcularFiltrados() {
         const tipo = filtroTipo.value;
         const fecha = filtroFecha.value; // Formato YYYY-MM-DD
         const usuario = filtroUsuario.value.trim().toLowerCase();
 
-        registrosFiltrados = registrosCompletos.filter(reg => {
+        return registrosCompletos.filter(reg => {
             const tipoInfo = obtenerDatosTipo(reg.tipo);
 
             let dataFecha = '';
@@ -56,10 +64,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             return coincideTipo && coincideFecha && coincideUsuario;
         });
-
-        // Reiniciar a la primera página cada vez que se filtra
-        paginaActual = 1;
-        renderTabla();
     }
 
     // ─── RENDERIZADO DE TABLA (SOLO LA PÁGINA ACTUAL) ───────────────────
@@ -101,6 +105,22 @@ document.addEventListener('DOMContentLoaded', function () {
                         </a>`
                     : '';
 
+                // Eliminar: solo borradores en 'revisar' y solo si el servidor lo habilitó.
+                // (El backend vuelve a verificar rol, estado y dependencias.)
+                const btnEliminar = (esRevisar && reg.url_eliminar)
+                    ? `<button type="button" class="btn-accion btn-eliminar" data-url="${reg.url_eliminar}" data-reg-id="${reg.id}" data-tipo="${reg.tipo}" data-version="${reg.version || ''}" title="Eliminar borrador" aria-label="Eliminar borrador">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>`
+                    : '';
+
+                // Historial de intervenciones (el servidor lo informa solo para Refuerzo)
+                const bloqueHistorial = reg.url_auditoria
+                    ? `<div>
+                                <strong>Historial:</strong>
+                                <button type="button" class="btn-historial-link" data-url="${reg.url_auditoria}" data-reg-id="${reg.id}">Ver intervenciones</button>
+                            </div>`
+                    : '';
+
                 // Fila principal (los data-label los usa el CSS en vista móvil)
                 const trPrincipal = document.createElement('tr');
                 trPrincipal.className = 'registro-row';
@@ -115,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <td data-label="Estado">
                         <span class="badge ${claseEstado}">${reg.estado}</span>
                     </td>
-                    <td class="col-acciones" data-label="Acciones">${btnVer}${btnEditar}</td>
+                    <td class="col-acciones" data-label="Acciones">${btnVer}${btnEditar}${btnEliminar}</td>
                     <td class="expandir" data-label="Más información">
                         <button type="button" class="btn-expandir" aria-label="Ver más información">
                             <i class="fa-solid fa-chevron-down"></i>
@@ -137,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 <strong>Editado por:</strong>
                                 <span>${reg.modificado_por}</span>
                             </div>
+                            ${bloqueHistorial}
                         </div>
                     </td>
                 `;
@@ -201,9 +222,173 @@ document.addEventListener('DOMContentLoaded', function () {
     filtroFecha.addEventListener('change', aplicarFiltros);
     filtroUsuario.addEventListener('input', aplicarFiltros);
 
+    // ─── ELIMINAR BORRADOR (con confirmación) ───────────────────────────
+    const modalEliminar     = document.getElementById('modal-eliminar');
+    const msgEliminar       = document.getElementById('modal-eliminar-msg');
+    const btnEliminarOk     = document.getElementById('modal-eliminar-confirmar');
+    const btnEliminarCancel = document.getElementById('modal-eliminar-cancelar');
+    let eliminarPendiente   = null; // { url, regId, tipo, version }
+
+    // El diálogo es el mismo para todos los tipos: el texto cambia según el registro
+    const textoEliminar      = document.getElementById('modal-eliminar-texto');
+    const TEXTO_ELIMINAR_BASE = textoEliminar ? textoEliminar.textContent : '';
+    const TEXTOS_ELIMINAR = {
+        'Refuerzo': '¿Está seguro de que desea eliminar este borrador de Refuerzo? Esta acción no se puede deshacer. '
+                  + 'No se modificarán saldos ni se generarán movimientos presupuestarios. '
+                  + 'Quedará registrado quién lo eliminó y cuándo.',
+    };
+
+    // Vuelve a pedir el listado conservando la página actual (p. ej. tras un conflicto de edición)
+    async function refrescarRegistrosConservandoPagina() {
+        try {
+            const resp = await fetch(apiUrl);
+            if (!resp.ok) return;
+            const data = await resp.json();
+            registrosCompletos = data.registros;
+            const previa = paginaActual;
+            registrosFiltrados = calcularFiltrados();
+            paginaActual = Math.min(previa, Math.ceil(registrosFiltrados.length / REGISTROS_POR_PAGINA) || 1);
+            renderTabla();
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function getCookie(name) {
+        const m = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith(name + '='));
+        return m ? decodeURIComponent(m.split('=')[1]) : '';
+    }
+
+    tbody.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-eliminar');
+        if (!btn || !modalEliminar) return;
+        eliminarPendiente = {
+            url:     btn.dataset.url,
+            regId:   btn.dataset.regId,
+            tipo:    btn.dataset.tipo,
+            version: btn.dataset.version,
+        };
+        if (textoEliminar) {
+            textoEliminar.textContent = TEXTOS_ELIMINAR[eliminarPendiente.tipo] || TEXTO_ELIMINAR_BASE;
+        }
+        msgEliminar.textContent = '';
+        msgEliminar.hidden = true;
+        btnEliminarOk.disabled = false;
+        modalEliminar.showModal();
+    });
+
+    btnEliminarCancel?.addEventListener('click', () => { eliminarPendiente = null; modalEliminar.close(); });
+
+    btnEliminarOk?.addEventListener('click', async function () {
+        if (!eliminarPendiente) return;
+        btnEliminarOk.disabled = true;
+        try {
+            // Si el registro informó su versión (Refuerzo), se envía: el servidor se niega a borrar
+            // un borrador que alguien modificó después de cargar este listado.
+            const opciones = { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } };
+            if (eliminarPendiente.version) {
+                opciones.headers['Content-Type'] = 'application/json';
+                opciones.body = JSON.stringify({ version: eliminarPendiente.version });
+            }
+            const resp = await fetch(eliminarPendiente.url, opciones);
+            let data = {};
+            try { data = await resp.json(); } catch (_) {}
+            if (!resp.ok) {
+                msgEliminar.textContent = data.error || `No se pudo eliminar (error ${resp.status}).`;
+                msgEliminar.hidden = false;
+                if (resp.status === 404 || resp.status === 409) {
+                    // El borrador cambió o ya no existe: reintentar con los mismos datos fallaría.
+                    // Se deja el mensaje, se actualiza el listado y se cierra con "Cancelar".
+                    refrescarRegistrosConservandoPagina();
+                } else {
+                    btnEliminarOk.disabled = false;
+                }
+                return;
+            }
+            registrosCompletos = registrosCompletos.filter(r => r.id !== eliminarPendiente.regId);
+            eliminarPendiente = null;
+            modalEliminar.close();
+            // Re-filtrar conservando la página actual (acotada al total)
+            const previa = paginaActual;
+            registrosFiltrados = calcularFiltrados();
+            paginaActual = Math.min(previa, Math.ceil(registrosFiltrados.length / REGISTROS_POR_PAGINA) || 1);
+            renderTabla();
+        } catch (err) {
+            console.error(err);
+            msgEliminar.textContent = 'Error de red: el borrador NO se eliminó.';
+            msgEliminar.hidden = false;
+            btnEliminarOk.disabled = false;
+        }
+    });
+
+    // ─── HISTORIAL DE INTERVENCIONES (Refuerzo, solo lectura) ───────────
+    const modalHistorial = document.getElementById('modal-historial-refuerzo');
+
+    async function abrirHistorial(btn) {
+        if (!modalHistorial) return;
+        const lista  = document.getElementById('historial-lista');
+        const estado = document.getElementById('historial-estado');
+        const sub    = document.getElementById('historial-subtitulo');
+        const reg    = registrosCompletos.find(r => r.id === btn.dataset.regId);
+
+        lista.innerHTML = '';
+        estado.textContent = 'Cargando…';
+        sub.textContent = reg && reg.nro_expediente ? 'Expediente ' + reg.nro_expediente : 'Refuerzo sin expediente';
+        modalHistorial.showModal();
+
+        try {
+            const resp = await fetch(btn.dataset.url, { headers: { 'Accept': 'application/json' } });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error || 'Error');
+
+            if (!data.eventos.length) {
+                estado.textContent = 'Sin intervenciones registradas.';
+                return;
+            }
+            estado.textContent = '';
+            data.eventos.forEach(ev => {
+                const li = document.createElement('li');
+                li.className = 'historial-item historial-' + ev.operacion.toLowerCase();
+
+                const cab = document.createElement('div');
+                const que = document.createElement('strong');
+                que.textContent = ev.texto;
+                const quien = document.createElement('span');
+                quien.textContent = ' — ' + ev.usuario;
+                cab.appendChild(que);
+                cab.appendChild(quien);
+                li.appendChild(cab);
+
+                const cuando = document.createElement('div');
+                cuando.className = 'historial-fecha';
+                cuando.textContent = ev.fecha
+                    + (ev.cantidad > 1 && ev.fecha_ultima ? ' → ' + ev.fecha_ultima + ' (' + ev.cantidad + ' guardados)' : '');
+                li.appendChild(cuando);
+
+                if (ev.campos && ev.campos.length) {
+                    const campos = document.createElement('div');
+                    campos.className = 'historial-campos';
+                    campos.textContent = 'Modificó: ' + ev.campos.join(', ');
+                    li.appendChild(campos);
+                }
+                lista.appendChild(li);
+            });
+        } catch (err) {
+            console.error(err);
+            estado.textContent = 'No se pudo cargar el historial.';
+        }
+    }
+
+    tbody.addEventListener('click', function (e) {
+        const btn = e.target.closest('.btn-historial-link');
+        if (btn) abrirHistorial(btn);
+    });
+
+    document.getElementById('modal-historial-cerrar')?.addEventListener('click', () => modalHistorial.close());
+
     // Expansión de filas usando delegación de eventos
     tbody.addEventListener("click", function (e) {
-        // Si el clic fue en un botón de acción (Ver / Editar), no expandir la fila
+        // Si el clic fue en un botón de acción (Ver / Editar / Eliminar), no expandir la fila
         if (e.target.closest(".btn-accion")) return;
 
         const fila = e.target.closest(".registro-row");

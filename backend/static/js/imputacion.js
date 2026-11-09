@@ -667,6 +667,18 @@ document.addEventListener("DOMContentLoaded", function () {
     let colaGuardado  = Promise.resolve(true); // serializa los guardados: nunca hay dos en paralelo
     let restaurando   = false;                // true mientras se carga un borrador existente
     let completando   = false;
+    let versionBorrador = null;               // token de concurrencia que devuelve el servidor
+    let conflicto     = false;                // true si otro usuario modificó el borrador: se frena el autosave
+    let mensajeConflicto = "";
+
+    function manejarConflicto(mensaje) {
+        conflicto = true;
+        mensajeConflicto = mensaje || "Otro usuario modificó esta imputación. Recargá la página para ver la versión actual.";
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        setEstadoAutosave("error", "conflicto de edición");
+        mostrarMensajeValidacion(mensajeConflicto);
+    }
 
     const aNum     = (v) => (v ? Number(v) : null);
     const disparar = (el) => el.dispatchEvent(new Event("change", { bubbles: true }));
@@ -720,6 +732,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ── Guardado (crea la primera vez, actualiza después) ─────────
     async function ejecutarGuardadoBorrador() {
+        if (conflicto) return false;   // nunca sobrescribir tras detectar un conflicto
         try {
             const payload = construirPayloadBorrador();
 
@@ -732,6 +745,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 ? `/api/imputacion/borrador/${imputacionId}/actualizar/`
                 : "/api/imputacion/borrador/crear/";
 
+            if (imputacionId) payload.version = versionBorrador;
+
             const resp = await fetch(url, {
                 method:    "POST",
                 headers:   { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
@@ -740,7 +755,10 @@ document.addEventListener("DOMContentLoaded", function () {
             });
             let data = {};
             try { data = await resp.json(); } catch (_) {}
+            if (resp.status === 409 && data.conflicto) { manejarConflicto(data.error); return false; }
             if (!resp.ok) throw new Error(data.error || `Error ${resp.status}`);
+
+            if (data.version != null) versionBorrador = data.version;
 
             if (!imputacionId && data.imputacion_id) {
                 imputacionId = data.imputacion_id;
@@ -761,7 +779,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function programarAutoguardado() {
-        if (esModoVer || restaurando || completando) return;
+        if (esModoVer || restaurando || completando || conflicto) return;
         clearTimeout(autosaveTimer);
         autosaveTimer = setTimeout(() => { autosaveTimer = null; guardarBorrador(); }, AUTOSAVE_MS);
     }
@@ -811,6 +829,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // ── Guardar como completado ───────────────────────────────────
     async function pedirCompletar() {
         if (esModoVer || completando) return;
+        if (conflicto) { mostrarMensajeValidacion(mensajeConflicto); return; }
         if (mensajeValidacion) mensajeValidacion.hidden = true;
 
         const error = validarParaCompletar();
@@ -834,11 +853,14 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
             const resp = await fetch(`/api/imputacion/${imputacionId}/completar/`, {
                 method:  "POST",
-                headers: { "X-CSRFToken": csrftoken },
+                headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
+                body:    JSON.stringify({ version: versionBorrador }),
             });
             let data = {};
             try { data = await resp.json(); } catch (_) {}
             modalCompletar.close();
+
+            if (resp.status === 409 && data.conflicto) { manejarConflicto(data.error); return; }
 
             if (!resp.ok) {
                 // Sigue en estado Revisar: el usuario corrige y vuelve a intentar
@@ -933,6 +955,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (data.estado_formulario !== "REVISAR") throw new Error("Esta imputación ya fue completada y no se puede editar.");
 
             imputacionId = data.imputacion_id;
+            versionBorrador = data.version;
 
             if (fechaInput && data.fecha) { fechaInput.value = data.fecha; disparar(fechaInput); }
             const exp = data.nro_expediente || "";

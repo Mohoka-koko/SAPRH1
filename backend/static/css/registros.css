@@ -278,6 +278,19 @@ ESTILO BASE: CYBER-KEY LIGHT
 
 .btn-ver    { background: #3b82f6; }
 .btn-editar { background: #f59e0b; }
+.btn-eliminar { background: #dc2626; border: none; cursor: pointer; }
+
+/* Diálogo de confirmación para eliminar borradores */
+.modal-eliminar {
+    border: none;
+    border-radius: 10px;
+    padding: 22px 24px;
+    max-width: 420px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+.modal-eliminar::backdrop { background: rgba(0, 0, 0, 0.45); }
+.modal-eliminar-msg { color: #b91c1c; font-weight: 600; }
+.modal-eliminar-acciones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
 /* ===================================================
    FILAS DESPLEGABLES (botón chevron mejorado)
@@ -630,3 +643,45 @@ ESTILO BASE: CYBER-KEY LIGHT
     .card { padding: 0.9rem; }
     .history-table tbody tr.registro-row > td { padding: 9px 12px; }
 }
+
+
+/* ===================================================
+   HISTORIAL DE INTERVENCIONES (Refuerzo)
+=================================================== */
+.btn-historial-link {
+    align-self: flex-start;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: #2563eb;
+    font-size: 14px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.btn-historial-link:hover { color: #1d4ed8; }
+
+.modal-historial { max-width: 620px; width: calc(100% - 32px); }
+.modal-historial-titulo { margin: 0 0 8px; font-size: 18px; color: #1e1e2e; }
+.modal-historial-sub    { margin: 0 0 10px; color: #3b6f73; font-size: 13px; font-weight: 600; }
+
+.historial-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+.historial-item {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #f7fafb;
+    border-left: 4px solid #94a3b8;
+    border-radius: 6px;
+    font-size: 14px;
+}
+.historial-crear     { border-left-color: #3b82f6; }
+.historial-editar    { border-left-color: #f59e0b; }
+.historial-completar { border-left-color: #16a34a; }
+.historial-eliminar  { border-left-color: #dc2626; }
+.historial-fecha  { color: #555; font-size: 12px; margin-top: 2px; }
+.historial-campos { color: #3b6f73; font-size: 12px; margin-top: 4px; }

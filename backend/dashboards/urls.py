@@ -46,6 +46,8 @@ urlpatterns = [
     path('api/refuerzo/borrador/crear/',                              views.api_refuerzo_borrador_crear,      name='api_refuerzo_borrador_crear'),
     path('api/refuerzo/borrador/<int:refuerzo_id>/actualizar/',       views.api_refuerzo_borrador_actualizar, name='api_refuerzo_borrador_actualizar'),
     path('api/refuerzo/<int:refuerzo_id>/completar/',                 views.api_refuerzo_completar,           name='api_refuerzo_completar'),
+    path('api/refuerzo/borrador/<int:refuerzo_id>/eliminar/',         views.api_refuerzo_borrador_eliminar,   name='api_refuerzo_borrador_eliminar'),
+    path('api/refuerzo/<int:refuerzo_id>/auditoria/',                 views.api_refuerzo_auditoria,           name='api_refuerzo_auditoria'),
     path('modificacion/crear/',                        views.modificacion_crear,  name='modificacion_crear'),
     path('modificacion/editar/<int:modificacion_id>/', views.modificacion_editar, name='modificacion_editar'),
     path('api/modificacion/crear/', views.api_crear_modificacion, name='api_crear_modificacion'),
@@ -58,6 +60,8 @@ urlpatterns = [
     path('api/fuentes/',        views.api_fuentes,        name='api_fuentes'),
     path('api/imputaciones-por-linea/', views.api_imputaciones_por_linea, name='api_imputaciones_por_linea'),
     path('api/historial-registros/', views.api_historial_registros, name='api_historial_registros'),
+    # ── OP Personal: guardado automático (borrador "Revisar") y completado ──
+    # (se retiró api/op-personal/crear/: creaba la OP y sus imputaciones sin pasar por Revisar → Listo)
     path('ordenpagopersonal/editar/<int:opp_id>/', views.ordenpagopersonal_editar, name='ordenpagopersonal_editar'),
     path('ordenpagopersonal/ver/<int:opp_id>/',    views.ordenpagopersonal_ver,    name='ordenpagopersonal_ver'),
     path('api/op-personal/borrador/crear/',                          views.api_op_personal_borrador_crear,      name='api_op_personal_borrador_crear'),
@@ -95,6 +99,7 @@ urlpatterns = [
     path('api/imputacion/borrador/<int:imputacion_id>/actualizar/', views.api_imputacion_borrador_actualizar, name='api_imputacion_borrador_actualizar'),
     path('api/imputacion/borrador/<int:imputacion_id>/obtener/',    views.api_imputacion_borrador_obtener,    name='api_imputacion_borrador_obtener'),
     path('api/imputacion/<int:imputacion_id>/completar/', views.api_imputacion_completar,          name='api_imputacion_completar'),
+    path('api/imputacion/borrador/<int:imputacion_id>/eliminar/',   views.api_imputacion_borrador_eliminar,   name='api_imputacion_borrador_eliminar'),
 
     # ── Otros dashboards ───────────────────────────────────────────────────
     path('usuariovip-dashboard/', views.usuariovip_dashboard, name='usuariovip_dashboard'),

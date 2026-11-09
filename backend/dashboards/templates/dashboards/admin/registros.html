@@ -9,6 +9,8 @@
 
 {% block content %}
 
+{% csrf_token %}
+
 <div class="main-wrapper">
 
     <!-- ACCIONES -->
@@ -129,6 +131,26 @@
     </div>
 
 </div>
+
+<dialog id="modal-eliminar" class="modal-eliminar">
+    <p id="modal-eliminar-texto">¿Está seguro de que desea eliminar este borrador de Imputación? Esta acción no se puede deshacer. No se modificarán saldos ni se generarán movimientos presupuestarios.</p>
+    <p id="modal-eliminar-msg" class="modal-eliminar-msg" role="alert" hidden></p>
+    <div class="modal-eliminar-acciones">
+        <button type="button" class="btn-accion" id="modal-eliminar-cancelar">Cancelar</button>
+        <button type="button" class="btn-accion btn-eliminar" id="modal-eliminar-confirmar">Eliminar</button>
+    </div>
+</dialog>
+
+<!-- HISTORIAL DE INTERVENCIONES DE UN REFUERZO (solo lectura) -->
+<dialog id="modal-historial-refuerzo" class="modal-eliminar modal-historial" aria-labelledby="modal-historial-titulo">
+    <h3 id="modal-historial-titulo" class="modal-historial-titulo">Historial de intervenciones</h3>
+    <p id="historial-subtitulo" class="modal-historial-sub"></p>
+    <p id="historial-estado"></p>
+    <ul id="historial-lista" class="historial-lista"></ul>
+    <div class="modal-eliminar-acciones">
+        <button type="button" class="btn-accion" id="modal-historial-cerrar">Cerrar</button>
+    </div>
+</dialog>
 
 {% endblock %}
 
