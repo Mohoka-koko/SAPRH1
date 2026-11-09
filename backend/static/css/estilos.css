@@ -950,3 +950,110 @@ tbody td {
 .notification-footer a:hover {
     color: #163f6d;
 }
+
+
+/* ===== NOTIFICACIONES: PANEL DESPLEGABLE ===== */
+
+#notificationPanel {
+    width: 375px;
+    max-width: 90vw;
+    box-sizing: border-box;
+}
+
+#notificationPanel .notification-body {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px;
+    padding: 14px;
+    max-height: 420px;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+/* Cada notificación ocupa una fila completa */
+#notificationPanel .notification-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    gap: 6px;
+    border: 1px solid #dce3ee;
+    border-radius: 8px;
+    background-color: #ffffff;
+    text-align: left;
+}
+
+/* Título */
+#notificationPanel .notification-item strong {
+    display: block;
+    width: 100%;
+    color: #203f80;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+/* Mensaje */
+#notificationPanel .notification-item p {
+    display: block;
+    width: 100%;
+    margin: 0;
+    color: #444;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+/* Fecha */
+#notificationPanel .notification-item small {
+    display: block;
+    color: #718096;
+    font-size: 11px;
+}
+
+/* Enlace */
+#notificationPanel .notification-item a {
+    display: inline-block;
+    margin-top: 4px;
+    color: #2455a4;
+    font-size: 12px;
+    text-decoration: underline;
+}
+
+/* Notificación no leída */
+#notificationPanel .notification-item.no-leida {
+    border-left: 4px solid #2864bd;
+    background-color: #f3f7ff;
+}
+
+
+/* Panel de notificaciones: lista vertical */
+#notificationPanel .notification-body {
+    display: block !important;
+    width: 100% !important;
+    padding: 12px !important;
+    box-sizing: border-box !important;
+}
+
+#notificationPanel .notification-item {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 0 12px 0 !important;
+    padding: 12px !important;
+    box-sizing: border-box !important;
+    text-align: left !important;
+    float: none !important;
+}
+
+#notificationPanel .notification-item strong,
+#notificationPanel .notification-item p,
+#notificationPanel .notification-item small {
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    white-space: pre-line;
+    margin: 0 0 6px 0;
+}

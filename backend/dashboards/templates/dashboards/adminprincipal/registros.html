@@ -1,99 +1,132 @@
-{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% extends 'dashboards/adminprincipal/adminprincipal_dashboard.html' %}
 {% load static %}
+
+{% block extra_css %}
+
+<link rel="stylesheet" href="{% static 'css/registros.css' %}">
+
+{% endblock %}
 
 {% block content %}
 
 <div class="main-wrapper">
 
-  <!-- CARD: SELECCIONAR -->
-  <div class="card">
-    <div class="card-header">Seleccionar:</div>
+<div class="card card-acciones">
+    <h2 class="card-header-title">Acciones de Registro</h2>
 
-    <div class="filter-container">
-      <div class="filter-bar">
-        <div class="filter-label">Filtrar por: </div>
-        <input type="text" placeholder="Código…">
-        <input type="text" placeholder="Área…">
-        <input type="date">
-      </div>
+        <div class="actions-container-xl">
+
+            <a href="{% url 'imputacion' %}" class="cyber-key key-yellow">
+                <span class="label">Crear Imputación</span>
+            </a>
+
+            <a href="{% url 'lista_imputaciones' %}" target="_blank" class="cyber-key key-light-blue">
+                <span class="label">Crear Orden de Pago</span>
+            </a>
+
+            <a href="{% url 'ordenpagopersonal' %}" target="_blank" class="cyber-key key-light-blue">
+                <span class="label">Crear Orden de Pago Personal</span>
+            </a>
+
+            <a href="{% url 'modificacion' %}" class="cyber-key key-turquoise">
+                <span class="label">Modificación</span>
+            </a>
+
+            <a href="{% url 'refuerzo' %}" class="cyber-key key-orange">
+                <span class="label">Refuerzo</span>
+            </a>
+
+        </div>
     </div>
 
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Código</th>
-          <th>Área</th>
-          <th>Descripción</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr onclick="selectRow(this)">
-          <td class="code-cell">011</td>
-          <td>Construcción</td>
-          <td class="desc">aquí va texto descriptivo</td>
-        </tr>
-        <tr class="selected" onclick="selectRow(this)">
-          <td class="code-cell">02</td>
-          <td>Tesorería</td>
-          <td class="desc">aquí va texto descriptivo</td>
-        </tr>
-        <tr onclick="selectRow(this)">
-          <td class="code-cell">532</td>
-          <td>Contabilidad</td>
-          <td class="desc">aquí va texto descriptivo</td>
-        </tr>
-      </tbody>
-    </table>
 
-    <div class="actions">
-      <button class="btn btn-yellow">Crear Imputación</button>
-      <button class="btn btn-outline">Crear Orden de Pago</button>
-      <a href="{% url 'refuerzomodificacion' %}"><button class="btn btn-orange">Modificación o Refuerzo</button></a>
+    <div class="card">
+
+        <h2 class="card-header-title">Historial de registros</h2>
+
+        <div class="filter-container">
+
+            <div class="filter-bar">
+
+                <div class="filter-label">
+                    <i class="fa-solid fa-filter"></i>
+                    Filtrar por:
+                </div>
+
+                <select id="filtro-tipo" name="tipo">
+                    <option value="">Tipo (todos)</option>
+                    <option value="imputacion">Imputación</option>
+                    <option value="op">Orden de Pago</option>
+                    <option value="op-personal">Orden de Pago Personal</option>
+                    <option value="modificacion">Modificación</option>
+                    <option value="refuerzo">Refuerzo</option>
+                </select>
+
+                <input
+                    type="date"
+                    id="filtro-fecha"
+                    name="fecha_creacion"
+                >
+
+                <input
+                    type="text"
+                    id="filtro-usuario"
+                    name="usuario"
+                    placeholder="Usuario…"
+                >
+
+            </div>
+
+        </div>
+
+        <div class="table-container">
+
+            <div class="history-table-wrapper">
+
+                <table class="history-table">
+
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>N.º de expediente</th>
+                            <th>Fecha de creación</th>
+                            <th>Creado por</th>
+                            <th>Estado</th>
+                            <th colspan="2">Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tabla-registros-body" data-api-url="{% url 'api_historial_registros' %}">
+                        <!-- El contenido se carga dinámicamente mediante JS -->
+                    </tbody>
+                </table>
+
+            </div>
+
+            <div class="pagination-bar" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                <span class="pagination-info"></span>
+
+                <div class="pagination-buttons">
+                    <span class="page-number-text"></span>
+                    <button class="btn-page btn-prev">
+                        <i class="fa-solid fa-chevron-left"></i> Prev
+                    </button>
+                    <button class="btn-page btn-next">
+                        Next <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
     </div>
-  </div>
-
-  <!-- CARD: HISTORIAL -->
-  <div class="card">
-    <div class="card-header">Historial de registros:</div>
-
-    <table class="history-table">
-      <thead>
-        <tr>
-          <th>Registro de</th>
-          <th>Fecha y Hora</th>
-          <th>Creado por</th>
-          <th>Última Modificación</th>
-          <th>Estado</th>
-          <th>Editar</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Registro1</td>
-          <td class="ts">22/04/2022 – 14:52</td>
-          <td>Usuario1</td>
-          <td class="ts">22/04/2022 – 14:52</td>
-          <td><span class="badge badge-listo">Listo</span></td>
-          <td><button class="edit-btn">📄</button></td>
-        </tr>
-        <tr>
-          <td>Registro2</td>
-          <td class="ts">22/04/2022 – 16:02</td>
-          <td>Usuario2</td>
-          <td class="ts">22/04/2022 – 16:02</td>
-          <td><span class="badge badge-revisar">Revisar</span></td>
-          <td><button class="edit-btn">📄</button></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
 
 </div>
 
-
-<script src="js/script.js"></script>
 {% endblock %}
 
 {% block extra_js %}
-  <script src="{% static 'js/registros.js' %}"></script>
+
+<script src="{% static 'js/registros.js' %}"></script>
+
 {% endblock %}

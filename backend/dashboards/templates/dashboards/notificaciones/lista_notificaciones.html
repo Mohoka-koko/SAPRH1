@@ -1,0 +1,100 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link
+        rel="stylesheet"
+        href="{% static 'css/notificaciones_centro.css' %}"
+    >
+{% endblock %}
+
+{% block content %}
+
+<div
+    id="centroNotificaciones"
+    class="centro-notificaciones"
+    data-api-url="{% url 'api_notificaciones' %}"
+    data-marcar-todas-url="{% url 'marcar_todas_notificaciones_leidas' %}"
+    data-marcar-leida-base="{% url 'marcar_notificacion_leida' 0 %}"
+>
+
+    {% csrf_token %}
+
+    <header class="centro-notificaciones__cabecera">
+
+        <div>
+            <h1>
+                <i class="fa-solid fa-bell"></i>
+                Centro de notificaciones
+            </h1>
+
+            <p>
+                Consultá los avisos y movimientos recientes del sistema.
+            </p>
+        </div>
+
+        <button
+            type="button"
+            id="marcarTodasLeidas"
+            class="noti-boton-secundario"
+        >
+            Marcar todas como leídas
+        </button>
+
+    </header>
+
+
+    <nav
+        class="noti-filtros"
+        aria-label="Filtrar notificaciones"
+    >
+
+        <button
+            type="button"
+            class="activo"
+            data-filtro="todas"
+        >
+            Todas
+        </button>
+
+        <button
+            type="button"
+            data-filtro="no_leidas"
+        >
+            No leídas
+        </button>
+
+        <button
+            type="button"
+            data-filtro="leidas"
+        >
+            Leídas
+        </button>
+
+    </nav>
+
+
+    <div
+        id="estadoNotificaciones"
+        class="noti-estado"
+        role="status"
+        aria-live="polite"
+    >
+        Cargando notificaciones...
+    </div>
+
+
+    <div
+        id="listaTodasNotificaciones"
+        class="noti-lista"
+    ></div>
+
+</div>
+
+<script
+    src="{% static 'js/notificaciones_centro.js' %}?v=1"
+    defer
+></script>
+
+{% endblock %}

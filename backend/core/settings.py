@@ -47,7 +47,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
+
+    'middleware.ActualizarActividadMiddleware',]
 
 ROOT_URLCONF = 'core.urls'
 
@@ -125,3 +126,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SESSION_COOKIE_HTTPONLY = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True   # Sesión muere al cerrar el navegador
 SESSION_COOKIE_AGE = 3600                # Sesión expira en 1 hora de inactividad
+
+# Archivos multimedia para fotos de perfil
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

@@ -53,6 +53,7 @@ class UsuarioPersonalizado(AbstractBaseUser, PermissionsMixin):
 
     email         = models.EmailField(unique=True, verbose_name='Correo electrónico')
     nombre        = models.CharField(max_length=100, verbose_name='Nombre completo')
+    foto_perfil = models.ImageField(upload_to='perfiles/', null=True, blank=True, verbose_name='Foto de perfil')
     rol           = models.CharField(
                         max_length=20,
                         choices=ROL_CHOICES,
@@ -80,6 +81,7 @@ class UsuarioPersonalizado(AbstractBaseUser, PermissionsMixin):
     is_staff      = models.BooleanField(default=False, verbose_name='Staff (panel admin)')
     fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de registro')
     ultimo_acceso  = models.DateTimeField(null=True, blank=True, verbose_name='Último acceso')
+    ultima_actividad = models.DateTimeField(null=True, blank=True, verbose_name='Última actividad')
 
     # ── NUEVO ────────────────────────────────────────────────────────────────
     fecha_baja     = models.DateTimeField(

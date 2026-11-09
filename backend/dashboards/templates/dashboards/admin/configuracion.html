@@ -7,6 +7,8 @@
 
 {% block content %}
 
+{% csrf_token %}
+
 <div class="configuracion-container">
 
     <!-- ========================================
@@ -72,13 +74,11 @@
     </div>
 
 
-    <!-- POR AHORA SIN FUNCIÓN -->
-
-    <div class="opcion">
-        <span>Historial de accesos</span>
-        <i class="fa-solid fa-chevron-right"></i>
+    <div class="opcion" onclick="abrirModal('historial')">
+    <span>Historial de accesos</span>
+    <i class="fa-solid fa-chevron-right"></i>
     </div>
-
+ 
 </div>
 
 
@@ -103,6 +103,5 @@
 
 <!-- JavaScript de configuración -->
 
-<script src="{% static 'js/configuracion.js' %}"></script>
-
+<script src="{% static 'js/configuracion.js' %}?v=3"></script>
 {% endblock %}

@@ -2,86 +2,158 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Panel Administrador</title>
-  <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
-  {% block extra_css %}{% endblock %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S.A.P.R.H.</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'img/logo3.jpg' %}">
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    {% block extra_css %}
+    {% endblock %}
 </head>
 
-<body class="home-page">
-    <div class="container">
+<body>
 
-        <!-- ===== SIDEBAR ===== -->
-        <div class="sidebar" id="sidebar">
+    <header class="header">
 
-        <div class="sidebar-top">
-            <button class="toggle-btn" onclick="toggleMenu()">
-            <img src="{% static 'img/icono1.png' %}" class="icono-menu" alt="Menú">
-            </button>
+        <div class="logo">
+            <a href="{% url 'adminprincipal_dashboard' %}">
+                <div class="logo-emblem-container">
+                    <div class="logo-emblem-outer">
+                        <div class="logo-emblem-inner">
+                            <img src="{% static 'img/logo4.png' %}" alt="Logo S.A.P.R.H.">
+                        </div>
+                    </div>
+                </div>
+            </a>
+            <h1>S.A.P.R.H.</h1>
         </div>
 
-        <div class="sidebar-logo">
-            <img src="{% static 'img/logo2.png' %}" alt="Logo">
-            <span class="text">S.A.P.R.H.</span>
-        </div>
+        <nav class="navbar">
+            <ul class="nav-list">
 
-        <ul class="sidebar-menu">
-            <li class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
-            <a href="{% url 'admin_dashboard' %}" class="menu-link">
-                <img src="{% static 'img/hogar.png' %}" class="icono-sidebar">
-                <span class="text">Inicio</span>
-            </a>
-            </li>
-        
-            <li class="{% if request.resolver_match.url_name == 'registros' %}active{% endif %}">
-            <a href="{% url 'registros' %}" class="menu-link">
-                <img src="{% static 'img/panel.png' %}" class="icono-sidebar">
-                <span class="text">Panel Registros</span>
-            </a>
-            </li>
-        
-            <li class="{% if request.resolver_match.url_name == 'usuarios' %}active{% endif %}">
-            <a href="{% url 'usuarios' %}" class="menu-link">
-                <img src="{% static 'img/usuario.png' %}" class="icono-sidebar">
-                <span class="text">Usuarios</span>
-            </a>
-            </li>
-        
-            <li class="{% if request.resolver_match.url_name == 'configuracion' %}active{% endif %}">
-            <a href="{% url 'configuracion' %}" class="menu-link">
-                <img src="{% static 'img/configuracion.png' %}" class="icono-sidebar">
-                <span class="text">Configuración</span>
-            </a>
-            </li>
-        </ul>
+                <li class="{% if request.resolver_match.url_name == 'adminprincipal_dashboard' %}active{% endif %}">
+                    <a href="{% url 'adminprincipal_dashboard' %}">
+                        <i class="fa-solid fa-house nav-icon"></i>
+                        <span>Inicio</span>
+                    </a>
+                </li>
 
-        <div class="sidebar-footer">
-            <div class="user-info">
-            <img src="{% static 'img/usuario.png' %}" class="icono-sidebar">
-            <div class="user-text">
-                <span class="user-name">{{ usuario.nombre }}</span>
-                <span class="rol">{{ usuario.get_rol_display }}</span>
+                <li class="{% if request.resolver_match.url_name == 'carga_catalogos' %}active{% endif %}">
+                    <a href="{% url 'carga_catalogos' %}">
+                        <i class="fa-solid fa-book nav-icon"></i>
+                        <span>Crear partida</span>
+                    </a>
+                </li>
+
+                <li class="{% if request.resolver_match.url_name == 'adminprincipal_registros' %}active{% endif %}">
+                    <a href="{% url 'adminprincipal_registros' %}">
+                        <i class="fa-solid fa-clipboard-list nav-icon"></i>
+                        <span>Panel Registro</span>
+                    </a>
+                </li>
+
+                <li class="{% if request.resolver_match.url_name == 'ejerciciosanteriores_prueba' %}active{% endif %}">
+                    <a href="{% url 'ejerciciosanteriores_prueba' %}">
+                        <i class="fa-solid fa-clock-rotate-left nav-icon"></i>
+                        <span>Ejercicios Anteriores</span>
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+
+        <div class="user-menu">
+
+            <div class="user-card">
+                <div class="user-avatar">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+
+                <div class="user-info">
+                    <span class="user-name">{{ usuario.nombre }}</span>
+                    <span class="user-role">{{ usuario.get_rol_display }}</span>
+                </div>
             </div>
+
+            <div class="notification-container">
+
+                <button
+                    type="button"
+                    class="notification-btn"
+                    id="notificationBtn"
+                    title="Notificaciones">
+
+                    <i class="fa-solid fa-bell"></i>
+                </button>
+
+                <div
+                    class="notification-panel"
+                    id="notificationPanel"
+                    data-api-url="{% url 'api_notificaciones' %}">
+
+                    <div class="notification-header">
+
+                        <span>Notificaciones</span>
+
+                        <div class="notification-actions">
+
+                            <button
+                                type="button"
+                                class="notification-settings"
+                                title="Configuración de notificaciones">
+
+                                <i class="fa-solid fa-gear"></i>
+                            </button>
+
+                            <button
+                                type="button"
+                                class="notification-close"
+                                id="notificationClose"
+                                title="Cerrar">
+
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+
+                        </div>
+                    </div>
+
+                    <div class="notification-body" id="notificationBody">
+                        <p>Cargando notificaciones...</p>
+                    </div>
+
+                    <div class="notification-footer">
+                        <a href="{% url 'lista_notificaciones' %}">Verlo todo</a>
+                    </div>
+
+                </div>
+
             </div>
 
-            <div class="logout">
-            <a href="{% url 'logout' %}" class="menu-link">
-                <img src="{% static 'img/cerrarsesion.png' %}" class="icono-sidebar">
-                <span class="text">Cerrar sesión</span>
+            <a href="{% url 'adminprincipal_configuracion' %}" class="config-btn" title="Configuración">
+                <i class="fa-solid fa-gear" style="color: #ffffff !important;"></i>
             </a>
-            </div>
-        </div>
+
+            <a href="{% url 'logout' %}">
+                <button class="logout-btn" title="Cerrar Sesión">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </a>
 
         </div>
 
-        <!-- ===== CONTENIDO ===== -->
-        <div class="main-content">
-        {% block content %}{% endblock %}
-        </div>
+    </header>
 
-    </div>
+    <main class="main-content">
+        {% block content %}
+        {% endblock %}
+    </main>
 
-    <script src="{% static 'js/script.js' %}"></script>
-{% block extra_js %}{% endblock %}
+    <script src="{% static 'js/notificaciones.js' %}?v=3"></script>
+
+    {% block extra_js %}
+    {% endblock %}
+
 </body>
 </html>

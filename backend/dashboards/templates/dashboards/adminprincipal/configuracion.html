@@ -1,27 +1,58 @@
-{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% extends 'dashboards/adminprincipal/adminprincipal_dashboard.html' %}
 {% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/configuracion.css' %}">
+{% endblock %}
 
 {% block content %}
 
-<div class="main-wrapper">
+{% csrf_token %}
 
-  <div class="card config-simple">
+<div class="configuracion-container">
 
-    <div class="config-section-text">
+    <h1 class="configuracion-titulo">
+        <i class="fa-solid fa-gear"></i>
+        Configuración
+    </h1>
 
-      <h3>Configuración de Usuario</h3>
-      <p onclick="mostrarSeccion('password')">Cambiar contraseña</p>
+    <h2 class="configuracion-seccion">Personales</h2>
 
-      <h3>Configuración del Sistema</h3>
-      <p>Editar datos del área</p>
-      <p>Ajustar formato de fecha y hora</p>
-      <p>Ajustar notificaciones y preferencias</p>
-      <p>Información del sistema</p>
-
+    <div class="opcion" onclick="abrirModal('perfil')">
+        <span>Cambiar foto de perfil</span>
+        <i class="fa-solid fa-chevron-right"></i>
     </div>
 
-  </div>
+    <h2 class="configuracion-seccion">Sistemas</h2>
+
+    <div class="opcion">
+        <span>Datos del área</span>
+        <i class="fa-solid fa-chevron-right"></i>
+    </div>
+
+    <div class="opcion" onclick="abrirModal('fecha')">
+        <span>Formato de fecha y hora</span>
+        <i class="fa-solid fa-chevron-right"></i>
+    </div>
+
+    <div class="opcion" onclick="abrirModal('notificaciones')">
+        <span>Notificaciones y preferencias</span>
+        <i class="fa-solid fa-chevron-right"></i>
+    </div>
+
+    <div class="opcion" onclick="abrirModal('info')">
+        <span>Información del sistema</span>
+        <i class="fa-solid fa-chevron-right"></i>
+    </div>
 
 </div>
 
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <span class="cerrar" onclick="cerrarModal()">&times;</span>
+        <div id="contenidoModal"></div>
+    </div>
+</div>
+
+<script src="{% static 'js/configuracion.js' %}?v=2"></script>
 {% endblock %}

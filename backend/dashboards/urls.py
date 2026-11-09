@@ -3,24 +3,34 @@
 # imputación con eliminar borrador) + rutas de borrador/completar de modificación
 # tomadas de "urls (1).py".
 
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 urlpatterns = [
-    path('adminprincipal-dashboard/', views.adminprincipal_dashboard, name='adminprincipal_dashboard'),
-    path('adminprincipal-dashboard/registros/', views.adminprincipal_registros, name='registros'),
-    path('adminprincipal-dashboard/usuarios/', views.adminprincipal_usuarios, name='usuarios'),
-    path('adminprincipal-dashboard/configuracion/', views.adminprincipal_configuracion, name='configuracion'),
-    path('adminprincipal-dashboard/registros/refuerzomodificacion/', views.adminprincipal_refuerzomodificacion, name='refuerzomodificacion'),
-    path('adminprincipal-dashboard/registros/imputacion/', views.imputacion, name='imputacion'),
-
+    
+# ── Panel administrador principal ──────────────────────
+    path('adminprincipal-dashboard/',views.adminprincipal_dashboard,name='adminprincipal_dashboard'),
+    path('adminprincipal-dashboard/registros/',views.adminprincipal_registros,name='adminprincipal_registros'),
+    
+    path('adminprincipal-dashboard/configuracion/',views.adminprincipal_configuracion,name='adminprincipal_configuracion'),
+    path('adminprincipal-dashboard/registros/refuerzomodificacion/',views.adminprincipal_refuerzomodificacion,name='adminprincipal_refuerzomodificacion'),
+    path('adminprincipal-dashboard/registros/imputacion/',views.imputacion,name='adminprincipal_imputacion'),
+    
     # ── Panel admin ────────────────────────────────────────────────────────
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('admin-dashboard/home/', views.home, name='home'),
 
+    path('admin-dashboard/registros/imputacion/', views.imputacion, name='imputacion'),
+    
+
+
     path('admin-dashboard/registros/', views.admin_registros, name='registros'),
     path('admin-dashboard/usuarios/', views.admin_usuarios, name='usuarios'),
     path('admin-dashboard/configuracion/', views.admin_configuracion, name='configuracion'),
+    path('admin-dashboard/configuracion/historial-accesos/', views.historial_accesos, name='historial_accesos'),
+    path('admin-dashboard/configuracion/cambiar-foto/', views.cambiar_foto_perfil, name='cambiar_foto_perfil'),
+    path('admin-dashboard/configuracion/cambiar-contrasena/', views.cambiar_contrasena, name='cambiar_contrasena'),
+        path('admin-dashboard/configuracion/usuarios-contrasena/', views.usuarios_para_contrasena, name='usuarios_para_contrasena'),
     path('admin-dashboard/registros/refuerzo', views.admin_refuerzo, name='refuerzo'),
     path('admin-dashboard/registros/modificacion', views.admin_modificacion, name='modificacion'),
     path('admin-dashboard/registros/imputaciones/', views.lista_imputaciones, name='lista_imputaciones'),
@@ -127,4 +137,7 @@ urlpatterns = [
     path('usuariovip-dashboard/', views.usuariovip_dashboard, name='usuariovip_dashboard'),
     path('usuariocomun-dashboard/', views.usuariocomun_dashboard, name='usuariocomun_dashboard'),
     path('acceso-denegado/', views.acceso_denegado, name='acceso_denegado'),
+
+    path('', include('dashboards.notificaciones_urls')),
+    
 ]

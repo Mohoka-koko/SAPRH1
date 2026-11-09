@@ -1,5 +1,6 @@
 #dashboards/models.py
 import django
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -769,3 +770,57 @@ class CodigoPago(RegistroAuditable):
 
     def __str__(self):
         return f'{self.codigo} - {self.descripcion}'
+
+class Notificacion(models.Model):
+
+    TIPOS = [
+        ("imputacion", "Imputación"),
+        ("orden_pago", "Orden de pago"),
+        ("orden_pago_personal", "Orden de pago personal"),
+        ("sistema", "Sistema"),
+    ]
+
+    destinatario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notificaciones_saprh1"
+    )
+
+    titulo = models.CharField(max_length=180)
+
+    mensaje = models.TextField()
+
+    tipo = models.CharField(
+        max_length=40,
+        choices=TIPOS,
+        default="sistema"
+    )
+
+    url = models.CharField(
+        max_length=500,
+        blank=True,
+        default=""
+    )
+
+    creada_en = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True
+    )
+
+    leida = models.BooleanField(
+        default=False,
+        db_index=True
+    )
+
+    leida_en = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        ordering = ["-creada_en"]
+        verbose_name = "Notificación"
+        verbose_name_plural = "Notificaciones"
+
+    def __str__(self):
+        return f"{self.titulo} — {self.destinatario}"

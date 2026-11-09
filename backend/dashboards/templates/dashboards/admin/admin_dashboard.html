@@ -56,13 +56,18 @@
         <span>Ejercicios Anteriores</span>
     </a>
 </li>
-                <li class="{% if request.resolver_match.url_name == 'usuarios' %}active{% endif %}">
-                    <a href="{% url 'usuarios' %}">
-                        <i class="fa-solid fa-users nav-icon"></i>
-                        <span>Usuarios</span>
-                    </a>
-                </li>
-               
+        
+
+{% if request.user.rol == 'admin' %}
+<li class="{% if request.resolver_match.url_name == 'usuarios' %}active{% endif %}">
+    <a href="{% url 'usuarios' %}">
+        <i class="fa-solid fa-users nav-icon"></i>
+        <span>Usuarios</span>
+    </a>
+</li>
+{% endif %}
+
+        
             </ul>
         </nav>
     
@@ -91,7 +96,7 @@
 
         <!-- PANEL DE NOTIFICACIONES -->
 
-        <div class="notification-panel" id="notificationPanel">
+        <div class="notification-panel" id="notificationPanel"  data-api-url="{% url 'api_notificaciones' %}">
 
             <div class="notification-header">
 
@@ -123,16 +128,14 @@
             </div>
 
 
-            <div class="notification-body">
-
-                <p>Usted no tiene notificaciones</p>
-
+           <div class="notification-body" id="notificationBody">
+                <p>Cargando notificaciones...</p>
             </div>
 
 
-            <div class="notification-footer">
+           <div class="notification-footer">
 
-                <a href="#">Verlo todo</a>
+                 <a href="{% url 'lista_notificaciones' %}">Verlo todo</a>
 
             </div>
 
@@ -156,7 +159,7 @@
         {% endblock %}
     </main>
 
-    <script src="{% static 'js/notificaciones.js' %}"></script>
+    <script src="{% static 'js/notificaciones.js' %}?v=3"></script>
 
     {% block extra_js %}
     {% endblock %}

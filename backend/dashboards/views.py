@@ -17,6 +17,7 @@ from dashboards.models import (
     LineaPresupuestaria, Refuerzo, RefuerzoDetalle, RefuerzoBorradorDetalle, RefuerzoAuditoria,
     Modificacion, ModificacionTransferente, ModificacionReceptora, ModificacionBorradorDetalle,
     Imputacion, ImputacionDetalle, ImputacionBorradorDetalle, ImputacionAuditoria,
+    Notificacion,
     OrdenPago, OrdenPagoBeneficiario, OrdenPagoUnidadPresupuestaria,
     MovimientoHistorial, Jurisdiccion, Programa, Subprograma, Proyecto,
     ActividadObra, Partida, FuenteFinanciamiento,
@@ -30,6 +31,34 @@ from datetime import datetime as _dt
 import logging
 
 Usuario = get_user_model()
+
+
+def crear_notificaciones_admins(
+    titulo, mensaje, tipo, url="", realizado_por=""
+):
+    """
+    Crea una notificación para cada usuario activo
+    con rol admin o adminprincipal.
+    """
+
+    mensaje = (
+        f"{mensaje}\n"
+        f"Realizada por: {realizado_por}"
+    )
+
+    destinatarios = Usuario.objects.filter(
+        rol__in=["admin", "adminprincipal"],
+        is_active=True
+    )
+
+    for usuario in destinatarios:
+        Notificacion.objects.create(
+            destinatario=usuario,
+            titulo=titulo,
+            mensaje=mensaje,
+            tipo=tipo,
+            url=url
+        )
 
 # ==========================================
 #  VISTAS PARA ADMIN PRINCIPAL
@@ -80,7 +109,7 @@ def obtener_modificaciones_y_refuerzos(request):
 
 @rol_requerido('adminprincipal')
 def adminprincipal_dashboard(request):
-    return render(request, 'dashboards/adminprincipal/adminprincipal_dashboard.html', {'usuario': request.user})
+    return render(request, 'dashboards/adminprincipal/home.html', {'usuario': request.user})
 
 @rol_requerido('adminprincipal')
 def adminprincipal_registros(request):
@@ -92,7 +121,7 @@ def adminprincipal_refuerzomodificacion(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/adminprincipal/refuerzomodificacion.html', context)
 
-@rol_requerido('adminprincipal')
+@rol_requerido('admin')
 def adminprincipal_usuarios(request):
     todos = Usuario.objects.exclude(id=request.user.id).order_by('is_active', 'nombre')
     context = {
@@ -125,7 +154,7 @@ def home(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/home.html', context)
 
-@rol_requerido('admin')
+@rol_requerido('admin', 'adminprincipal')
 def admin_registros(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/registros.html', context)
@@ -154,9 +183,11 @@ def admin_usuarios(request):
     }
     return render(request, 'dashboards/admin/usuarios.html', context)
 
-@rol_requerido('admin')
+@rol_requerido('admin', 'adminprincipal')
 def admin_configuracion(request):
     context = {'usuario': request.user}
+    if request.user.rol == 'adminprincipal':
+        return render(request, 'dashboards/adminprincipal/configuracion.html', context)
     return render(request, 'dashboards/admin/configuracion.html', context)
 
 @rol_requerido('admin','adminprincipal')
@@ -2480,6 +2511,15 @@ def api_crear_imputacion(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+        # ── NOTIFICACIÓN DE IMPUTACIÓN ─────────────────────────────
+
+    crear_notificaciones_admins(
+    titulo="Nueva imputación registrada",
+    mensaje=f"Expediente: {nro_expediente}",
+    tipo="imputacion",
+    url=f"/admin-dashboard/imputacion/ver/{imputacion.id}/",
+    realizado_por=request.user.nombre
+)
     return JsonResponse({
         'ok':            True,
         'imputacion_id': imputacion.id,
@@ -2951,6 +2991,15 @@ def api_imputacion_completar(request, imputacion_id):
         return JsonResponse({'error': str(e)}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+    # ── NOTIFICACIÓN DE IMPUTACIÓN ─────────────────────────────
+    crear_notificaciones_admins(
+        titulo="Nueva imputación registrada",
+        mensaje=f"Expediente: {imputacion.nro_expediente}",
+        tipo="imputacion",
+        url=f"/admin-dashboard/imputacion/ver/{imputacion.id}/",
+        realizado_por=request.user.nombre
+    )
 
     return JsonResponse({
         'ok':            True,
@@ -3735,7 +3784,16 @@ def api_crear_orden_pago(request):
                         f'— {concepto[:80]}'
                     ),
                 )
-
+                            # ── NOTIFICACIÓN DE ORDEN DE PAGO ─────────────────────
+            crear_notificaciones_admins(
+                titulo="Nueva orden de pago registrada",
+                mensaje=(
+                    f"Expediente: {imputacion.nro_expediente}"
+                ),
+                tipo="orden_pago",
+                url="/admin-dashboard/registros/ordenpago/",
+                realizado_por=request.user.nombre
+            )
     except ValueError as e:
         return JsonResponse({'error': str(e)}, status=400)
         
@@ -4710,6 +4768,17 @@ def api_op_personal_completar(request, opp_id):
             # El borrador de erogaciones ya no hace falta
             opp.borradores_partida.all().delete()
 
+            # ── NOTIFICACIÓN DE ORDEN DE PAGO PERSONAL ─────────────────
+            crear_notificaciones_admins(
+                titulo="Nueva orden de pago personal registrada",
+                mensaje=(
+                    f"Expediente: {opp.nro_expediente}"
+                ),
+                tipo="orden_pago_personal",
+                url="/admin-dashboard/",
+                realizado_por=request.user.nombre
+            )
+
     except _RefuerzoError as e:
         return _respuesta_error(e)
     except Exception:
@@ -4887,4 +4956,163 @@ def api_ejercicios_datos(request):
     return JsonResponse({
         'ejercicio': ejercicio,
         'lineas':    resultado,
+    })
+@rol_requerido('admin')
+def historial_accesos(request):
+
+    usuarios = Usuario.objects.all().order_by('nombre')
+
+    datos = []
+
+    ahora = timezone.now()
+
+    for usuario in usuarios:
+
+        if usuario.ultimo_acceso:
+            ultimo_acceso = timezone.localtime(
+            usuario.ultimo_acceso).strftime('%d/%m/%Y %H:%M')
+        else:
+            ultimo_acceso = 'Nunca ingresó'
+
+        if usuario.ultima_actividad:
+            activo = ahora - usuario.ultima_actividad < timedelta(minutes=5)
+        else:
+            activo = False
+
+        datos.append({
+            'nombre': usuario.nombre,
+            'activo': activo,
+            'ultimo_acceso': ultimo_acceso,
+        })
+
+    return JsonResponse({
+        'ok': True,
+        'usuarios': datos,
+    })
+
+@rol_requerido('admin')
+def usuarios_para_contrasena(request):
+    """Lista de usuarios a los que el admin puede cambiar la contraseña."""
+    usuarios = Usuario.objects.exclude(rol='adminprincipal').order_by('nombre')
+
+    return JsonResponse({
+        'ok': True,
+        'usuarios': [
+            {
+                'id': u.id,
+                'nombre': u.nombre,
+                'email': u.email,
+                'rol': u.get_rol_display(),
+                'activo': u.is_active,
+            }
+            for u in usuarios
+        ],
+    })
+
+
+@rol_requerido('admin')
+def cambiar_contrasena(request):
+    if request.method != 'POST':
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'Método no permitido.'
+        }, status=405)
+
+    usuario_id = request.POST.get('usuario_id', '')
+    contrasena_admin = request.POST.get('contrasena_admin', '')
+    nueva_contrasena = request.POST.get('nueva_contrasena', '')
+    confirmar_contrasena = request.POST.get('confirmar_contrasena', '')
+
+    # Todos los campos son obligatorios
+    if not usuario_id or not contrasena_admin or not nueva_contrasena or not confirmar_contrasena:
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'Todos los campos son obligatorios.'
+        }, status=400)
+
+    # El admin confirma su propia contraseña antes de cambiar la de otro
+    if not request.user.check_password(contrasena_admin):
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'Tu contraseña de administrador es incorrecta.'
+        }, status=400)
+
+    # Buscar el usuario al que se le cambia la contraseña
+    try:
+        objetivo = Usuario.objects.get(id=int(usuario_id))
+    except (Usuario.DoesNotExist, ValueError):
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'El usuario seleccionado no existe.'
+        }, status=404)
+
+    # Un admin no puede tocar la cuenta del Administrador Principal
+    if objetivo.rol == 'adminprincipal':
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'No tenés permiso para cambiar la contraseña de ese usuario.'
+        }, status=403)
+
+    if nueva_contrasena != confirmar_contrasena:
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'Las nuevas contraseñas no coinciden.'
+        }, status=400)
+
+    if len(nueva_contrasena) < 8:
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'La nueva contraseña debe tener al menos 8 caracteres.'
+        }, status=400)
+
+    objetivo.set_password(nueva_contrasena)
+    objetivo.save(update_fields=['password'])
+
+    # Si el admin se cambió la suya, mantenerlo conectado
+    if objetivo.pk == request.user.pk:
+        from django.contrib.auth import update_session_auth_hash
+        update_session_auth_hash(request, request.user)
+
+    return JsonResponse({
+        'ok': True,
+        'mensaje': f'Contraseña de {objetivo.nombre} cambiada correctamente.'
+    })
+
+@rol_requerido('admin', 'adminprincipal')
+def cambiar_foto_perfil(request):
+    if request.method != 'POST':
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'Método no permitido.'
+        }, status=405)
+
+    foto = request.FILES.get('foto_perfil')
+
+    if not foto:
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'No se seleccionó ninguna foto.'
+        }, status=400)
+
+    # Validar que sea una imagen
+    if not foto.content_type.startswith('image/'):
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'El archivo seleccionado no es una imagen válida.'
+        }, status=400)
+
+    # Limitar el tamaño a 5 MB
+    if foto.size > 5 * 1024 * 1024:
+        return JsonResponse({
+            'ok': False,
+            'mensaje': 'La foto no puede superar los 5 MB.'
+        }, status=400)
+
+    request.user.foto_perfil = foto
+    request.user.save(update_fields=['foto_perfil'])
+
+    return JsonResponse({
+        'ok': True,
+        'mensaje': 'Foto de perfil actualizada correctamente.',
+        'foto_url': request.user.foto_perfil.url
     })
