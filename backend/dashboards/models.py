@@ -308,6 +308,11 @@ class ImputacionAuditoria(models.Model):
 # ORDEN DE PAGO 
 # ─────────────────────────────────────────────
 class OrdenPago(ControlModificacion):
+    ESTADO_FORMULARIO_CHOICES = [
+        ('REVISAR', 'Revisar'),
+        ('LISTO',   'Listo'),
+    ]
+
     imputacion                = models.ForeignKey('Imputacion', on_delete=models.PROTECT, related_name='ordenes_pago', null=True, blank=True)
     nro_orden_pago            = models.CharField(max_length=50)
     fecha                     = models.DateField()
@@ -334,11 +339,30 @@ class OrdenPago(ControlModificacion):
     fecha_creacion            = models.DateTimeField(auto_now_add=True)
     anulada                   = models.BooleanField(default=False)
     fecha_anulacion           = models.DateTimeField(null=True, blank=True)
+    # REVISAR = borrador (autoguardado, sin movimientos presupuestarios).
+    # LISTO   = completada. El default protege a las OP ya existentes.
+    estado_formulario         = models.CharField(
+        max_length=10,
+        choices=ESTADO_FORMULARIO_CHOICES,
+        default='LISTO',
+    )
+    # Token de concurrencia (bloqueo optimista). Sube solo con cambios reales o al
+    # completar. El cliente lo devuelve en cada guardado.
+    version                   = models.PositiveIntegerField(default=1)
+    # UUID generado por el navegador para el primer guardado: si la respuesta se pierde
+    # y el cliente reintenta, el servidor devuelve el mismo borrador en vez de crear otro.
+    clave_idempotencia        = models.UUIDField(null=True, blank=True, unique=True, editable=False)
 
     class Meta:
         db_table     = 'orden_pago'
         ordering     = ['-fecha']
         verbose_name = 'Orden de Pago'
+        constraints  = [
+            models.CheckConstraint(
+                name='op_estado_formulario_valido',
+                **_check(Q(estado_formulario__in=['REVISAR', 'LISTO'])),
+            ),
+        ]
 
     def __str__(self):
         return f'OP {self.nro_orden_pago} - {self.importe_total}'
@@ -367,6 +391,79 @@ class OrdenPagoUnidadPresupuestaria(RegistroAuditable):
 
     def __str__(self):
         return f'{self.orden_pago} - {self.imputacion_detalle} - {self.importe}'
+
+class OrdenPagoBorradorBeneficiario(models.Model):
+    # Beneficiarios de una OP en estado REVISAR. Tabla aparte a propósito: los borradores
+    # se reemplazan completos en cada guardado y al completar se convierten en
+    # OrdenPagoBeneficiario y se borran.
+    orden_pago          = models.ForeignKey(OrdenPago, on_delete=models.CASCADE, related_name='borradores_beneficiario')
+    codigo_beneficiario = models.CharField(max_length=20, blank=True)
+    beneficiario        = models.CharField(max_length=200, blank=True)
+    importe             = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    orden               = models.IntegerField(default=0)
+
+    class Meta:
+        db_table     = 'orden_pago_borrador_beneficiario'
+        ordering     = ['orden']
+        verbose_name = 'Borrador de Beneficiario de OP'
+
+    def __str__(self):
+        return f'Borrador OP {self.orden_pago_id} beneficiario {self.orden}'
+
+
+class OrdenPagoBorradorUP(models.Model):
+    # Importes por UP de una OP en estado REVISAR. NUNCA se guardan en
+    # OrdenPagoUnidadPresupuestaria: esa tabla es la que consume fondos de la Imputación
+    # (todas las fórmulas de disponibilidad la suman). Un borrador solo escribe acá.
+    orden_pago         = models.ForeignKey(OrdenPago, on_delete=models.CASCADE, related_name='borradores_up')
+    imputacion_detalle = models.ForeignKey(ImputacionDetalle, on_delete=models.SET_NULL, null=True, blank=True, related_name='borradores_orden_pago')
+    importe            = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    orden              = models.IntegerField(default=0)
+
+    class Meta:
+        db_table     = 'orden_pago_borrador_up'
+        ordering     = ['orden']
+        verbose_name = 'Borrador de UP de OP'
+
+    def __str__(self):
+        return f'Borrador OP {self.orden_pago_id} UP {self.orden}'
+
+
+class OrdenPagoAuditoria(models.Model):
+    """
+    Historial de INTERVENCIONES sobre una OP (quién hizo qué y cuándo).
+    NO es un movimiento presupuestario: nunca toca saldos ni MovimientoHistorial.
+
+    - 'orden_pago_id' es un entero SIN FK a propósito: el rastro de una eliminación
+      de borrador sobrevive al borrado de la OP.
+    - Ediciones consecutivas del MISMO usuario dentro de una ventana de tiempo se
+      agrupan en una fila (el autoguardado dispara muchos guardados).
+    - Consultas / aperturas del formulario NO generan filas.
+    """
+    OPERACION_CHOICES = [
+        ('CREAR',     'Creación del borrador'),
+        ('EDITAR',    'Edición del borrador'),
+        ('COMPLETAR', 'Confirmación como Listo'),
+        ('ELIMINAR',  'Eliminación del borrador'),
+    ]
+
+    orden_pago_id     = models.IntegerField(db_index=True)
+    operacion         = models.CharField(max_length=12, choices=OPERACION_CHOICES)
+    usuario           = models.ForeignKey(UsuarioPersonalizado, on_delete=models.PROTECT, related_name='auditoria_ordenes_pago')
+    fecha             = models.DateTimeField(default=timezone.now)
+    fecha_ultima      = models.DateTimeField(default=timezone.now)
+    cantidad          = models.PositiveIntegerField(default=1)
+    estado_resultante = models.CharField(max_length=10)
+    detalle           = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = 'orden_pago_auditoria'
+        ordering = ['fecha', 'id']
+        indexes  = [models.Index(fields=['orden_pago_id', 'fecha'], name='op_aud_op_fecha_idx')]
+
+    def __str__(self):
+        return f'OP {self.orden_pago_id} — {self.operacion} por {self.usuario_id}'
+
 
 # ─────────────────────────────────────────────
 # ORDEN DE PAGO PERSONAL

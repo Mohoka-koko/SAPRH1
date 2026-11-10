@@ -25,6 +25,7 @@
             <option value="Pendiente">Pendiente</option>
             <option value="Pagada parcial">Pagada parcial</option>
             <option value="Pagada total">Pagada total</option>
+            <option value="Anulada">Anulada</option>
         </select>
         <button type="button" id="btn-limpiar-filtros" class="btn-limpiar">Limpiar filtros</button>
     </div>
@@ -68,7 +69,9 @@
                         </span>
                     </td>
                     <td data-label="Acciones">
-                        {% if imp.estado != 'Pagada total' %}
+                        {% if imp.anulada %}
+                        <span class="op-anulada">Anulada</span>
+                        {% elif imp.estado != 'Pagada total' %}
                         <a href="{% url 'ordenpago' %}?imputacion_id={{ imp.id }}"
                            class="btn-generar-op">
                             Generar OP

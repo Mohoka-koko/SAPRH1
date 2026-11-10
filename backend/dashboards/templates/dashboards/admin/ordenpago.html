@@ -8,21 +8,25 @@
 
 {% block content %}
 
-<div class="ordenpago-page">
+<div class="ordenpago-page" id="ordenpagoPage" data-registros-url="{% url 'registros' %}">
     <div class="botones-accion no-print">
         <button type="button" class="btn-accion" id="btnExportarPDF">
             <i class="fa-solid fa-file-pdf"></i>
             Exportar a PDF
         </button>
-        <button type="button" class="btn-accion" id="btnImprimir">
+        <button type="button" class="btn-accion" id="btnCompletar">
             <i class="fa-solid fa-floppy-disk"></i>
-            Guardar orden de pago
+            Guardar como completado
         </button>
-        <a href="{% url 'lista_imputaciones' %}" class="btn-accion btn-link"
-           onclick="return confirm('¿Cancelar y volver a la lista de imputaciones? Se perderán los datos cargados.');">
-            &times; Cancelar
+        <a href="{% url 'registros' %}" class="btn-accion btn-link" id="btnSalir">
+            &larr; Salir
         </a>
+        <span id="estadoGuardado" class="estado-guardado" role="status" aria-live="polite"></span>
     </div>
+
+    <!-- Avisos del guardado automático (conflicto, borrador ya completado, etc.) -->
+    <div id="opAviso" class="no-print" role="alert" hidden
+         style="margin:.5rem 0;padding:.6rem .9rem;border:1px solid #b91c1c;border-radius:6px;background:#fef2f2;color:#7f1d1d;"></div>
 
     <div class="hoja" id="hoja">
         <div class="marco">
@@ -241,12 +245,28 @@
 
 </div>
 
+<!-- Datos del borrador a recuperar (null cuando se está creando una OP nueva) -->
+<script>window.OP_DATOS = {{ op_datos|default:"null"|safe }};</script>
+<script>window.OP_MODO = "{{ modo|default:"crear"|escapejs }}";</script>
+
+<!-- MODAL DE CONFIRMACIÓN PARA COMPLETAR -->
+<div id="modalConfirmarCompletar" class="modal-validacion-overlay" style="display:none;">
+    <div class="modal-validacion-caja">
+        <h3 class="modal-validacion-titulo">Guardar como completada</h3>
+        <p class="modal-validacion-subtitulo">¿Está seguro de que desea guardar esta Orden de Pago como completada?</p>
+        <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
+            <button type="button" id="btnCancelarCompletar" class="modal-validacion-btn" style="background:#6b7280;">Cancelar</button>
+            <button type="button" id="btnConfirmarCompletar" class="modal-validacion-btn">Confirmar</button>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL DE VALIDACIÓN -->
 <div id="modalValidacion" class="modal-validacion-overlay" style="display:none;">
     <div class="modal-validacion-caja">
         <div class="modal-validacion-icono">⚠️</div>
-        <h3 class="modal-validacion-titulo">Campos incompletos</h3>
-        <p class="modal-validacion-subtitulo">Completá los siguientes campos antes de guardar:</p>
+        <h3 class="modal-validacion-titulo">No se pudo completar la Orden de Pago</h3>
+        <p class="modal-validacion-subtitulo">Corregí lo siguiente. El borrador sigue guardado en estado Revisar:</p>
         <ul id="modalValidacionLista" class="modal-validacion-lista"></ul>
         <button id="modalValidacionCerrar" class="modal-validacion-btn">Entendido</button>
     </div>

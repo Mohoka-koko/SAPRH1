@@ -113,8 +113,15 @@ urlpatterns = [
     path('api/op-personal/borrador/<int:opp_id>/actualizar/', views.api_op_personal_borrador_actualizar, name='api_op_personal_borrador_actualizar'),
     path('api/op-personal/<int:opp_id>/completar/', views.api_op_personal_completar, name='api_op_personal_completar'),
 
-    # ── Orden de pago ──────────────────────────────────────────────────────
-    path('api/orden-pago/crear/', views.api_crear_orden_pago, name='api_crear_orden_pago'),
+    # ── Orden de pago: guardado automático (borrador "Revisar"), completado y ver ──
+    # (se retiró api/orden-pago/crear/: creaba la OP y consumía fondos sin pasar por Revisar → Listo)
+    path('ordenpago/editar/<int:op_id>/', views.ordenpago_editar, name='ordenpago_editar'),
+    path('ordenpago/ver/<int:op_id>/', views.ordenpago_ver, name='ordenpago_ver'),
+    path('api/orden-pago/borrador/crear/', views.api_op_borrador_crear, name='api_op_borrador_crear'),
+    path('api/orden-pago/borrador/<int:op_id>/actualizar/', views.api_op_borrador_actualizar, name='api_op_borrador_actualizar'),
+    path('api/orden-pago/<int:op_id>/completar/', views.api_op_completar, name='api_op_completar'),
+    path('api/orden-pago/borrador/<int:op_id>/eliminar/', views.api_op_borrador_eliminar, name='api_op_borrador_eliminar'),
+    path('api/orden-pago/<int:op_id>/auditoria/', views.api_op_auditoria, name='api_op_auditoria'),
 
     # ── Carga de catálogos (CRUD genérico) ─────────────────────────────────
     path('api/catalogos/listar/', views.api_catalogos_listar, name='api_catalogos_listar'),

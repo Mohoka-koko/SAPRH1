@@ -395,6 +395,7 @@
         campoTotal.value = total > 0 ? formatearImporte(total) : "";
         actualizarLetras();
     }
+    recalcularImporteConcepto();
   }
 
   /* ------------------------------------------------------------------------
@@ -422,9 +423,10 @@
     const totalOP    = parsearImporte(campoTotal?.value);
     const errTotal   = document.getElementById("err-importeTotal");
 
-    if (totalOP > 0 && totalBenef > totalOP) {
+    // La suma de los beneficiarios debe ser EXACTAMENTE el importe del Señor Tesorero
+    if (totalBenef > 0 && Math.abs(totalBenef - totalOP) > 0.005) {
         if (errTotal) {
-            errTotal.textContent = `El total de beneficiarios ($${formatearImporte(totalBenef)}) supera el importe de la OP ($${formatearImporte(totalOP)}).`;
+            errTotal.textContent = `La suma de los beneficiarios ($${formatearImporte(totalBenef)}) debe ser exactamente igual al importe del Señor Tesorero ($${formatearImporte(totalOP)}).`;
         }
     } else {
         if (errTotal) errTotal.textContent = "";
@@ -581,7 +583,6 @@
 
     document.getElementById("btnAddBeneficiario")?.addEventListener("click", agregarFilaBeneficiario);
     document.getElementById("btnDelBeneficiario")?.addEventListener("click", eliminarFilaBeneficiario);
-    document.getElementById("btnImprimir")?.addEventListener("click", guardarOrdenPago);
     document.getElementById("btnExportarPDF")?.addEventListener("click", exportarAPDF);
 
     inicializarPanelSaldos();
@@ -637,7 +638,7 @@
    ------------------------------------------------------------------------ */
   async function autocompletarDesdeImputacion() {
     const params       = new URLSearchParams(window.location.search);
-    const imputacionId = params.get('imputacion_id');
+    const imputacionId = params.get('imputacion_id') || (window.OP_DATOS && window.OP_DATOS.imputacion_id);
     if (!imputacionId) return;
 
     // Guardamos el id globalmente para usarlo al guardar
@@ -657,6 +658,17 @@
 
       if (campExpediente)   campExpediente.value   = detalle.expediente   || '';
       if (campJurisdiccion) campJurisdiccion.value = detalle.jurisdiccion  || '';
+
+      // Modo "Ver": solo el encabezado. Las UP se arman desde la propia OP (la lista de UP con saldo
+      // no sirve acá: omite las UP que esta OP agotó).
+      window._jurVer = detalle.detalles.length > 0 ? detalle.detalles[0].jur : '51';
+      if (window.OP_MODO === 'ver') {
+        const campEjercicio = document.getElementById('ejercicio');
+        if (campEjercicio && detalle.detalles.length > 0 && detalle.detalles[0].ejercicio) {
+          campEjercicio.value = detalle.detalles[0].ejercicio;
+        }
+        return;
+      }
 
       // ── UPs disponibles con saldo ─────────────────────────────────────
       const respUPs = await fetch(`/api/imputacion/${imputacionId}/ups/`);
@@ -909,7 +921,7 @@
   if (contenedorFechaRentas) {
     const inputOriginal = document.getElementById('fechaRentas');
     if (inputOriginal) inputOriginal.remove();
-    mostrarSelectorFecha(contenedorFechaRentas);
+    mostrarFechaFormateada(contenedorFechaRentas, hoyISO());
   }
 
   /* ------------------------------------------------------------------------
@@ -938,217 +950,495 @@
     };
   }
 
-  async function guardarOrdenPago() {
-    const imputacionId = window._imputacionId;
-    const errores = [];
-  
-    // ── Validaciones de encabezado ────────────────────────────────────────
-    const numeroOrden = document.getElementById('numeroOrden')?.value.trim();
-    if (!numeroOrden) errores.push('Número de Orden de Pago es obligatorio.');
-    else if (!/^\d{2}-\d{2}-\d{4}$/.test(numeroOrden)) {
-      errores.push('El número de orden debe tener el formato 00-00-0000 (8 dígitos).');
+  /* ------------------------------------------------------------------------
+   GUARDADO AUTOMÁTICO DEL BORRADOR + COMPLETAR (Revisar → Listo)
+
+   - Abrir el formulario NO crea nada: el borrador se crea con la primera edición real.
+   - Cada cambio se guarda solo (debounce + al salir del campo). Si el contenido no cambió
+     respecto de lo último confirmado por el servidor, no se envía nada.
+   - El servidor devuelve una "versión": si otra persona u otra pestaña modificó el borrador,
+     responde 409 y NO se pisan sus cambios (se bloquea el autoguardado y se avisa).
+   - Un borrador nunca consume fondos: eso solo ocurre al completar (en el servidor).
+   ------------------------------------------------------------------------ */
+  const OP_AUTOGUARDADO_MS = 1500;
+  const OP_ESTADO = {
+    id: null,               // id del borrador (null hasta el primer guardado)
+    version: null,          // versión que el servidor nos devolvió por última vez
+    imputacionId: null,
+    clave: null,            // UUID del primer guardado (evita duplicados si se pierde la respuesta)
+    ultimoGuardado: null,   // contenido (JSON) confirmado por el servidor
+    timer: null,
+    cola: Promise.resolve(),
+    activo: false,          // true cuando terminó de cargar y restaurar
+    bloqueado: false,       // true ante conflicto / borrador completado o inexistente
+    completando: false,
+  };
+
+  function generarUUID() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    const b = new Uint8Array(16);
+    crypto.getRandomValues(b);
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  }
+
+  function hoyISO() {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }
+
+  function isoADDMMAAAA(iso) {
+    if (!iso) return '';
+    const [a, m, d] = iso.split('-');
+    return `${d}/${m}/${a}`;
+  }
+
+  function esFechaISOValida(iso) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+    const f = new Date(`${iso}T00:00:00`);
+    return !isNaN(f.getTime()) && f.toISOString().slice(0, 10) === iso;
+  }
+
+  function postJSON(url, cuerpo) {
+    return fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken') || '',
+      },
+      body: JSON.stringify(cuerpo),
+    });
+  }
+
+  function mostrarEstadoGuardado(estado, texto) {
+    const el = document.getElementById('estadoGuardado');
+    if (!el) return;
+    const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    const textos = {
+      nuevo:       'Se guarda automáticamente a medida que completás los campos.',
+      previo:      'Borrador recuperado. Los cambios se guardan automáticamente.',
+      pendiente:   'Cambios sin guardar…',
+      guardando:   'Guardando…',
+      guardado:    `Guardado automáticamente a las ${hora}`,
+      sinconexion: 'Sin conexión: se reintentará automáticamente.',
+      error:       texto || 'No se pudo guardar el borrador.',
+    };
+    el.textContent = textos[estado] || '';
+    el.dataset.estado = estado;
+    el.style.color = (estado === 'error' || estado === 'sinconexion') ? '#b91c1c' : '';
+  }
+
+  function mostrarAviso(mensaje, { recargar = false, irRegistros = false } = {}) {
+    const el = document.getElementById('opAviso');
+    if (!el) { alert(mensaje); return; }
+    el.textContent = '';
+    const texto = document.createElement('span');
+    texto.textContent = mensaje + ' ';
+    el.appendChild(texto);
+    if (recargar) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn-accion';
+      b.textContent = 'Recargar';
+      b.addEventListener('click', () => window.location.reload());
+      el.appendChild(b);
     }
-  
-    const expediente = document.getElementById('expediente')?.value.trim();
-    if (!expediente) errores.push('Expediente Nº es obligatorio.');
-  
-    const ejercicio = document.getElementById('ejercicio')?.value.trim();
-    if (!ejercicio) errores.push('Ejercicio es obligatorio.');
-  
-    const jurisdiccion = document.getElementById('jurisdiccion')?.value.trim();
-    if (!jurisdiccion) errores.push('Jurisdicción es obligatoria.');
-  
-    const codigoPago = document.getElementById('codigoPago')?.value.trim();
-    if (!codigoPago) errores.push('Código de Pago es obligatorio.');
-  
-    const fechaVencimiento = document.getElementById('fechaVencimiento')?.value.trim();
-    if (!fechaVencimiento) {
-      errores.push('Fecha de Vencimiento es obligatoria.');
-    } else if (!validarFecha(document.getElementById('fechaVencimiento'))) {
-      errores.push('Fecha de Vencimiento debe ser válida y tener formato dd/mm/aaaa.');
+    if (irRegistros) {
+      const a = document.createElement('a');
+      a.className = 'btn-accion btn-link';
+      a.href = (document.getElementById('ordenpagoPage')?.dataset.registrosUrl || '/');
+      a.textContent = 'Ir a Registros';
+      el.appendChild(a);
     }
-  
-    const importeTotal = parsearImporte(document.getElementById('importeTotal')?.value);
-    if (importeTotal <= 0) errores.push('El importe total debe ser mayor a cero.');
-  
-    // ── Validación de imputación ──────────────────────────────────────────
-    if (!imputacionId) errores.push('No hay una imputación asociada a esta Orden de Pago.');
-  
-    // ── Validación de beneficiarios ───────────────────────────────────────
-    const filasBenef = document.querySelectorAll('#beneficiariosBody tr');
-    const beneficiarios = [];
-    let benefIncompleto = false;
-  
-    for (const fila of filasBenef) {
-      const nombre  = fila.querySelector('.input-nombre-beneficiario')?.value.trim() || '';
-      const importe = parsearImporte(fila.querySelector('.input-importe-beneficiario')?.value);
-      const codigo  = fila.querySelector('.input-codigo-beneficiario')?.value.trim() || '';
-  
-      if (!nombre && importe === 0) continue; // fila vacía, se ignora
-  
-      if (!nombre || importe <= 0) {
-        benefIncompleto = true;
-        break;
+    el.hidden = false;
+  }
+
+  /** Foto de lo que hay en pantalla, en el formato que espera el servidor. */
+  function recolectarContenido() {
+    const val = (id) => (document.getElementById(id)?.value || '').trim();
+    const contenido = {
+      nro_orden_pago:                val('numeroOrden'),
+      fecha:                         document.querySelector('#fechaRentasWrapper [data-valor-iso]')?.dataset?.valorIso || '',
+      codigo_pago:                   val('codigoPago'),
+      descripcion_codigo_pago:       val('descripcionCodigoPago'),
+      concepto_lineas:               Array.from(document.querySelectorAll('#conceptoDescripcionContainer textarea')).map((t) => t.value),
+      nro_factura:                   val('numeroFactura'),
+      nro_resolucion:                val('resolucion'),
+      nro_resolucion_rectificatoria: val('nroResolucionRectificatoria'),
+      decreto:                       val('decreto'),
+      licitacion:                    val('licitacion'),
+    };
+
+    // Fecha de vencimiento: vacía se envía vacía; incompleta (mientras se escribe) no se envía.
+    const venc = val('fechaVencimiento');
+    if (!venc) {
+      contenido.fecha_vencimiento = '';
+    } else {
+      const iso = convertirFechaAIso(venc);
+      if (iso && esFechaISOValida(iso)) contenido.fecha_vencimiento = iso;
+    }
+
+    // Concepto del pago (primera fila): el código debe ser numérico; mientras no lo sea no se envía.
+    const filaConcepto = document.querySelector('#conceptoPagoBody tr');
+    const codConcepto  = (filaConcepto?.querySelector('.input-codigo-concepto')?.value || '').trim();
+    if (/^\d*$/.test(codConcepto)) contenido.codigo_concepto_pago = codConcepto;
+    contenido.concepto_del_pago = (filaConcepto?.querySelector('.input-desc-concepto')?.value || '').trim();
+
+    contenido.beneficiarios = Array.from(document.querySelectorAll('#beneficiariosBody tr')).map((f) => {
+      const crudo = (f.querySelector('.input-importe-beneficiario')?.value || '').trim();
+      return {
+        codigo_beneficiario: (f.querySelector('.input-codigo-beneficiario')?.value || '').trim(),
+        beneficiario:        (f.querySelector('.input-nombre-beneficiario')?.value || '').trim(),
+        importe:             crudo === '' ? '' : String(parsearImporte(crudo)),
+      };
+    });
+
+    contenido.ups = [];
+    document.querySelectorAll('#partidasBody tr').forEach((f) => {
+      const detalleId = f.dataset.detalleId;
+      const importe = parsearImporte(f.querySelector('.input-importe-up')?.value);
+      if (detalleId && importe > 0) contenido.ups.push({ imputacion_detalle_id: detalleId, importe: String(importe) });
+    });
+
+    return contenido;
+  }
+
+  function programarGuardado(demora = OP_AUTOGUARDADO_MS) {
+    if (!OP_ESTADO.activo || OP_ESTADO.bloqueado || OP_ESTADO.completando) return;
+    clearTimeout(OP_ESTADO.timer);
+    mostrarEstadoGuardado('pendiente');
+    OP_ESTADO.timer = setTimeout(() => guardarBorrador(), demora);
+  }
+
+  /** Un solo guardado a la vez (en orden). Devuelve { ok, sinCambios }. */
+  function guardarBorrador({ forzar = false } = {}) {
+    clearTimeout(OP_ESTADO.timer);
+    OP_ESTADO.cola = OP_ESTADO.cola.then(() => ejecutarGuardado(forzar)).catch(() => ({ ok: false }));
+    return OP_ESTADO.cola;
+  }
+
+  async function ejecutarGuardado(forzar) {
+    if (OP_ESTADO.bloqueado) return { ok: false };
+    const contenido = recolectarContenido();
+    const instantanea = JSON.stringify(contenido);
+
+    if (!forzar && instantanea === OP_ESTADO.ultimoGuardado) {
+      if (OP_ESTADO.id) mostrarEstadoGuardado('guardado');
+      return { ok: true, sinCambios: true };
+    }
+
+    mostrarEstadoGuardado('guardando');
+    try {
+      let resp, data;
+      if (!OP_ESTADO.id) {
+        resp = await postJSON('/api/orden-pago/borrador/crear/', {
+          ...contenido,
+          imputacion_id: OP_ESTADO.imputacionId,
+          clave_idempotencia: OP_ESTADO.clave,
+        });
+        data = await resp.json().catch(() => ({}));
+        if (resp.ok) {
+          OP_ESTADO.id = data.orden_pago_id;
+          OP_ESTADO.version = data.version;
+          if (data.url_editar) window.history.replaceState(null, '', data.url_editar);
+          if (data.existente) {
+            // Reintento de un primer guardado cuya respuesta se perdió: se reenvía el contenido
+            // como actualización del mismo borrador.
+            OP_ESTADO.ultimoGuardado = null;
+            return await ejecutarGuardado(true);
+          }
+        }
+      } else {
+        resp = await postJSON(`/api/orden-pago/borrador/${OP_ESTADO.id}/actualizar/`, {
+          ...contenido,
+          version: OP_ESTADO.version,
+        });
+        data = await resp.json().catch(() => ({}));
+        if (resp.ok) OP_ESTADO.version = data.version;
       }
-      beneficiarios.push({ codigo_beneficiario: codigo, beneficiario: nombre, importe });
-    }
-  
-    if (benefIncompleto) errores.push('Hay un beneficiario incompleto (falta nombre o importe).');
-    if (beneficiarios.length === 0 && !benefIncompleto) errores.push('Agregá al menos un beneficiario con importe.');
-  
-    // ── Validación de UPs ─────────────────────────────────────────────────
-    const filasUPs = document.querySelectorAll('#partidasBody tr');
-    const ups = [];
-    let upNegativa = false;
-    let upSuperaSaldo = false;
-    let detalleSuperaSaldo = '';
-  
-    for (const fila of filasUPs) {
-      const detalleId = fila.dataset.detalleId;
-      const importe   = parsearImporte(fila.querySelector('.input-importe-up')?.value);
-  
-      if (!detalleId || importe === 0) continue;
-  
-      if (importe < 0) { upNegativa = true; break; }
-  
-      const saldo = parseFloat(fila.dataset.saldoDisponible);
-      if (importe > saldo) {
-        upSuperaSaldo = true;
-        detalleSuperaSaldo = `Disponible: $${formatearImporte(saldo)} / Asignado: $${formatearImporte(importe)}`;
-        break;
+
+      if (resp.ok) {
+        OP_ESTADO.ultimoGuardado = instantanea;
+        mostrarEstadoGuardado('guardado');
+        return { ok: true };
       }
-      ups.push({ imputacion_detalle_id: detalleId, importe });
+      return manejarErrorGuardado(resp.status, data);
+    } catch (err) {
+      console.error('Error de red guardando el borrador:', err);
+      mostrarEstadoGuardado('sinconexion');
+      OP_ESTADO.timer = setTimeout(() => guardarBorrador(), 5000);
+      return { ok: false, red: true };
     }
-  
-    if (upNegativa)    errores.push('El importe de una Unidad Presupuestaria no puede ser negativo.');
-    if (upSuperaSaldo) errores.push(`Un importe de UP supera el saldo disponible. ${detalleSuperaSaldo}`);
-    if (ups.length === 0 && !upNegativa && !upSuperaSaldo) errores.push('Asigná importe a al menos una Unidad Presupuestaria.');
-  
-    // ── Validación cruzada ────────────────────────────────────────────────
-    const totalBenef = beneficiarios.reduce((acc, b) => acc + b.importe, 0);
-    const totalUPs   = ups.reduce((acc, u) => acc + u.importe, 0);
-  
-    if (beneficiarios.length > 0 && totalBenef > importeTotal) {
-      errores.push(`El total de beneficiarios ($${formatearImporte(totalBenef)}) supera el importe de la OP ($${formatearImporte(importeTotal)}).`);
+  }
+
+  function bloquearEdicion(mensaje, opciones) {
+    OP_ESTADO.bloqueado = true;
+    clearTimeout(OP_ESTADO.timer);
+    document.getElementById('btnCompletar')?.setAttribute('disabled', 'disabled');
+    mostrarEstadoGuardado('error', 'Edición detenida: no se guardan más cambios.');
+    mostrarAviso(mensaje, opciones);
+  }
+
+  function manejarErrorGuardado(estado, data) {
+    const mensaje = (data && data.error) || `No se pudo guardar (error ${estado}).`;
+    if (estado === 409 && data && data.conflicto) {
+      bloquearEdicion(mensaje, { recargar: true });
+    } else if (estado === 409 && data && data.completado) {
+      bloquearEdicion(mensaje, { irRegistros: true });
+    } else if (estado === 403 || estado === 404) {
+      bloquearEdicion(mensaje, { irRegistros: true });
+    } else {
+      // Error de validación del contenido o del servidor: se informa y se reintenta con la próxima edición.
+      mostrarEstadoGuardado('error', mensaje);
     }
-    if (ups.length > 0 && Math.abs(totalUPs - importeTotal) > 0.01) {
-      errores.push(`La suma de UPs ($${formatearImporte(totalUPs)}) no coincide con el importe de la OP ($${formatearImporte(importeTotal)}).`);
-    }
-    
-      // ── Validación de código de beneficiario ──────────────────────────────
-    for (const fila of filasBenef) {
-      const nombre  = fila.querySelector('.input-nombre-beneficiario')?.value.trim() || '';
-      const codigo  = fila.querySelector('.input-codigo-beneficiario')?.value.trim() || '';
-      const importe = parsearImporte(fila.querySelector('.input-importe-beneficiario')?.value);
-      if (!nombre && importe === 0) continue; // fila vacía
-      if (!codigo) {
-        errores.push('Falta el código en uno o más beneficiarios.');
-        break;
+    return { ok: false, estado, data };
+  }
+
+  /* ── Restaurar un borrador guardado ───────────────────────────────────── */
+  function restaurarBorrador(d) {
+    const poner = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+
+    poner('numeroOrden', d.nro_orden_pago);
+    poner('fechaVencimiento', isoADDMMAAAA(d.fecha_vencimiento));
+    poner('numeroFactura', d.nro_factura);
+    poner('resolucion', d.nro_resolucion);
+    poner('nroResolucionRectificatoria', d.nro_resolucion_rectificatoria);
+    poner('decreto', d.decreto);
+    poner('licitacion', d.licitacion);
+
+    // Fecha de elaboración: la guardada (por defecto, la de creación del borrador)
+    const contFecha = document.getElementById('fechaRentasWrapper');
+    if (contFecha) mostrarFechaFormateada(contFecha, d.fecha || hoyISO());
+
+    // Código de pago (si ya no figura entre los activos, se conserva igual)
+    const select = document.getElementById('codigoPago');
+    if (select && d.codigo_pago) {
+      if (!Array.from(select.options).some((o) => o.value === String(d.codigo_pago))) {
+        const op = document.createElement('option');
+        op.value = op.textContent = String(d.codigo_pago);
+        select.appendChild(op);
       }
+      select.value = String(d.codigo_pago);
+    }
+    poner('descripcionCodigoPago', d.descripcion_codigo_pago || (window._codigosPagoMap || {})[d.codigo_pago] || '');
+
+    // Descripción del concepto (líneas libres)
+    const cont = document.getElementById('conceptoDescripcionContainer');
+    cont.innerHTML = '';
+    const lineas = (d.concepto_lineas && d.concepto_lineas.length) ? d.concepto_lineas : [''];
+    lineas.forEach((texto) => {
+      agregarLineaDescripcionConcepto();
+      const ta = cont.querySelector('.concepto-linea-desc:last-child textarea');
+      ta.value = texto;
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    });
+
+    // Concepto del pago
+    const filaConcepto = document.querySelector('#conceptoPagoBody tr');
+    if (filaConcepto) {
+      filaConcepto.querySelector('.input-codigo-concepto').value = d.codigo_concepto_pago || '';
+      filaConcepto.querySelector('.input-desc-concepto').value = d.concepto_del_pago || '';
     }
 
-    // ── Validación de concepto del pago ───────────────────────────────────
-    const filasConceptoVal = document.querySelectorAll('#conceptoPagoBody tr');
-    for (const fila of filasConceptoVal) {
-      const cod  = fila.querySelector('.input-codigo-concepto')?.value.trim() || '';
-      const desc = fila.querySelector('.input-desc-concepto')?.value.trim()   || '';
-      if (!cod)  { errores.push('Falta el código en Concepto del Pago.');       break; }
-      if (!desc) { errores.push('Falta la descripción en Concepto del Pago.');  break; }
+    // Beneficiarios
+    const cuerpoBenef = document.getElementById('beneficiariosBody');
+    cuerpoBenef.innerHTML = '';
+    const benef = (d.beneficiarios && d.beneficiarios.length) ? d.beneficiarios : [{}];
+    benef.forEach((b) => {
+      agregarFilaBeneficiario();
+      const fila = cuerpoBenef.lastElementChild;
+      fila.querySelector('.input-codigo-beneficiario').value = b.codigo_beneficiario || '';
+      fila.querySelector('.input-nombre-beneficiario').value = b.beneficiario || '';
+      const imp = fila.querySelector('.input-importe-beneficiario');
+      imp.value = b.importe ? formatearImporte(Number(b.importe)) : '';
+    });
+
+    // Importes por Unidad Presupuestaria (las filas ya fueron armadas desde la Imputación)
+    const perdidas = [];
+    (d.ups || []).forEach((u) => {
+      const fila = document.querySelector(`#partidasBody tr[data-detalle-id="${u.imputacion_detalle_id}"]`);
+      const input = fila && fila.querySelector('.input-importe-up');
+      if (!input) { perdidas.push(u); return; }
+      input.value = formatearImporte(Number(u.importe));
+      input.dispatchEvent(new Event('input'));   // sintético: actualiza panel de saldos y totales
+    });
+    recalcularImporteOrdenPago();
+    recalcularImporteConcepto();
+
+    if (perdidas.length) {
+      mostrarAviso(
+        'Algunas unidades presupuestarias asignadas en este borrador ya no tienen saldo disponible en la '
+        + 'Imputación y no se pudieron restaurar. Revisá los importes antes de completar.'
+      );
+    }
+  }
+
+  /* ── Completar (Revisar → Listo) ──────────────────────────────────────── */
+  function abrirConfirmacionCompletar() {
+    if (OP_ESTADO.bloqueado || OP_ESTADO.completando) return;
+    const overlay = document.getElementById('modalConfirmarCompletar');
+    if (overlay) overlay.style.display = 'flex';
+  }
+
+  function cerrarConfirmacionCompletar() {
+    const overlay = document.getElementById('modalConfirmarCompletar');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  async function confirmarCompletar() {
+    cerrarConfirmacionCompletar();
+    if (OP_ESTADO.bloqueado || OP_ESTADO.completando) return;
+    OP_ESTADO.completando = true;
+    clearTimeout(OP_ESTADO.timer);
+
+    const btn = document.getElementById('btnCompletar');
+    const textoBtn = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Completando...'; }
+
+    try {
+      // 1) Lo que se ve en pantalla debe ser exactamente lo que está guardado
+      const guardado = await guardarBorrador({ forzar: !OP_ESTADO.id });
+      if (!guardado.ok) {
+        if (!OP_ESTADO.bloqueado) {
+          mostrarModalValidacion([
+            (guardado.data && guardado.data.error) || 'No se pudo guardar el borrador antes de completar. Verificá la conexión e intentá de nuevo.',
+          ]);
+        }
+        return;
+      }
+
+      // 2) El servidor valida todo y recién ahí pasa a Listo
+      const resp = await postJSON(`/api/orden-pago/${OP_ESTADO.id}/completar/`, { version: OP_ESTADO.version });
+      const data = await resp.json().catch(() => ({}));
+
+      if (resp.ok) {
+        OP_ESTADO.bloqueado = true;
+        clearTimeout(OP_ESTADO.timer);
+        alert(`Orden de Pago completada correctamente.\nTotal: $${formatearImporte(parseFloat(data.importe_total))}`);
+        window.location.href = (document.getElementById('ordenpagoPage')?.dataset.registrosUrl || '/');
+        return;
+      }
+
+      if (resp.status === 409 || resp.status === 403 || resp.status === 404) {
+        manejarErrorGuardado(resp.status, data);
+      } else if (data.errores && data.errores.length) {
+        mostrarModalValidacion(data.errores);
+      } else {
+        mostrarModalValidacion([data.error || 'Error al completar. Revisá los datos.']);
+      }
+    } catch (err) {
+      console.error('Error completando la OP:', err);
+      mostrarModalValidacion(['Error de red al completar la Orden de Pago.']);
+    } finally {
+      OP_ESTADO.completando = false;
+      if (btn && !OP_ESTADO.bloqueado) { btn.disabled = false; btn.innerHTML = textoBtn; }
+    }
+  }
+
+  /* ── Modo "Ver": OP completada, solo lectura ──────────────────────────── */
+  async function iniciarModoVer(datos) {
+    await Promise.all([autocompletarDesdeImputacion(), cargarCodigosPago()]);
+
+    // Una fila por cada UP de la OP, con su importe definitivo
+    const jur = window._jurVer || '51';
+    const cuerpo = document.getElementById('partidasBody');
+    cuerpo.innerHTML = '';
+    (datos.ups_detalle || []).forEach((up) => {
+      const fila = document.createElement('tr');
+      fila.dataset.detalleId    = up.imputacion_detalle_id;
+      fila.dataset.fuenteId     = up.fuente_id;
+      fila.dataset.fuenteCodigo = up.fuente_codigo;
+      fila.dataset.fuenteNombre = up.fuente;
+      const celda = (v, extra = '') => `<td><input type="text" class="input-cod-partida ${extra}" value="${String(v ?? '').replace(/"/g, '&quot;')}" readonly></td>`;
+      fila.innerHTML =
+        celda(jur) + celda(up.prog) + celda('00') + celda(up.pry) + celda(up.ao) + celda(up.part) +
+        celda(up.fuente_codigo) + celda(up.denominacion || '', 'col-partida-desc') +
+        `<td><input type="text" class="input-importe-partida input-importe-up" value="${formatearImporte(Number(up.importe))}" readonly></td>`;
+      cuerpo.appendChild(fila);
+    });
+
+    restaurarBorrador({ ...datos, ups: [] });
+
+    // Todo en solo lectura
+    document.querySelectorAll('#hoja input, #hoja textarea').forEach((el) => { el.readOnly = true; });
+    document.querySelectorAll('#hoja select').forEach((el) => { el.disabled = true; });
+    document.querySelectorAll('#fechaRentasWrapper button').forEach((b) => b.remove());
+    ['.tabla-acciones', '#btnCompletar', '#panelSaldos'].forEach((sel) =>
+      document.querySelectorAll(sel).forEach((el) => { el.style.display = 'none'; }));
+
+    recalcularImporteOrdenPago();
+    recalcularImporteConcepto();
+
+    const estado = document.getElementById('estadoGuardado');
+    if (estado) {
+      estado.textContent = `Orden de Pago completada (solo lectura). Creada por ${datos.creado_por}` +
+        (datos.editado_por ? ` · última intervención: ${datos.editado_por}` : '');
+    }
+  }
+
+  /* ── Arranque ─────────────────────────────────────────────────────────── */
+  async function iniciarOrdenPago() {
+    const datos = window.OP_DATOS || null;
+    if (window.OP_MODO === 'ver' && datos) { await iniciarModoVer(datos); return; }
+    OP_ESTADO.imputacionId = datos ? datos.imputacion_id : new URLSearchParams(window.location.search).get('imputacion_id');
+    OP_ESTADO.clave = generarUUID();
+
+    // Las filas de UP y los códigos de pago llegan del servidor: hay que esperarlos antes de restaurar
+    await Promise.all([autocompletarDesdeImputacion(), cargarCodigosPago()]);
+
+    if (datos) {
+      OP_ESTADO.id = datos.id;
+      OP_ESTADO.version = datos.version;
+      restaurarBorrador(datos);
     }
 
-    // ── Validación de descripción del concepto (bloque libre) ────────────
-    const descripcionConcepto = Array.from(
-      document.querySelectorAll('#conceptoDescripcionContainer textarea')
-    ).map(t => t.value.trim()).filter(v => v);
-    if (descripcionConcepto.length === 0) {
-      errores.push('La descripción del concepto es obligatoria.');
-    }
-
-    // ── Validación de número de factura ───────────────────────────────────
-    const nroFactura = document.getElementById('numeroFactura')?.value.trim();
-    if (!nroFactura) errores.push('El número de factura es obligatorio.');
-
-    // ── Validación de resolución ──────────────────────────────────────────
-    const nroResolucion = document.getElementById('resolucion')?.value.trim();
-    if (!nroResolucion) errores.push('El número de resolución es obligatorio.');
-
-    // ── Validación de licitación y decreto ────────────────────────────────
-    const licitacion = document.getElementById('licitacion')?.value.trim();
-    const decreto = document.getElementById('decreto')?.value.trim();
-    if (!licitacion) errores.push('La licitación es obligatoria.');
-    if (!decreto) errores.push('El decreto es obligatorio.');
-
-    // ── Validación de fecha de Rentas Generales ───────────────────────────
-    const inputFechaRentas = document.querySelector('#fechaRentasWrapper [data-valor-iso]');
-    if (!inputFechaRentas?.dataset?.valorIso) {
-      errores.push('La fecha de Rentas Generales es obligatoria.');
-    }
-
-    // ── Si hay errores → mostrar modal y frenar ───────────────────────────
-    if (errores.length > 0) {
-      mostrarModalValidacion(errores);
+    if (!OP_ESTADO.imputacionId) {
+      mostrarAviso('Esta Orden de Pago no tiene una Imputación asociada. Volvé a la lista de Imputaciones y elegí "Generar OP".', { irRegistros: true });
       return;
     }
-  
-    // ── A partir de acá todo está validado: continuar con el POST ─────────
-    const conceptoLineas = Array.from(
-      document.querySelectorAll('#conceptoDescripcionContainer textarea')
-    ).map(t => t.value.trim()).filter(v => v).join(' / ');
-    
-    const filasConcepto  = document.querySelectorAll('#conceptoPagoBody tr');
-    const codigoConcepto = filasConcepto[0]?.querySelector('.input-codigo-concepto')?.value.trim() || '0';
-    const descConcepto   = filasConcepto[0]?.querySelector('.input-desc-concepto')?.value.trim()   || '';
-  
-    const payload = {
-      imputacion_id:             imputacionId,
-      nro_orden_pago:            numeroOrden,
-      fecha_vencimiento:         convertirFechaAIso(fechaVencimiento) || null,
-      codigo_pago:               codigoPago,
-      descripcion_codigo_pago:   document.getElementById('descripcionCodigoPago')?.value.trim() || '',
-      concepto:                  conceptoLineas,
-      nro_factura:               document.getElementById('numeroFactura')?.value.trim()          || '',
-      nro_resolucion:            document.getElementById('resolucion')?.value.trim()             || '',
-      licitacion:                licitacion || '',
-      decreto:                   decreto || '',
-      nro_resolucion_rectificatoria: document.getElementById('nroResolucionRectificatoria')?.value.trim() || '',
-      codigo_concepto_pago:      parseInt(codigoConcepto) || 0,
-      concepto_del_pago:         descConcepto,
-      beneficiarios,
-      ups,
-      fecha_rentas: document.querySelector('#fechaRentasWrapper [data-valor-iso]')?.dataset?.valorIso || null,
-    };
-  
-    const btnGuardar = document.getElementById('btnImprimir');
-    try {
-      btnGuardar.disabled    = true;
-      btnGuardar.textContent = 'Guardando...';
-  
-      const csrfToken = getCookie('csrftoken');
-      const resp = await fetch('/api/orden-pago/crear/', {
-        method:  'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken':  csrfToken,
-        },
-        body: JSON.stringify(payload),
-      });
-  
-      const data = await resp.json();
-      console.log('Respuesta backend:', data); 
-  
-      if (resp.ok) {
-        alert(`Orden de Pago guardada correctamente.\nTotal: $${formatearImporte(parseFloat(data.importe_total))}`);
-      } else {
-        mostrarModalValidacion([data.error || 'Error al guardar. Revisá los datos.']);
+
+    OP_ESTADO.ultimoGuardado = JSON.stringify(recolectarContenido());
+    OP_ESTADO.activo = true;
+    mostrarEstadoGuardado(datos ? 'previo' : 'nuevo');
+
+    // Solo las ediciones del usuario (isTrusted) disparan el guardado: los cambios hechos por el
+    // propio código (autocompletado, restauración) no crean ni modifican nada.
+    const hoja = document.getElementById('hoja');
+    ['input', 'change'].forEach((tipo) => hoja.addEventListener(tipo, (e) => { if (e.isTrusted) programarGuardado(); }));
+    hoja.addEventListener('focusout', (e) => { if (e.isTrusted) programarGuardado(400); });
+    ['btnAddBeneficiario', 'btnDelBeneficiario'].forEach((id) =>
+      document.getElementById(id)?.addEventListener('click', () => programarGuardado(400)));
+
+    document.getElementById('btnCompletar')?.addEventListener('click', abrirConfirmacionCompletar);
+    document.getElementById('btnConfirmarCompletar')?.addEventListener('click', confirmarCompletar);
+    document.getElementById('btnCancelarCompletar')?.addEventListener('click', cerrarConfirmacionCompletar);
+
+    // Salir: primero se vacía el guardado pendiente
+    document.getElementById('btnSalir')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const destino = e.currentTarget.href;
+      const r = await guardarBorrador();
+      if (r.ok || OP_ESTADO.bloqueado || confirm('No se pudo guardar el último cambio. ¿Salir de todos modos?')) {
+        window.location.href = destino;
       }
-  
-    } catch (err) {
-      console.error('Error guardando OP:', err);
-      mostrarModalValidacion(['Error de red al guardar la Orden de Pago.']);
-    } finally {
-      btnGuardar.disabled    = false;
-      btnGuardar.innerHTML   = '<i class="fa-solid fa-floppy-disk"></i> Guardar orden de pago';
-    }
+    });
+
+    window.addEventListener('beforeunload', (e) => {
+      if (!OP_ESTADO.activo || OP_ESTADO.bloqueado) return;
+      if (JSON.stringify(recolectarContenido()) !== OP_ESTADO.ultimoGuardado) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && OP_ESTADO.activo && !OP_ESTADO.bloqueado && !OP_ESTADO.completando) guardarBorrador();
+    });
   }
 
   // Convierte "dd/mm/aaaa" → "aaaa-mm-dd" para la API
@@ -1269,8 +1559,7 @@
     inicializarFilasBase();
     recalcularImporteOrdenPago();
     recalcularImporteConcepto();
-    autocompletarDesdeImputacion();
-    cargarCodigosPago(); 
+    iniciarOrdenPago();
     observarFuentesFinanciamiento();
 
     // Inicializar: usar el wrapper, no el contenedor completo
@@ -1278,7 +1567,7 @@
     if (contenedorFechaRentas) {
       const inputOriginal = document.getElementById('fechaRentas');
       if (inputOriginal) inputOriginal.remove();
-      mostrarSelectorFecha(contenedorFechaRentas);
+      mostrarFechaFormateada(contenedorFechaRentas, hoyISO());
     }
   
     const delegacion = document.getElementById("delegacionContable");

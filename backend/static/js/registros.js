@@ -238,6 +238,9 @@ document.addEventListener('DOMContentLoaded', function () {
         'Refuerzo': '¿Está seguro de que desea eliminar este borrador de Refuerzo? Esta acción no se puede deshacer. '
                   + 'No se modificarán saldos ni se generarán movimientos presupuestarios. '
                   + 'Quedará registrado quién lo eliminó y cuándo.',
+        'Orden de Pago': '¿Está seguro de que desea eliminar este borrador de Orden de Pago? Esta acción no se puede deshacer. '
+                  + 'No se modificarán saldos ni se generarán movimientos presupuestarios. '
+                  + 'Quedará registrado quién lo eliminó y cuándo.',
     };
 
     // Vuelve a pedir el listado conservando la página actual (p. ej. tras un conflicto de edición)
@@ -335,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         lista.innerHTML = '';
         estado.textContent = 'Cargando…';
-        sub.textContent = reg && reg.nro_expediente ? 'Expediente ' + reg.nro_expediente : 'Refuerzo sin expediente';
+        sub.textContent = reg && reg.nro_expediente ? 'Expediente ' + reg.nro_expediente : (reg ? reg.tipo : 'Registro') + ' sin expediente';
         modalHistorial.showModal();
 
         try {
