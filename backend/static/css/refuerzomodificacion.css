@@ -1,474 +1,610 @@
 /* ===== CONTENEDOR PRINCIPAL ===== */
+
 .pagina {
-  width: 100%;
+    width: 100%;
 }
+
+/* ===== ENCABEZADO DE PÁGINA ===== */
 
 .header-pagina {
-  margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 1.5rem;
 }
 
-
-/* ===== BOTÓN AGREGAR (FAB) ===== */
-.btn-agregar-wrapper {
-  text-decoration: none;
+/* El título queda a la izquierda */
+.header-pagina h1,
+.header-pagina h2 {
+    order: 1;
+    margin: 0;
 }
 
-.btn-agregar {
-  position: fixed;
-  bottom: 2.5rem;
-  right: 0.5rem;
-  width: 56px;
-  height: 56px;
-  background-color: #4338ca;
-  color: #ffffff;
-  border: none;
-  border-radius: 50%;
-  font-size: 1.75rem;
-  line-height: 1;
-  cursor: pointer;
-  box-shadow: 0 10px 15px -3px rgba(67, 56, 202, 0.4), 0 4px 6px -2px rgba(67, 56, 202, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  z-index: 10;
-}
-
-.btn-agregar:hover {
-  background-color: #3730a3;
-  transform: translateY(-2px) scale(1.03);
-}
-
-/* ===================================================
-   MODIFICACION — estilos adicionales estilo prototipo2
-   Agregar al final de refuerzomodificacion.css
-   =================================================== */
-
-/* ── Tabla principal ───────────────────────────────── */
-.tabla-wrapper {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
-  border: 1px solid #e2e8f0;
-  overflow: hidden;
-}
-
-.tabla-registros {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-  color: #475569;
-  white-space: nowrap;
-}
-
-/* Cabecera */
-.tabla-registros thead tr {
-  background: #00d1c0;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.tabla-registros th {
-  padding: 14px 20px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #ffffff;
-  background: #2b6f8e;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-/* Fila principal */
-.fila-principal {
-  cursor: pointer;
-  transition: background 0.15s;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.fila-principal:hover {
-  background: #e3fcfa;
-}
-
-.fila-principal td {
-  padding: 14px 20px;
-  vertical-align: middle;
-  color: #374151;
-}
-
-/* Celda toggle */
-.toggle-cell {
-  width: 44px;
-  text-align: center;
-  color: #94a3b8;
-}
-
-.toggle-cell button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #94a3b8;
-  padding: 4px;
-  border-radius: 4px;
-  transition: color 0.15s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.toggle-cell button:hover {
-  color: #2563eb;
-}
-
-/* Celda de expediente */
-.expediente-cell{
-  white-space: normal; /* Sobrescribe el 'nowrap' general de la tabla */
-  overflow-wrap: anywhere; /* Fuerza el corte de palabras largas sin espacios (ej: nombres de PDF) */
-  max-width: 260px; /* Define un tope máximo de ancho. Ajusta este valor si lo deseas */
-}
-
-/* Celda usuario con ícono */
-.usuario-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.usuario-avatar {
-  background: #dbeafe;
-  color: #2563eb;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* Celda decreto/doc referencia */
-/* Celda decreto/doc referencia */
-.doc-link {
-  display: flex;
-  align-items: flex-start; /* Cambiado: mantiene el ícono arriba si hay múltiples líneas */
-  gap: 6px;
-  color: #0d9488;
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 0.15s;
-  
-  /* --- NUEVAS REGLAS PARA EL MANEJO DE TEXTO --- */
-  white-space: normal; /* Sobrescribe el 'nowrap' general de la tabla */
-  overflow-wrap: anywhere; /* Fuerza el corte de palabras largas sin espacios (ej: nombres de PDF) */
-  max-width: 260px; /* Define un tope máximo de ancho. Ajusta este valor si lo deseas */
-  line-height: 1.4; /* Añade un poco de espacio entre líneas para mejor lectura */
-}
-
-.doc-link:hover {
-  color: #0f766e;
-  text-decoration: underline;
-}
-
-/* Regla para proteger el ícono del documento */
-.doc-link svg {
-  flex-shrink: 0; /* Evita que el SVG se aplaste al comprimirse el texto */
-  margin-top: 2px; /* Alineación fina para que quede centrado con la primera línea de texto */
-}
-
-/* Importe total — alineado derecha */
-.col-importe-total {
-  text-align: right;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-/* ── Fila de detalle expandible ────────────────────── */
-/* Color base para la fila de detalle completa */
-.fila-detalle {
-  background: #e2e2e2 !important; 
-}
-
-/* Evitar que cambie al pasar el mouse por encima de la fila completa */
-.fila-detalle:hover {
-  background-color: #e2e2e2 !important; 
-}
-
-/* Color para el contenedor interno (el del borde azul) */
-.detalle-container {
-  border-left: 4px solid #1d4ed8;
-  padding: 24px 48px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  max-width: 900px;
-}
-
-.detalle-col {
-  display: flex;
-  flex-direction: column;
-}
-
-.detalle-titulo {
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #475569;
-  margin-bottom: 12px;
-}
-
-.detalle-lista {
-  list-style: disc;
-  padding-left: 18px;
-  margin: 0 0 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.detalle-lista li {
-  font-size: 1rem;
-  color: #374151;
-}
-
-.detalle-lista li::marker {
-  color: #2563eb;
-}
-
-.detalle-lista-destino li::marker {
-  color: #0d9488;
-}
-
-.detalle-subtotal {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 10px;
-  border-top: 1px solid #01214b;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin-top: auto;
-}
-
-/* ── Botones de acción ─────────────────────────────── */
-.acciones-contenedor {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.btn-accion {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
-  color: #94a3b8;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-ver:hover    { color: #2563eb; }
-.btn-editar:hover { color: #2563eb; }
-.btn-eliminar:hover { color: #ef4444; }
-
-.btn-accion:focus { outline: none; }
-
-/* ── Barra de filtrado estilo prototipo ────────────── */
-.barra-filtrado {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 1.5rem;
-  padding: 12px 20px;
-  border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
-  flex-wrap: nowrap;
-}
-
-.filtro-grupo {
-  display: flex;
-  align-items: center;
-  gap: 10px; /* Esto agrega una pequeña separación entre el texto y el select */
-}
-
-/* 1. Texto "Filtrado:" en negrita */
-.filtrado-label {
-  font-weight: 700;
-  color: #1e293b; /* Color oscuro para resaltar la negrita */
-}
-
-/* 2. Texto "Campo" en gris */
-.campo-label {
-  color: #64748b; /* Gris acorde a la paleta de tu diseño */
-}
-
-/* 3. Estilos del select con la flecha personalizada */
-.select-campo {
-  /* Mantén tus estilos originales */
-  border-radius: 8px !important;
-  border-color: #cbd5e1 !important;
-  font-size: 0.875rem !important;
-  color: #3a3751 !important;
-  border: 1px solid #cbd5e1; /* Borde explícito */
-  
-  /* Nuevos estilos para la flecha */
-  appearance: none; /* Oculta la flecha por defecto */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-color: #ffffff !important;
-  padding: 8px 36px 8px 12px !important; /* Espacio derecho (36px) para que el texto no pise la flecha */
-  
-  /* SVG de la flecha insertado como fondo */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
-  background-repeat: no-repeat !important;
-  background-position: right 12px center !important; /* Posiciona la flecha a la derecha */
-  background-size: 16px !important;
-}
-
-.busqueda-grupo {
-  display: flex;
-  align-items: center;
-  position: relative;
-  width: 320px;
-}
-
-.input-busqueda {
-  width: 100%;
-  height: 38px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 0 12px 0 36px;
-  font-size: 0.875rem;
-  color: #374151;
-  outline: none;
-  background: #ffffff;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.input-busqueda:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-/* ── Paginación ────────────────────────────────────── */
-#paginacion-modificaciones,
-#paginacion-refuerzos {
-  margin-top: 8px;
-}
-
-.table-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background-color: #ffffff;
-  border-top: 1px solid #e2e8f0;
-  font-size: 14px;
-}
-
-/* Texto de total de registros en gris */
-.pagination-info {
-  color: #64748b;
-  font-size: 0.875rem;
-}
-
-.pagination-buttons {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Texto "Página X de Y" en gris */
-.page-number-text {
-  font-size: 0.875rem;
-  color: #64748b;
-  font-weight: 500;
-  margin-right: 4px;
-}
-
-/* Estilo limpio para los botones Prev / Next */
-.btn-page {
-  appearance: none;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  color: #374151;
-  padding: 6px 14px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: 8px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease-in-out;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-/* Hover Opción B con font-weight: 600 */
-.btn-page:hover:not(:disabled) {
-  background-color: #f0f7fa;
-  border-color: #2b6f8e;
-  color: #2b6f8e;
-  font-weight: 600;
-}
-
-/* Estado deshabilitado (gris atenuado) */
-.btn-page:disabled {
-  color: #9ca3af;
-  border-color: #e5e7eb;
-  background-color: #ffffff;
-  cursor: not-allowed;
-  box-shadow: none;
-  opacity: 0.7;
-}
-
-/* ===== BOTÓN VOLVER - DISEÑO ACTUALIZADO ===== */
-
+/* El botón Volver queda a la derecha */
 .header-pagina .btn-volver {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 10px !important;
+    order: 2;
+    margin-left: auto;
+    flex-shrink: 0;
 
-    width: fit-content !important;
-    padding: 11px 20px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 
-    background: #2b6f8e !important;
-    color: #ffffff !important;
+    width: fit-content;
+    padding: 11px 20px;
 
-    border: none !important;
-    border-radius: 10px !important;
+    background: #2b6f8e;
+    color: #ffffff;
 
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    text-decoration: none !important;
+    border: none;
+    border-radius: 10px;
 
-    box-shadow: 0 4px 10px rgba(43, 111, 142, 0.22) !important;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
 
-    cursor: pointer !important;
-    transition: all 0.25s ease !important;
+    box-shadow: 0 4px 10px rgba(43, 111, 142, 0.22);
+
+    cursor: pointer;
+    transition: all 0.25s ease;
 }
 
 .header-pagina .btn-volver i {
-    font-size: 14px !important;
-    transition: transform 0.25s ease !important;
+    font-size: 14px;
+    transition: transform 0.25s ease;
 }
 
 .header-pagina .btn-volver:hover {
-    background: #20566f !important;
-    color: #ffffff !important;
-
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 14px rgba(43, 111, 142, 0.30) !important;
+    background: #20566f;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(43, 111, 142, 0.30);
 }
 
 .header-pagina .btn-volver:hover i {
-    transform: translateX(-4px) !important;
+    transform: translateX(-4px);
+}
+
+/* ===== BOTÓN AGREGAR (FAB) ===== */
+
+.btn-agregar-wrapper {
+    text-decoration: none;
+}
+
+.btn-agregar {
+    position: fixed;
+    bottom: 2.5rem;
+    right: 0.5rem;
+    width: 56px;
+    height: 56px;
+    background-color: #4338ca;
+    color: #ffffff;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.75rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 10px 15px -3px rgba(67, 56, 202, 0.4),
+                0 4px 6px -2px rgba(67, 56, 202, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.btn-agregar:hover {
+    background-color: #3730a3;
+    transform: translateY(-2px) scale(1.03);
+}
+
+/* ===================================================
+   TABLA PRINCIPAL
+=================================================== */
+
+.tabla-wrapper {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+}
+
+.tabla-registros {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    color: #475569;
+    white-space: nowrap;
+}
+
+/* Cabecera */
+
+.tabla-registros thead tr {
+    background: #00d1c0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.tabla-registros th {
+    padding: 14px 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #ffffff;
+    background: #2b6f8e;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* Fila principal */
+
+.fila-principal {
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.fila-principal:hover {
+    background: #e3fcfa;
+}
+
+.fila-principal td {
+    padding: 14px 20px;
+    vertical-align: middle;
+    color: #374151;
+}
+
+/* Celda toggle */
+
+.toggle-cell {
+    width: 44px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.toggle-cell button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggle-cell button:hover {
+    color: #2563eb;
+}
+
+/* Celda de expediente */
+
+.expediente-cell {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    max-width: 260px;
+}
+
+/* Celda usuario con ícono */
+
+.usuario-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.usuario-avatar {
+    background: #dbeafe;
+    color: #2563eb;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Celda decreto/documento */
+
+.doc-link {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    color: #0d9488;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.15s;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    max-width: 260px;
+    line-height: 1.4;
+}
+
+.doc-link:hover {
+    color: #0f766e;
+    text-decoration: underline;
+}
+
+.doc-link svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* Importe total */
+
+.col-importe-total {
+    text-align: right;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+/* ===================================================
+   FILA DE DETALLE EXPANDIBLE
+=================================================== */
+
+.fila-detalle {
+    background: #e2e2e2 !important;
+}
+
+.fila-detalle:hover {
+    background-color: #e2e2e2 !important;
+}
+
+.detalle-container {
+    border-left: 4px solid #1d4ed8;
+    padding: 24px 48px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    max-width: 900px;
+}
+
+.detalle-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.detalle-titulo {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 12px;
+}
+
+.detalle-lista {
+    list-style: disc;
+    padding-left: 18px;
+    margin: 0 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.detalle-lista li {
+    font-size: 1rem;
+    color: #374151;
+}
+
+.detalle-lista li::marker {
+    color: #2563eb;
+}
+
+.detalle-lista-destino li::marker {
+    color: #0d9488;
+}
+
+.detalle-subtotal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px solid #01214b;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-top: auto;
+}
+
+/* ===================================================
+   BOTONES DE ACCIÓN
+=================================================== */
+
+.acciones-contenedor {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-accion {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    color: #94a3b8;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-ver:hover {
+    color: #2563eb;
+}
+
+.btn-editar:hover {
+    color: #2563eb;
+}
+
+.btn-eliminar:hover {
+    color: #ef4444;
+}
+
+.btn-accion:focus {
+    outline: none;
+}
+
+/* ===================================================
+   BARRA DE FILTRADO
+=================================================== */
+
+.barra-filtrado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 1.5rem;
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    flex-wrap: nowrap;
+}
+
+.filtro-grupo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filtrado-label {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.campo-label {
+    color: #64748b;
+}
+
+/* Select */
+
+.select-campo {
+    border-radius: 8px !important;
+    border-color: #cbd5e1 !important;
+    font-size: 0.875rem !important;
+    color: #3a3751 !important;
+    border: 1px solid #cbd5e1;
+
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+
+    background-color: #ffffff !important;
+    padding: 8px 36px 8px 12px !important;
+
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    background-size: 16px !important;
+}
+
+.busqueda-grupo {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 320px;
+}
+
+.input-busqueda {
+    width: 100%;
+    height: 38px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0 12px 0 36px;
+    font-size: 0.875rem;
+    color: #374151;
+    outline: none;
+    background: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-busqueda:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* ===================================================
+   PAGINACIÓN
+=================================================== */
+
+#paginacion-modificaciones,
+#paginacion-refuerzos {
+    margin-top: 8px;
+}
+
+.table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background-color: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    font-size: 14px;
+}
+
+.pagination-info {
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.pagination-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.page-number-text {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-right: 4px;
+}
+
+.btn-page {
+    appearance: none;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #374151;
+    padding: 6px 14px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease-in-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-page:hover:not(:disabled) {
+    background-color: #f0f7fa;
+    border-color: #2b6f8e;
+    color: #2b6f8e;
+    font-weight: 600;
+}
+
+.btn-page:disabled {
+    color: #9ca3af;
+    border-color: #e5e7eb;
+    background-color: #ffffff;
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.7;
+}
+
+/* ===================================================
+   RESPONSIVE
+=================================================== */
+
+@media (max-width: 1024px) {
+
+    .tabla-registros th,
+    .tabla-registros td {
+        padding: 10px 12px;
+    }
+
+    .detalle-container {
+        padding: 20px 24px;
+        gap: 20px;
+    }
+
+    .barra-filtrado {
+        flex-wrap: wrap;
+    }
+
+    .busqueda-grupo {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+
+    /* Encabezado */
+    .header-pagina {
+        align-items: center;
+        gap: 12px;
+    }
+
+    .header-pagina .btn-volver {
+        padding: 9px 15px;
+        font-size: 13px;
+    }
+
+    /* Tabla */
+    .tabla-wrapper {
+        overflow-x: auto;
+    }
+
+    .tabla-registros {
+        min-width: 650px;
+    }
+
+    /* Detalles */
+    .detalle-container {
+        grid-template-columns: 1fr;
+        padding: 18px;
+        gap: 20px;
+    }
+
+    /* Filtros */
+    .barra-filtrado {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px;
+    }
+
+    .filtro-grupo {
+        flex-wrap: wrap;
+    }
+
+    .busqueda-grupo {
+        width: 100%;
+    }
+
+    .select-campo {
+        max-width: 100%;
+    }
+
+    /* Footer */
+    .table-footer {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .pagination-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .header-pagina {
+        gap: 10px;
+    }
+
+    .header-pagina .btn-volver {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .detalle-container {
+        padding: 14px;
+    }
+
+    .tabla-registros {
+        min-width: 600px;
+    }
 }

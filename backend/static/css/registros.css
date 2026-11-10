@@ -707,3 +707,68 @@ ESTILO BASE: CYBER-KEY LIGHT
 .historial-eliminar  { border-left-color: #dc2626; }
 .historial-fecha  { color: #555; font-size: 12px; margin-top: 2px; }
 .historial-campos { color: #3b6f73; font-size: 12px; margin-top: 4px; }
+/* ============================================
+   CORRECCIÓN DE FILAS DESPLEGABLES EN MÓVIL
+============================================ */
+
+@media (max-width: 768px) {
+
+    /* Ocultar siempre las filas de detalle cerradas */
+    .history-table tbody tr.detalle-row:not(.mostrar) {
+        display: none !important;
+    }
+
+    /* Mostrar solamente las filas que tengan la clase mostrar */
+    .history-table tbody tr.detalle-row.mostrar {
+        display: block !important;
+        width: 100%;
+        margin-bottom: 12px;
+        background: #eef8fa;
+        border: 1px solid var(--border);
+        border-top: 0;
+        border-left: 4px solid #5bc0be;
+        border-radius: 0 0 12px 12px;
+        overflow: hidden;
+    }
+
+    /* Ajustar el contenido del detalle */
+    .history-table tbody tr.detalle-row > td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px !important;
+        border: 0;
+    }
+
+    .detalle-contenido {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px 14px;
+    }
+
+    /* Botón de expansión */
+    .btn-expandir {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        position: relative;
+        z-index: 2;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    /* Flecha girada al abrir */
+    .registro-row.abierto .btn-expandir i {
+        transform: rotate(180deg);
+    }
+
+    /* Flecha normal al cerrar */
+    .registro-row:not(.abierto) .btn-expandir i {
+        transform: rotate(0deg);
+    }
+}
