@@ -505,7 +505,7 @@
     * Exporta el contenido de la hoja (#hoja) a un archivo PDF en tamaño A4,
     * utilizando la librería html2pdf.js.
     */
-   function exportarAPDF() {
+   async function exportarAPDF() {
      const elemento = document.getElementById("hoja");
      if (!elemento || typeof html2pdf !== "function") {
        throw new Error("No se pudo preparar la exportación de la orden de pago.");
@@ -513,33 +513,76 @@
 
      const opciones = {
        margin: 0,
-       filename: "orden-de-pago.pdf",
        image: { type: "jpeg", quality: 0.98 },
        html2canvas: {
          scale: 2,
          useCORS: true,
          backgroundColor: "#ffffff",
          scrollX: 0,
-         scrollY: 0
-       },
-       pagebreak: {
-         mode: ["css", "legacy"],
-         avoid: ["tr", ".encabezado", ".tabla-datos", ".fila-codigo-pago",
-           ".bloque-texto-pago", ".bloque-concepto", ".bloque-resolucion",
-           ".rentas-generales", ".pie-inferior"]
+         scrollY: 0,
+         onclone: (documentoClonado) => {
+           const hojaClonada = documentoClonado.getElementById("hoja");
+           if (!hojaClonada) {
+             throw new Error("No se pudo preparar la hoja para exportar.");
+           }
+           hojaClonada.querySelectorAll("input, textarea, select").forEach((campo) => {
+             const valor = campo.tagName === "SELECT"
+               ? campo.selectedOptions[0]?.textContent?.trim() || campo.value
+               : campo.value || campo.placeholder;
+             const texto = documentoClonado.createElement("span");
+             texto.className = `pdf-value ${campo.className}`;
+             texto.textContent = valor;
+             campo.replaceWith(texto);
+           });
+         }
        },
        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
      };
 
-     document.body.classList.add("exportando-pdf");
-     html2pdf().set(opciones).from(elemento).save()
-       .catch((error) => {
-         console.error("Error al exportar la orden de pago a PDF:", error);
-         throw error;
-       })
-       .finally(() => {
-         document.body.classList.remove("exportando-pdf");
-       });
+     const raiz = document.documentElement;
+     raiz.classList.add("exportando-pdf");
+     try {
+       await new Promise((resolver) => requestAnimationFrame(() => requestAnimationFrame(resolver)));
+
+       const trabajador = html2pdf().set(opciones).from(elemento);
+       const canvas = await trabajador.toCanvas().get("canvas");
+       if (!canvas.width || !canvas.height) {
+         throw new Error("La hoja no produjo una imagen válida para el PDF.");
+       }
+       await trabajador.toPdf();
+       const pdf = await trabajador.get("pdf");
+
+       while (pdf.getNumberOfPages() > 1) {
+         pdf.deletePage(pdf.getNumberOfPages());
+       }
+       if (pdf.getNumberOfPages() !== 1) {
+         throw new Error("No se pudo ajustar la orden a una sola página.");
+       }
+
+       const anchoPagina = pdf.internal.pageSize.getWidth();
+       const altoPagina = pdf.internal.pageSize.getHeight();
+       const margen = 5;
+       const escala = Math.min(
+         (anchoPagina - margen * 2) / canvas.width,
+         (altoPagina - margen * 2) / canvas.height
+       );
+       const anchoImagen = canvas.width * escala;
+       const altoImagen = canvas.height * escala;
+       const posicionX = (anchoPagina - anchoImagen) / 2;
+       const posicionY = (altoPagina - altoImagen) / 2;
+       const imagen = canvas.toDataURL("image/jpeg", 0.98);
+
+       pdf.setPage(1);
+       pdf.setFillColor(255, 255, 255);
+       pdf.rect(0, 0, anchoPagina, altoPagina, "F");
+       pdf.addImage(imagen, "JPEG", posicionX, posicionY, anchoImagen, altoImagen);
+       pdf.save("orden-de-pago.pdf");
+     } catch (error) {
+       console.error("Error al exportar la orden de pago a PDF:", error);
+       throw error;
+     } finally {
+       raiz.classList.remove("exportando-pdf");
+     }
    }
    
    /* ------------------------------------------------------------------------

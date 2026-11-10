@@ -56,61 +56,70 @@
     }
 }
 
-body.exportando-pdf .no-print {
+html.exportando-pdf {
+    font-size: 11px;
+}
+
+html.exportando-pdf .no-print {
     display: none !important;
 }
 
-body.exportando-pdf {
+html.exportando-pdf body {
     background: #ffffff;
 }
 
-body.exportando-pdf .ordenpago-page {
+html.exportando-pdf .ordenpago-page {
     display: block;
+    width: 210mm;
+    min-width: 0;
     padding: 0;
 }
 
-body.exportando-pdf .hoja {
+html.exportando-pdf .hoja {
     width: 210mm;
     max-width: 210mm;
     min-height: 0;
     margin: 0;
-    padding: 10mm;
+    padding: 5mm;
     box-sizing: border-box;
+    overflow: visible;
     box-shadow: none;
     border-radius: 0;
 }
 
-body.exportando-pdf .marco {
-    padding: 10mm;
+html.exportando-pdf .marco {
+    height: auto;
+    padding: 5mm;
     box-sizing: border-box;
+    border-radius: 0;
 }
 
-body.exportando-pdf .encabezado,
-body.exportando-pdf .tabla-datos,
-body.exportando-pdf .fila-codigo-pago,
-body.exportando-pdf .bloque-texto-pago,
-body.exportando-pdf .bloque-concepto,
-body.exportando-pdf .bloque-resolucion,
-body.exportando-pdf .tabla-principal thead,
-body.exportando-pdf .tabla-concepto-pago thead,
-body.exportando-pdf .tabla-partidas thead,
-body.exportando-pdf .rentas-generales,
-body.exportando-pdf .pie-inferior {
+html.exportando-pdf .encabezado,
+html.exportando-pdf .tabla-datos,
+html.exportando-pdf .fila-codigo-pago,
+html.exportando-pdf .bloque-texto-pago,
+html.exportando-pdf .bloque-concepto,
+html.exportando-pdf .bloque-resolucion,
+html.exportando-pdf .tabla-principal thead,
+html.exportando-pdf .tabla-concepto-pago thead,
+html.exportando-pdf .tabla-partidas thead,
+html.exportando-pdf .rentas-generales,
+html.exportando-pdf .pie-inferior {
     break-inside: avoid;
     page-break-inside: avoid;
 }
 
-body.exportando-pdf table {
+html.exportando-pdf table {
     break-inside: auto;
     page-break-inside: auto;
 }
 
-body.exportando-pdf tr {
+html.exportando-pdf tr {
     break-inside: avoid;
     page-break-inside: avoid;
 }
 
-body.exportando-pdf thead {
+html.exportando-pdf thead {
     display: table-header-group;
 }
 
@@ -743,4 +752,477 @@ input[type="number"]:focus {
     height: 100%;
     object-fit: contain;
     display: block;
+}
+
+/* Ajustes de distribución para pantallas estrechas. */
+@media screen and (max-width: 1100px) {
+    .ordenpago-page,
+    .ordenpago-page > .hoja,
+    .ordenpago-page > .hoja > .marco {
+        min-width: 0;
+    }
+
+    .ordenpago-page > .hoja {
+        padding: 1.25rem;
+    }
+
+    .ordenpago-page > .hoja > .marco {
+        padding: 1.25rem;
+    }
+
+    .ordenpago-page .encabezado {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .ordenpago-page .enc-izquierda,
+    .ordenpago-page .enc-centro {
+        flex: 1 1 280px;
+        min-width: 0;
+    }
+
+    .ordenpago-page .organismo,
+    .ordenpago-page .input-like {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .ordenpago-page .organismo-nombre {
+        overflow-wrap: anywhere;
+    }
+
+    .ordenpago-page .fila-codigo-pago,
+    .ordenpago-page .bloque-texto-pago {
+        flex-wrap: wrap;
+    }
+
+    .ordenpago-page .cod-pago-izq,
+    .ordenpago-page .cod-pago-der {
+        min-width: 0;
+        flex-wrap: wrap;
+        white-space: normal;
+    }
+
+    .ordenpago-page .cod-pago-izq {
+        flex: 1 1 100%;
+    }
+
+    .ordenpago-page .cod-pago-izq .larga {
+        flex: 1 1 100%;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .ordenpago-page .cod-pago-der {
+        flex: 1 1 100%;
+    }
+
+    .ordenpago-page .texto-pago-der {
+        margin-left: auto;
+    }
+
+    .ordenpago-page .concepto-fila {
+        flex-wrap: wrap;
+    }
+
+    .ordenpago-page .concepto-fila .input-linea {
+        flex: 1 1 100%;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .ordenpago-page .etiqueta-factura {
+        margin-left: 0;
+    }
+
+    .ordenpago-page .resolucion-referencia,
+    .ordenpago-page .resolucion-referencia .input-linea,
+    .ordenpago-page .resolucion-fila:first-child .input-linea {
+        min-width: 0;
+    }
+
+    .ordenpago-page .tabla-principal,
+    .ordenpago-page .tabla-concepto-pago,
+    .ordenpago-page .tabla-partidas {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+    }
+
+    .ordenpago-page .tabla-principal th,
+    .ordenpago-page .tabla-principal td,
+    .ordenpago-page .tabla-concepto-pago th,
+    .ordenpago-page .tabla-concepto-pago td,
+    .ordenpago-page .tabla-partidas th,
+    .ordenpago-page .tabla-partidas td {
+        white-space: nowrap;
+    }
+
+    .ordenpago-page .tabla-principal th:first-child,
+    .ordenpago-page .tabla-principal td:first-child,
+    .ordenpago-page .tabla-concepto-pago th:first-child,
+    .ordenpago-page .tabla-concepto-pago td:first-child {
+        min-width: 5rem;
+    }
+
+    .ordenpago-page .tabla-principal th:nth-child(2),
+    .ordenpago-page .tabla-principal td:nth-child(2),
+    .ordenpago-page .tabla-concepto-pago th:nth-child(2),
+    .ordenpago-page .tabla-concepto-pago td:nth-child(2) {
+        min-width: 12rem;
+    }
+
+    .ordenpago-page .tabla-principal th:last-child,
+    .ordenpago-page .tabla-principal td:last-child,
+    .ordenpago-page .tabla-concepto-pago th:last-child,
+    .ordenpago-page .tabla-concepto-pago td:last-child {
+        min-width: 7rem;
+    }
+
+    .ordenpago-page .tabla-partidas th:nth-child(-n+7),
+    .ordenpago-page .tabla-partidas td:nth-child(-n+7) {
+        min-width: 3.25rem;
+    }
+
+    .ordenpago-page .tabla-partidas .col-partida-desc {
+        min-width: 12rem;
+    }
+
+    .ordenpago-page .tabla-partidas .col-importe {
+        min-width: 8rem;
+    }
+
+    .ordenpago-page .tabla-acciones {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .ordenpago-page .tabla-acciones .btn-add-row,
+    .ordenpago-page .tabla-acciones .btn-remove-row {
+        flex: 1 1 12rem;
+        min-width: 0;
+    }
+
+    .ordenpago-page > #panelSaldos .panel-saldos-body {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    .ordenpago-page > #panelSaldos .tabla-saldos {
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .ordenpago-page > #panelSaldos .tabla-saldos th,
+    .ordenpago-page > #panelSaldos .tabla-saldos td {
+        overflow-wrap: anywhere;
+    }
+}
+
+@media screen and (max-width: 760px) {
+    .ordenpago-page > .botones-accion {
+        box-sizing: border-box;
+        flex-wrap: wrap;
+        align-items: stretch;
+        gap: 6px;
+        padding: 0.5rem;
+    }
+
+    .ordenpago-page > .botones-accion .btn-accion {
+        flex: 1 1 9rem;
+        justify-content: center;
+        min-width: 0;
+    }
+
+    .ordenpago-page .bloque-texto-pago {
+        align-items: stretch;
+    }
+
+    .ordenpago-page .linea-importe-letras {
+        flex-wrap: wrap;
+    }
+
+    .ordenpago-page .linea-importe-letras .input-linea {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    .ordenpago-page .texto-pago-der {
+        width: 100%;
+        box-sizing: border-box;
+        justify-content: flex-end;
+        border-left: 0;
+        border-top: 2px solid var(--border);
+        padding: 0.75rem 0 0;
+    }
+
+    .ordenpago-page .importe-total {
+        max-width: calc(100% - 2rem);
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .ordenpago-page > .hoja {
+        padding: 0.75rem;
+    }
+
+    .ordenpago-page > .hoja > .marco {
+        padding: 0.75rem;
+    }
+
+    .ordenpago-page .encabezado {
+        align-items: stretch;
+    }
+
+    .ordenpago-page .enc-izquierda {
+        flex-basis: 100%;
+    }
+
+    .ordenpago-page .enc-centro {
+        flex-basis: 100%;
+    }
+
+    .ordenpago-page .orden-linea {
+        flex-wrap: wrap;
+    }
+
+    .ordenpago-page .orden-titulo {
+        text-align: center;
+    }
+
+    .ordenpago-page .tabla-datos,
+    .ordenpago-page .tabla-datos tbody,
+    .ordenpago-page .tabla-datos tr,
+    .ordenpago-page .tabla-datos td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .ordenpago-page .tabla-datos .etiqueta {
+        padding-bottom: 0;
+        white-space: normal;
+    }
+
+    .ordenpago-page .tabla-datos .valor {
+        padding-top: 0;
+    }
+
+    .ordenpago-page .bloque-concepto,
+    .ordenpago-page .bloque-resolucion,
+    .ordenpago-page .bloque-texto-pago,
+    .ordenpago-page .fila-codigo-pago {
+        padding: 0.75rem;
+    }
+
+    .ordenpago-page .cod-pago-izq .select-codigo-pago,
+    .ordenpago-page .cod-pago-der .fecha {
+        margin-left: 0;
+    }
+
+    .ordenpago-page .fila-codigo-pago select,
+    .ordenpago-page .cod-pago-der .fecha {
+        max-width: 100%;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .ordenpago-page > .hoja > .marco {
+        padding: 0.6rem;
+    }
+
+    .ordenpago-page .enc-izquierda {
+        gap: 8px;
+    }
+
+    .ordenpago-page .input-linea.chico {
+        max-width: 100%;
+    }
+
+    #modalValidacion {
+        padding: 12px;
+    }
+
+    #modalValidacion > div {
+        box-sizing: border-box;
+        max-width: 100%;
+        padding: 24px;
+        gap: 12px;
+    }
+
+    #modalValidacionCerrar {
+        align-self: stretch;
+    }
+}
+
+html.exportando-pdf .encabezado {
+    flex-wrap: nowrap;
+    gap: 3mm;
+    padding-bottom: 2mm;
+    margin-bottom: 2mm;
+}
+
+html.exportando-pdf .enc-izquierda,
+html.exportando-pdf .enc-centro {
+    min-width: 0;
+}
+
+html.exportando-pdf .fila-codigo-pago {
+    flex-wrap: nowrap;
+}
+
+html.exportando-pdf .cod-pago-izq {
+    min-width: 0;
+    flex-wrap: nowrap;
+}
+
+html.exportando-pdf .cod-pago-izq .larga {
+    min-width: 0;
+    width: auto;
+    flex: 1 1 auto;
+}
+
+html.exportando-pdf .bloque-texto-pago {
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+html.exportando-pdf .linea-importe-letras {
+    flex-wrap: nowrap;
+}
+
+html.exportando-pdf .linea-importe-letras .input-linea {
+    min-width: 0;
+    width: auto;
+    flex: 1 1 auto;
+}
+
+html.exportando-pdf .texto-pago-der {
+    width: auto;
+    border-top: 0;
+    border-left: 2px solid var(--border);
+    padding: 0 0 0 2mm;
+}
+
+html.exportando-pdf .concepto-fila {
+    flex-wrap: nowrap;
+}
+
+html.exportando-pdf .concepto-fila .input-linea {
+    min-width: 0;
+    width: auto;
+    flex: 1 1 auto;
+}
+
+html.exportando-pdf .tabla-datos,
+html.exportando-pdf .tabla-datos tbody {
+    display: table;
+    width: 100%;
+}
+
+html.exportando-pdf .tabla-datos tr {
+    display: table-row;
+}
+
+html.exportando-pdf .tabla-datos td {
+    display: table-cell;
+    box-sizing: border-box;
+}
+
+html.exportando-pdf .tabla-datos,
+html.exportando-pdf .hoja table {
+    margin-bottom: 2mm;
+}
+
+html.exportando-pdf .tabla-datos td,
+html.exportando-pdf .hoja th,
+html.exportando-pdf .hoja td {
+    padding: 1mm 1.5mm;
+    font-size: 1rem;
+}
+
+html.exportando-pdf .fila-codigo-pago,
+html.exportando-pdf .bloque-texto-pago,
+html.exportando-pdf .bloque-concepto,
+html.exportando-pdf .bloque-resolucion {
+    padding: 2mm;
+    margin-bottom: 2mm;
+    gap: 2mm;
+}
+
+html.exportando-pdf .resolucion-fila.resolucion-referencias {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2mm;
+}
+
+html.exportando-pdf .tabla-principal,
+html.exportando-pdf .tabla-concepto-pago,
+html.exportando-pdf .tabla-partidas {
+    display: table;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+    table-layout: fixed;
+}
+
+html.exportando-pdf .tabla-principal th,
+html.exportando-pdf .tabla-principal td,
+html.exportando-pdf .tabla-concepto-pago th,
+html.exportando-pdf .tabla-concepto-pago td,
+html.exportando-pdf .tabla-partidas th,
+html.exportando-pdf .tabla-partidas td {
+    min-width: 0;
+    white-space: normal;
+}
+
+html.exportando-pdf .tabla-partidas .col-partida-desc {
+    overflow: visible;
+}
+
+html.exportando-pdf .tabla-partidas .col-partida-desc input {
+    text-overflow: clip;
+    white-space: normal;
+    overflow: visible;
+}
+
+html.exportando-pdf .tabla-partidas .pdf-value {
+    width: 100%;
+}
+
+html.exportando-pdf .rentas-generales {
+    margin: 3mm 0;
+    padding: 2mm;
+}
+
+html.exportando-pdf .pie-inferior {
+    margin-top: 3mm;
+    padding-top: 2mm;
+}
+
+html.exportando-pdf .pdf-value {
+    display: inline-block;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--border);
+    padding: 1px 2px;
+    color: var(--text);
+    font: inherit;
+    line-height: 1.15;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    vertical-align: middle;
+}
+
+html.exportando-pdf .tabla-principal .pdf-value,
+html.exportando-pdf .tabla-concepto-pago .pdf-value,
+html.exportando-pdf .tabla-partidas .pdf-value {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border-bottom: 0;
 }

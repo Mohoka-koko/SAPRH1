@@ -267,3 +267,126 @@
     background: #fbeaea;
     color: #c82333;
 }
+
+#modal .tabla-historial-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+
+#modal .tabla-historial {
+    min-width: 480px;
+}
+
+#modal .tabla-historial th,
+#modal .tabla-historial td {
+    overflow-wrap: anywhere;
+}
+
+@media screen and (max-width: 900px) {
+    .configuracion-container {
+        padding: 18px 20px 32px;
+    }
+
+    .configuracion-titulo {
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 24px;
+        font-size: 28px;
+    }
+
+    .configuracion-titulo i {
+        font-size: 30px;
+    }
+
+    .opcion {
+        min-height: 56px;
+        height: auto;
+        gap: 12px;
+        padding: 12px 16px;
+        font-size: 17px;
+    }
+
+    .opcion span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .opcion i {
+        flex: 0 0 auto;
+    }
+
+    #modal.modal {
+        box-sizing: border-box;
+        padding: 12px;
+    }
+
+    #modal .modal-content {
+        width: 100%;
+        max-width: 600px;
+        max-height: calc(100vh - 24px);
+        max-height: calc(100dvh - 24px);
+        padding: 26px 22px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    #modal .modal-titulo {
+        padding-right: 22px;
+        font-size: 22px;
+        overflow-wrap: anywhere;
+    }
+
+    #modal .modal-input {
+        max-width: 100%;
+    }
+
+    #modal .tabla-historial th,
+    #modal .tabla-historial td {
+        padding: 10px 12px;
+        white-space: nowrap;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .configuracion-container {
+        padding: 16px 12px 28px;
+    }
+
+    .configuracion-titulo {
+        gap: 8px;
+        margin-bottom: 20px;
+        font-size: 25px;
+    }
+
+    .configuracion-titulo i {
+        font-size: 27px;
+    }
+
+    .configuracion-seccion {
+        margin-bottom: 10px;
+        font-size: 17px;
+    }
+
+    .opcion {
+        min-height: 52px;
+        margin-bottom: 12px;
+        padding: 10px 14px;
+        font-size: 16px;
+    }
+
+    #modal.modal {
+        padding: 8px;
+    }
+
+    #modal .modal-content {
+        max-height: calc(100vh - 16px);
+        max-height: calc(100dvh - 16px);
+        padding: 24px 18px;
+    }
+
+    #modal .cerrar {
+        right: 14px;
+        top: 8px;
+    }
+}

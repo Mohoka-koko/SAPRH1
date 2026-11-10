@@ -83,25 +83,16 @@
 
             <!-- CAMPANA DE NOTIFICACIONES -->
             <div class="notification-container">
-
                 <button type="button" class="notification-btn" id="notificationBtn" title="Notificaciones">
                     <i class="fa-solid fa-bell"></i>
                 </button>
 
                 <!-- PANEL DE NOTIFICACIONES -->
                 <div class="notification-panel" id="notificationPanel" data-api-url="{% url 'api_notificaciones' %}">
-
                     <div class="notification-header">
                         <span>Notificaciones</span>
-
                         <div class="notification-actions">
-                            <button type="button" class="notification-settings"
-                                    title="Configuración de notificaciones">
-                                <i class="fa-solid fa-gear"></i>
-                            </button>
-
-                            <button type="button" class="notification-close" id="notificationClose"
-                                    title="Cerrar">
+                            <button type="button" class="notification-close" id="notificationClose" title="Cerrar">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
                         </div>
@@ -114,10 +105,8 @@
                     <div class="notification-footer">
                         <a href="{% url 'lista_notificaciones' %}">Verlo todo</a>
                     </div>
-
                 </div>
             </div>
-
             <a href="{% url 'configuracion' %}" class="config-btn" title="Configuración">
                 <i class="fa-solid fa-gear" style="color: #ffffff !important;"></i>
             </a>

@@ -608,3 +608,248 @@
         min-width: 600px;
     }
 }
+
+/* Ajustes exclusivos del listado de Modificación. La opción "transferente"
+   no existe en el filtro de Refuerzo y permite mantener aislados estos cambios. */
+.pagina:has(#campo-filtro option[value="transferente"]) {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.pagina:has(#campo-filtro option[value="transferente"]) .barra-filtrado,
+.pagina:has(#campo-filtro option[value="transferente"]) .tabla-wrapper,
+.pagina:has(#campo-filtro option[value="transferente"]) .table-footer,
+.pagina:has(#campo-filtro option[value="transferente"]) .tabla-registros {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.pagina:has(#campo-filtro option[value="transferente"]) .barra-filtrado {
+  flex-wrap: wrap;
+}
+
+.pagina:has(#campo-filtro option[value="transferente"]) .filtro-grupo {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.pagina:has(#campo-filtro option[value="transferente"]) .select-wrapper {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pagina:has(#campo-filtro option[value="transferente"]) .select-campo {
+  max-width: 100%;
+}
+
+.pagina:has(#campo-filtro option[value="transferente"]) .busqueda-grupo {
+  flex: 1 1 280px;
+  width: auto;
+  min-width: 0;
+  max-width: 380px;
+}
+
+.pagina:has(#campo-filtro option[value="transferente"]) .input-busqueda {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.pagina:has(#campo-filtro option[value="transferente"]) .tabla-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pagina:has(#campo-filtro option[value="transferente"]) .tabla-registros {
+  width: 100%;
+  min-width: 960px;
+}
+
+.pagina:has(#campo-filtro option[value="transferente"]) .detalle-container {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .pagina:has(#campo-filtro option[value="transferente"]) .barra-filtrado {
+    align-items: stretch;
+    padding: 12px 16px;
+  }
+
+  .pagina:has(#campo-filtro option[value="transferente"]) .busqueda-grupo {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .pagina:has(#campo-filtro option[value="transferente"]) .table-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .pagina:has(#campo-filtro option[value="transferente"]) .pagination-buttons {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .pagina:has(#campo-filtro option[value="transferente"]) .barra-filtrado {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .pagina:has(#campo-filtro option[value="transferente"]) .filtro-grupo {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: 8px;
+    width: 100%;
+  }
+
+  .pagina:has(#campo-filtro option[value="transferente"]) .select-campo {
+    width: 100%;
+  }
+
+  .pagina:has(#campo-filtro option[value="transferente"]) .busqueda-grupo {
+    flex-basis: 100%;
+  }
+
+  .pagina:has(#campo-filtro option[value="transferente"]) .table-footer {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .pagina:has(#campo-filtro option[value="transferente"]) .pagination-buttons {
+    gap: 6px;
+  }
+
+  .pagina:has(#campo-filtro option[value="transferente"]) .page-number-text {
+    margin-right: 0;
+  }
+
+  .pagina:has(#campo-filtro option[value="transferente"]) .btn-agregar {
+    right: 1rem;
+    bottom: 1rem;
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+  }
+}
+
+/* Ajustes exclusivos de Refuerzo: el filtro no incluye la opción transferente. */
+.pagina:not(:has(#campo-filtro option[value="transferente"])) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.pagina:not(:has(#campo-filtro option[value="transferente"])) .barra-filtrado,
+.pagina:not(:has(#campo-filtro option[value="transferente"])) .tabla-wrapper,
+.pagina:not(:has(#campo-filtro option[value="transferente"])) .table-footer {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.pagina:not(:has(#campo-filtro option[value="transferente"])) .tabla-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pagina:not(:has(#campo-filtro option[value="transferente"])) .tabla-registros {
+  width: max-content;
+  min-width: 100%;
+}
+
+.pagina:not(:has(#campo-filtro option[value="transferente"])) .detalle-container {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .barra-filtrado {
+    align-items: stretch;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .busqueda-grupo {
+    flex: 1 1 260px;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .input-busqueda {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .table-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .pagination-buttons {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .barra-filtrado {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .filtro-grupo {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .select-wrapper,
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .select-campo {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .busqueda-grupo {
+    flex-basis: 100%;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .table-footer {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .pagination-buttons {
+    gap: 6px;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .page-number-text {
+    margin-right: 0;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .detalle-container {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding: 16px;
+  }
+
+  .pagina:not(:has(#campo-filtro option[value="transferente"])) .btn-agregar {
+    right: 1rem;
+    bottom: 1rem;
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+  }
+}

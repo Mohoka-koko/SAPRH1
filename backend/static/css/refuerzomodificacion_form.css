@@ -1024,3 +1024,411 @@ span.mf-total-input.error-total {
     .mf-msg,
     .mf-modal { display: none !important; }
 }
+
+/* Ajustes responsive exclusivos de Modificación. */
+.modref-page:has(#contenedor-transferentes) {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-pagina {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-card,
+.modref-page:has(#contenedor-transferentes) .mf-encabezado-institucional,
+.modref-page:has(#contenedor-transferentes) .mf-transfer-grid,
+.modref-page:has(#contenedor-transferentes) .mf-info-grid,
+.modref-page:has(#contenedor-transferentes) .mf-totales,
+.modref-page:has(#contenedor-transferentes) .mf-acciones {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-encabezado-texto,
+.modref-page:has(#contenedor-transferentes) .mf-transfer-grid-col,
+.modref-page:has(#contenedor-transferentes) .mf-section-block,
+.modref-page:has(#contenedor-transferentes) .mf-importe-block,
+.modref-page:has(#contenedor-transferentes) .mf-campo,
+.modref-page:has(#contenedor-transferentes) .mf-file-wrap {
+    min-width: 0;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-transfer-grid {
+    grid-template-columns: minmax(0, 1fr) 180px 250px;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-cabecera-cascada,
+.modref-page:has(#contenedor-transferentes) .fila-receptora-refuerzo {
+    min-width: 0;
+}
+
+.modref-page:has(#contenedor-transferentes) .fila-receptora-refuerzo > select,
+.modref-page:has(#contenedor-transferentes) .fila-receptora-refuerzo > input[type="text"] {
+    min-width: 0;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-info-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-campo input[type="text"],
+.modref-page:has(#contenedor-transferentes) .mf-campo input[type="date"] {
+    width: 100%;
+    min-width: 0;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-campo:has(#m-expediente) > div {
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.modref-page:has(#contenedor-transferentes) #m-expediente {
+    min-width: 0;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-campo:has(#m-expediente) > div > span {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal !important;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-total-fila {
+    max-width: 100%;
+    flex-wrap: wrap;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-total-label {
+    min-width: 0;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-error-total {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-modal {
+    box-sizing: border-box;
+    width: min(460px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+}
+
+.modref-page:has(#contenedor-transferentes) .mf-modal-acciones {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 1100px) {
+    .modref-page:has(#contenedor-transferentes) .mf-transfer-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .modref-page:has(#contenedor-transferentes) .mf-cabecera-cascada,
+    .modref-page:has(#contenedor-transferentes) .fila-receptora-refuerzo {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-transfer-grid {
+        margin-right: 12px;
+        margin-left: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .modref-page:has(#contenedor-transferentes) .mf-pagina {
+        padding-bottom: 100px;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-encabezado-institucional {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        padding: 20px;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-encabezado-texto {
+        overflow-wrap: anywhere;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-info-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-acciones {
+        right: 12px;
+        bottom: 12px;
+        max-width: calc(100vw - 24px);
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-btn {
+        max-width: 100%;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-modal {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modref-page:has(#contenedor-transferentes) .mf-pagina {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-encabezado-institucional {
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-encabezado-logo {
+        flex: 0 0 auto;
+        max-width: 100%;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-transfer-grid {
+        margin-right: 8px;
+        margin-left: 8px;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-section-block,
+    .modref-page:has(#contenedor-transferentes) .mf-importe-block {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-cabecera-cascada,
+    .modref-page:has(#contenedor-transferentes) .fila-receptora-refuerzo {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-info-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+        padding: 16px;
+    }
+
+    .modref-page:has(#contenedor-transferentes) .mf-total-fila {
+        gap: 8px;
+    }
+}
+
+/* Ajustes responsive exclusivos de Refuerzo. */
+.modref-page:has(#m-importe-total-refuerzo) {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-pagina,
+.modref-page:has(#m-importe-total-refuerzo) .mf-card,
+.modref-page:has(#m-importe-total-refuerzo) .mf-encabezado-institucional,
+.modref-page:has(#m-importe-total-refuerzo) .mf-transfer-grid,
+.modref-page:has(#m-importe-total-refuerzo) .mf-info-grid,
+.modref-page:has(#m-importe-total-refuerzo) .mf-totales {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-encabezado-texto,
+.modref-page:has(#m-importe-total-refuerzo) .mf-transfer-grid-col,
+.modref-page:has(#m-importe-total-refuerzo) .mf-section-block,
+.modref-page:has(#m-importe-total-refuerzo) .mf-importe-block,
+.modref-page:has(#m-importe-total-refuerzo) .mf-campo,
+.modref-page:has(#m-importe-total-refuerzo) .mf-file-wrap {
+    min-width: 0;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) #m-importe-total-refuerzo {
+    width: 100%;
+    min-width: 0;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-transfer-grid {
+    grid-template-columns: minmax(0, 1fr) 180px 250px;
+    grid-template-rows: repeat(2, auto);
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-transfer-grid-col {
+    grid-row: span 2;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-cabecera-cascada,
+.modref-page:has(#m-importe-total-refuerzo) .fila-receptora-refuerzo {
+    min-width: 0;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .fila-receptora-refuerzo > select,
+.modref-page:has(#m-importe-total-refuerzo) .fila-receptora-refuerzo > input[type="text"] {
+    min-width: 0;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-info-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-campo input[type="text"],
+.modref-page:has(#m-importe-total-refuerzo) .mf-campo input[type="date"] {
+    width: 100%;
+    min-width: 0;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-campo:has(#m-expediente) > div {
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) #m-expediente {
+    min-width: 0;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-campo:has(#m-expediente) > div > span {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal !important;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-total-fila {
+    max-width: 100%;
+    flex-wrap: wrap;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-total-label {
+    min-width: 0;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-error-total {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-modal {
+    box-sizing: border-box;
+    width: min(460px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+}
+
+.modref-page:has(#m-importe-total-refuerzo) .mf-modal-acciones {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 1100px) {
+    .modref-page:has(#m-importe-total-refuerzo) .mf-transfer-grid {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: none;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-transfer-grid-col {
+        grid-row: auto;
+        grid-template-rows: auto auto;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-transfer-grid-col:not(:last-child) {
+        border-right: none;
+        border-bottom: 1px solid var(--mf-border);
+    }
+}
+
+@media (max-width: 900px) {
+    .modref-page:has(#m-importe-total-refuerzo) .mf-transfer-grid {
+        margin-right: 12px;
+        margin-left: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .modref-page:has(#m-importe-total-refuerzo) .mf-pagina {
+        padding-bottom: 100px;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-encabezado-institucional {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        padding: 20px;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-encabezado-texto {
+        overflow-wrap: anywhere;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-cabecera-cascada,
+    .modref-page:has(#m-importe-total-refuerzo) .fila-receptora-refuerzo {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-info-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-acciones {
+        right: 12px;
+        bottom: 12px;
+        max-width: calc(100vw - 24px);
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-btn {
+        max-width: 100%;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-modal {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modref-page:has(#m-importe-total-refuerzo) .mf-pagina {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-encabezado-institucional {
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-encabezado-logo {
+        flex: 0 0 auto;
+        max-width: 100%;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-transfer-grid {
+        margin-right: 8px;
+        margin-left: 8px;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-section-block,
+    .modref-page:has(#m-importe-total-refuerzo) .mf-importe-block {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-cabecera-cascada,
+    .modref-page:has(#m-importe-total-refuerzo) .fila-receptora-refuerzo {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-info-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+        padding: 16px;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-campo:has(#m-expediente) > div > input,
+    .modref-page:has(#m-importe-total-refuerzo) .mf-campo:has(#m-expediente) > div > span {
+        flex: 1 1 100%;
+    }
+
+    .modref-page:has(#m-importe-total-refuerzo) .mf-total-fila {
+        gap: 8px;
+    }
+}
