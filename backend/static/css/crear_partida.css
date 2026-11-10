@@ -13,6 +13,7 @@
     --primary: #4f46e5;
     --primary-hover: #4338ca;
     --text: #1e1e2e;
+    --navy: #2b6f8e;
     --radio-card:14px;
     --sombra-card:0 2px 12px rgba(11,61,145,.06);
 }
@@ -25,6 +26,7 @@ body{
     width: 100%;
     max-width: 100%;
     margin: 30px auto;
+    padding: 0 14px 30px;
 }
 
 /* ---------- Layout principal (panel lateral + tabla) ---------- */
@@ -232,11 +234,11 @@ button:disabled:hover{
 /* Encabezado */
 .panel-tabla thead,
 .panel-tabla thead tr {
-    background: var(--azul-oscuro);
+    background: var(--navy);
 }
 
 .panel-tabla thead th {
-    background: linear-gradient(135deg, var(--azul-oscuro), var(--azul-medio)) !important;
+    background: var(--navy) !important;
     color: #fff !important;
     padding: 14px 10px;
     font-size: 12px;
@@ -335,6 +337,7 @@ button:disabled:hover{
     background:rgba(11,25,51,.55);
     backdrop-filter:blur(2px);
     overflow-y:auto;
+    z-index:1000;
 }
 
 .modal-content{
@@ -446,6 +449,7 @@ button:disabled:hover{
     line-height:1;
     opacity:.85;
     transition:opacity .2s, transform .2s;
+    padding:0 4px;
 }
 
 .cerrar:hover{
@@ -554,39 +558,183 @@ button:disabled:hover{
   to   { transform: translateY(0);    opacity: 1; }
 }
 
-/* ---------- Responsive ---------- */
-@media(max-width:900px) {
-    .contenedor {
-        padding: 0 16px 40px;
-    }
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
 
-    .panel-tabla table {
-        min-width: 720px;   /* el wrapper hace scroll horizontal */
-    }
+/* Laptop chica / tablet horizontal */
+@media (max-width: 1100px){
+    .panel-lateral{ flex: 0 0 170px; }
+    .panel-tabla thead th{ font-size: 11px; padding: 12px 6px; }
+    .panel-tabla tbody td{ font-size: 13px; padding: 10px 6px; }
+}
 
-    .panel-tabla tbody td {
-        font-size: 12px;
-        padding: 8px 6px;
+/* Tablet vertical y celular: panel arriba, tabla en formato tarjetas */
+@media (max-width: 768px){
+
+    .contenedor{
+        margin: 16px auto;
+        padding: 0 12px 30px;
     }
 
     .layout-principal{
-        flex-direction:column;
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .panel-lateral{
-        flex:0 0 auto;
-        width:100%;
-        position:static;
+        flex: 0 0 auto;
+        width: 100%;
+        position: static;
     }
 
     .panel-acciones{
-        flex-direction:row;
+        flex-direction: row;
+    }
+    .panel-acciones button{
+        flex: 1;
+        padding: 12px 8px;
     }
 
-    .modal-header,
-    .modal-body,
-    .modal-footer {
-        padding-left: 20px;
-        padding-right: 20px;
+    /* 16px evita el zoom automático de iOS al enfocar un input */
+    input[type=text],
+    input[type=number],
+    .modal-content select,
+    .form-group input,
+    #buscador{
+        font-size: 16px;
+    }
+
+    /* ----- Tabla -> tarjetas ----- */
+    .tabla-wrapper{
+        overflow: visible;
+        box-shadow: none;
+        background: transparent;
+        border-radius: 0;
+    }
+
+    .panel-tabla table,
+    .panel-tabla tbody,
+    .panel-tabla tfoot,
+    .panel-tabla tr,
+    .panel-tabla td{
+        display: block;
+        width: 100%;
+    }
+
+    .panel-tabla table{
+        min-width: 0;
+        background: transparent;
+        table-layout: auto;
+    }
+
+    .panel-tabla thead{ display: none; }
+
+    .panel-tabla tbody tr{
+        background: white;
+        border-radius: var(--radio-card);
+        box-shadow: var(--sombra-card);
+        margin-bottom: 12px;
+        padding: 6px 14px;
+    }
+
+    .panel-tabla tbody td{
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 14px;
+        width: 100% !important;
+        padding: 9px 0 !important;
+        text-align: right !important;
+        font-size: 13px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        border-bottom: 1px dashed var(--gris-borde);
+    }
+
+    .panel-tabla tbody td:last-child{ border-bottom: none; }
+
+    .panel-tabla tbody td::before{
+        content: attr(data-label);
+        flex-shrink: 0;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--azul-oscuro);
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        text-align: left;
+    }
+
+    /* Total general */
+    .panel-tabla tfoot{ background: transparent; }
+
+    .panel-tabla tfoot tr{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: white;
+        border-radius: var(--radio-card);
+        box-shadow: var(--sombra-card);
+        padding: 14px;
+    }
+
+    .panel-tabla tfoot td{
+        width: auto !important;
+        padding: 0 !important;
+        text-align: left !important;
+    }
+    .panel-tabla tfoot td#totalGeneral{ text-align: right !important; }
+
+    /* ----- Modal UP ----- */
+    .modal-header{
+        padding: 18px 20px;
+    }
+    .modal-header h2{ font-size: 18px; }
+
+    .modal-body{
+        padding: 20px;
+    }
+
+    .modal-footer{
+        padding: 18px 20px 32px;
+    }
+}
+
+/* Celulares chicos */
+@media (max-width: 480px){
+
+    .panel-acciones{
+        flex-direction: column;
+    }
+
+    /* Modal UP: botones a lo ancho */
+    .modal-footer{
+        flex-direction: column-reverse;
+    }
+    .modal-footer button{
+        width: 100%;
+    }
+
+    /* Modal Partida */
+    .modal-box{
+        padding: 1.4rem;
+        width: 94vw;
+        max-height: 92vh;
+        overflow-y: auto;
+    }
+
+    .modal-acciones{
+        flex-direction: column-reverse;
+    }
+    .modal-acciones .btn{
+        width: 100%;
+    }
+
+    /* Toast a lo ancho, abajo */
+    .toast{
+        left: 14px;
+        right: 14px;
+        bottom: 16px;
+        justify-content: center;
     }
 }

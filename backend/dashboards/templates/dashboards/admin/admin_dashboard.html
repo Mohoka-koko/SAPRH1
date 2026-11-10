@@ -21,16 +21,21 @@
                 <div class="logo-emblem-container">
                     <div class="logo-emblem-outer">
                         <div class="logo-emblem-inner">
-                            <!-- Espacio directo para tu imagen de Django -->
                             <img src="{% static 'img/logo4.png' %}" alt="Logo S.A.P.R.H.">
                         </div>
                     </div>
                 </div>
-            </a>            
+            </a>
             <h1>S.A.P.R.H.</h1>
         </div>
-    
-        <nav class="navbar">
+
+        <!-- BOTÓN HAMBURGUESA (solo visible en pantallas chicas) -->
+        <button type="button" class="menu-toggle" id="menuToggle"
+                aria-label="Abrir menú" aria-expanded="false" aria-controls="mainNav">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <nav class="navbar" id="mainNav">
             <ul class="nav-list">
                 <li class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">
                     <a href="{% url 'home' %}">
@@ -50,27 +55,23 @@
                         <span>Panel Registro</span>
                     </a>
                 </li>
-          <li class="{% if request.resolver_match.url_name == 'ejerciciosanteriores_prueba' %}active{% endif %}">
-    <a href="{% url 'ejerciciosanteriores_prueba' %}">
-        <i class="fa-solid fa-clock-rotate-left nav-icon"></i>
-        <span>Ejercicios Anteriores</span>
-    </a>
-</li>
-        
-
-{% if request.user.rol == 'admin' %}
-<li class="{% if request.resolver_match.url_name == 'usuarios' %}active{% endif %}">
-    <a href="{% url 'usuarios' %}">
-        <i class="fa-solid fa-users nav-icon"></i>
-        <span>Usuarios</span>
-    </a>
-</li>
-{% endif %}
-
-        
+                <li class="{% if request.resolver_match.url_name == 'ejerciciosanteriores_prueba' %}active{% endif %}">
+                    <a href="{% url 'ejerciciosanteriores_prueba' %}">
+                        <i class="fa-solid fa-clock-rotate-left nav-icon"></i>
+                        <span>Ejercicios Anteriores</span>
+                    </a>
+                </li>
+                {% if request.user.rol == 'admin' %}
+                <li class="{% if request.resolver_match.url_name == 'usuarios' %}active{% endif %}">
+                    <a href="{% url 'usuarios' %}">
+                        <i class="fa-solid fa-users nav-icon"></i>
+                        <span>Usuarios</span>
+                    </a>
+                </li>
+                {% endif %}
             </ul>
         </nav>
-    
+
         <div class="user-menu">
             <div class="user-card">
                 <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
@@ -79,80 +80,54 @@
                     <span class="user-role">{{ usuario.get_rol_display }}</span>
                 </div>
             </div>
+
             <!-- CAMPANA DE NOTIFICACIONES -->
+            <div class="notification-container">
 
-        <div class="notification-container">
+                <button type="button" class="notification-btn" id="notificationBtn" title="Notificaciones">
+                    <i class="fa-solid fa-bell"></i>
+                </button>
 
-            <button
-                type="button"
-             class="notification-btn"
-             id="notificationBtn"
-             title="Notificaciones">
+                <!-- PANEL DE NOTIFICACIONES -->
+                <div class="notification-panel" id="notificationPanel" data-api-url="{% url 'api_notificaciones' %}">
 
-             <i class="fa-solid fa-bell"></i>
+                    <div class="notification-header">
+                        <span>Notificaciones</span>
 
-            </button>
+                        <div class="notification-actions">
+                            <button type="button" class="notification-settings"
+                                    title="Configuración de notificaciones">
+                                <i class="fa-solid fa-gear"></i>
+                            </button>
 
+                            <button type="button" class="notification-close" id="notificationClose"
+                                    title="Cerrar">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
 
-        <!-- PANEL DE NOTIFICACIONES -->
+                    <div class="notification-body" id="notificationBody">
+                        <p>Cargando notificaciones...</p>
+                    </div>
 
-        <div class="notification-panel" id="notificationPanel"  data-api-url="{% url 'api_notificaciones' %}">
-
-            <div class="notification-header">
-
-                <span>Notificaciones</span>
-
-                <div class="notification-actions">
-
-                    <button
-                        type="button"
-                        class="notification-settings"
-                        title="Configuración de notificaciones">
-
-                        <i class="fa-solid fa-gear"></i>
-
-                    </button>
-
-                    <button
-                        type="button"
-                        class="notification-close"
-                        id="notificationClose"
-                        title="Cerrar">
-
-                        <i class="fa-solid fa-xmark"></i>
-
-                    </button>
+                    <div class="notification-footer">
+                        <a href="{% url 'lista_notificaciones' %}">Verlo todo</a>
+                    </div>
 
                 </div>
-
             </div>
 
-
-           <div class="notification-body" id="notificationBody">
-                <p>Cargando notificaciones...</p>
-            </div>
-
-
-           <div class="notification-footer">
-
-                 <a href="{% url 'lista_notificaciones' %}">Verlo todo</a>
-
-            </div>
-
-        </div>
-
-    </div>
             <a href="{% url 'configuracion' %}" class="config-btn" title="Configuración">
                 <i class="fa-solid fa-gear" style="color: #ffffff !important;"></i>
             </a>
-            <a href="{% url 'logout' %}">
-                <button class="logout-btn" title="Cerrar Sesión">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
-            </a>            
+
+            <a href="{% url 'logout' %}" class="logout-btn" title="Cerrar Sesión">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </a>
         </div>
     </header>
-    
+
 
     <main class="main-content">
         {% block content %}
@@ -160,6 +135,37 @@
     </main>
 
     <script src="{% static 'js/notificaciones.js' %}?v=3"></script>
+
+    <!-- MENÚ HAMBURGUESA -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var toggle = document.getElementById("menuToggle");
+            var nav = document.getElementById("mainNav");
+            if (!toggle || !nav) return;
+
+            function setOpen(open) {
+                nav.classList.toggle("open", open);
+                toggle.setAttribute("aria-expanded", open ? "true" : "false");
+                toggle.querySelector("i").className = open
+                    ? "fa-solid fa-xmark"
+                    : "fa-solid fa-bars";
+            }
+
+            toggle.addEventListener("click", function () {
+                setOpen(!nav.classList.contains("open"));
+            });
+
+            // Cerrar el menú al elegir una opción
+            nav.querySelectorAll("a").forEach(function (a) {
+                a.addEventListener("click", function () { setOpen(false); });
+            });
+
+            // Resetear al volver a pantalla grande
+            window.addEventListener("resize", function () {
+                if (window.innerWidth > 1024) setOpen(false);
+            });
+        });
+    </script>
 
     {% block extra_js %}
     {% endblock %}

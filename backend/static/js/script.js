@@ -4,7 +4,8 @@
 
 /* ===== SIDEBAR ===== */
 function toggleMenu() {
-  document.getElementById("sidebar").classList.toggle("closed");
+  const sidebar = document.getElementById("sidebar");
+  if (sidebar) sidebar.classList.toggle("closed");
 }
 
 function cerrarSesion() {
@@ -16,6 +17,10 @@ function format(n) {
 }
 
 /* ── INICIO ── */
-if (document.getElementById("table-body")) {
+if (
+  document.getElementById("table-body") &&
+  typeof renderTabla === "function" &&
+  typeof data !== "undefined"
+) {
   renderTabla(data);
 }

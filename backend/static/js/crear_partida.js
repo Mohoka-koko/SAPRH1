@@ -85,6 +85,7 @@ function validarPresupuestoGeneral() {
 
 /* ==========================================================================
     TABLA DE PRESUPUESTO (Actualizada)
+    Cada <td> lleva data-label para mostrar el título en la vista móvil.
     ========================================================================== */
 async function cargarTabla() {
     try {
@@ -97,14 +98,14 @@ async function cargarTabla() {
         data.lineas.forEach((l) => {
             tbody.innerHTML += `
                 <tr>
-                    <td>${l.prog}</td>
-                    <td>${l.subp}</td>
-                    <td>${l.py}</td>
-                    <td>${l.ao}</td>
-                    <td>${l.partida}</td>
-                    <td>${l.denominacion}</td>
-                    <td>${l.fuente}</td>
-                    <td>$${Number(l.saldo_inicial).toLocaleString("es-AR")}</td>
+                    <td data-label="Prog">${l.prog}</td>
+                    <td data-label="Subp">${l.subp}</td>
+                    <td data-label="Py">${l.py}</td>
+                    <td data-label="A/O">${l.ao}</td>
+                    <td data-label="Part.">${l.partida}</td>
+                    <td data-label="Denominación">${l.denominacion}</td>
+                    <td data-label="Fuente">${l.fuente}</td>
+                    <td data-label="Presupuesto">$${Number(l.saldo_inicial).toLocaleString("es-AR")}</td>
                 </tr>
             `;
             total += parseFloat(l.saldo_inicial);
@@ -178,7 +179,7 @@ async function guardarPartida() {
 /* ==========================================================================
    MODAL: CREAR UP (Unidad Presupuestaria)
    ========================================================================== */
-   async function cargarSelectsUP() {
+async function cargarSelectsUP() {
     const respPrg = await fetch("/api/programas/");
     const dataPrg = await respPrg.json();
     llenarSelect(
@@ -268,9 +269,10 @@ function limpiarFormularioUP() {
     document.getElementById("partida").innerHTML = '<option value="">Seleccionar partida...</option>';
     document.getElementById("fuente").innerHTML  = '<option value="">Seleccionar fuente...</option>';
     document.getElementById("nombre").value      = "";
-    
+
     // Fijar presupuesto en '00,00' y dejarlo no editable
-    const inputPresupuesto = document.getElementById("presupuesto");
+    // (corregido: el id en el HTML es "presupuestoInicial")
+    const inputPresupuesto = document.getElementById("presupuestoInicial");
     if (inputPresupuesto) {
         inputPresupuesto.value = "00,00";
         inputPresupuesto.readOnly = true;

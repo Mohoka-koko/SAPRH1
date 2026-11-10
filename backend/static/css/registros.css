@@ -506,10 +506,25 @@ ESTILO BASE: CYBER-KEY LIGHT
 
     .table-container { padding: 0 0 1.5rem; }
 
-    /* La tabla se desliza de costado dentro de su contenedor */
-    .history-table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .history-table { min-width: 900px; }
-    .history-table td { white-space: nowrap; font-size: 0.95rem !important; }
+    /* La tabla se ajusta al ancho disponible, sin scroll horizontal */
+    .history-table-wrapper { overflow-x: visible; }
+    .history-table { width: 100%; min-width: 0; }
+
+    .history-table th,
+    .history-table td {
+        padding: 0.6rem 0.5rem;
+        white-space: normal;        /* el texto baja de línea en vez de ensanchar la tabla */
+        word-break: break-word;
+        font-size: 0.85rem !important;
+    }
+
+    .history-table th { font-size: 0.72rem; }
+
+    .badge-tipo { min-width: 0; padding: 4px 8px; }
+
+    .history-table td.expandir { width: 44px; padding: 0.4rem; }
+    .btn-expandir { width: 30px; height: 30px; }
+    .btn-accion { width: 28px; height: 28px; }
 }
 
 /* ---------- Móvil (hasta 768px): cada registro es una tarjeta ---------- */
