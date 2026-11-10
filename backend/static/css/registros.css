@@ -147,10 +147,12 @@ ESTILO BASE: CYBER-KEY LIGHT
     border-radius: var(--radius-sm);
     overflow: hidden;
     font-size: 0.875rem;
+    font-weight: 400;
     border: 1px solid var(--border);
 }
 
 .filter-bar input,
+.filter-bar select,
 .filter-label {
     background: var(--white);
     padding: 0 0.9rem;
@@ -159,10 +161,15 @@ ESTILO BASE: CYBER-KEY LIGHT
     outline: none;
     color: var(--text);
     font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.filter-bar select {
+    cursor: pointer;
 }
 
 .filter-label {
-    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 6px;

@@ -1,15 +1,18 @@
+
 {% extends 'dashboards/admin/admin_dashboard.html' %}
 {% load static %}
 
 {% block extra_css %}
-  <link rel="stylesheet" href="{% static 'css/refuerzomodificacion.css' %}">
+<link rel="stylesheet" href="{% static 'css/refuerzomodificacion.css' %}">
 {% endblock %}
 
 {% block content %}
+
 <div class="pagina">
     <div class="header-pagina">
+
         <!-- BOTÓN VOLVER -->
-        <a href="{% url 'registros' %}" class="btn-volver" title="Volver al Panel de Registro">
+        <a href="{% url 'registros' %}" class="btn-volver">
             <i class="fa-solid fa-arrow-left"></i>
             <span>Volver</span>
         </a>
@@ -23,6 +26,7 @@
         <div class="filtro-grupo">
             <span class="filtrado-label">Filtrado:</span>
             <span class="campo-label">Campo</span>
+
             <div class="select-wrapper">
                 <select id="campo-filtro" class="select-campo">
                     <option value="fecha">Fecha</option>
@@ -41,8 +45,21 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
             </span>
-            <input type="text" id="input-busqueda" class="input-busqueda" placeholder="Buscar..." style="padding-left:36px;" />
-            <button class="btn-buscar" id="btn-buscar" title="Buscar" style="display:none;"></button>
+
+            <input
+                type="text"
+                id="input-busqueda"
+                class="input-busqueda"
+                placeholder="Buscar..."
+                style="padding-left:36px;"
+            />
+
+            <button
+                class="btn-buscar"
+                id="btn-buscar"
+                title="Buscar"
+                style="display:none;">
+            </button>
         </div>
     </div>
 
@@ -55,14 +72,15 @@
 
         <div class="sin-resultados" id="sin-resultados" style="display:none;">
             <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#9ca3af" style="margin-bottom: 8px;">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 01-18 0z" />
             </svg>
             <p>No se encontraron registros que coincidan con la búsqueda.</p>
         </div>
 
-        <!-- FOOTER / PAGINACIÓN (Estilo Modificación) -->
+        <!-- PAGINACIÓN -->
         <div class="table-footer">
             <div class="pagination-info"></div>
+
             <div class="pagination-buttons">
                 <span class="page-number-text"></span>
                 <button class="btn-page btn-prev">&lt; Prev</button>

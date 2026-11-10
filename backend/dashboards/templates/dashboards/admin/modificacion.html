@@ -1,3 +1,4 @@
+
 {% extends 'dashboards/admin/admin_dashboard.html' %}
 {% load static %}
 
@@ -9,8 +10,9 @@
 
 <div class="pagina">
     <div class="header-pagina">
+
         <!-- BOTÓN VOLVER -->
-        <a href="{% url 'registros' %}" class="btn-volver" title="Volver al Panel de Registro">
+        <a href="{% url 'registros' %}" class="btn-volver">
             <i class="fa-solid fa-arrow-left"></i>
             <span>Volver</span>
         </a>
@@ -24,6 +26,7 @@
         <div class="filtro-grupo">
             <span class="filtrado-label">Filtrado:</span>
             <span class="campo-label">Campo</span>
+
             <div class="select-wrapper">
                 <select id="campo-filtro" class="select-campo">
                     <option value="fecha">Fecha</option>
@@ -43,8 +46,21 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
             </span>
-            <input type="text" id="input-busqueda" class="input-busqueda" placeholder="Buscar..." style="padding-left:36px;" />
-            <button class="btn-buscar" id="btn-buscar" title="Buscar" style="display:none;"></button>
+
+            <input
+                type="text"
+                id="input-busqueda"
+                class="input-busqueda"
+                placeholder="Buscar..."
+                style="padding-left:36px;"
+            />
+
+            <button
+                class="btn-buscar"
+                id="btn-buscar"
+                title="Buscar"
+                style="display:none;">
+            </button>
         </div>
     </div>
 
@@ -62,9 +78,10 @@
             <p>No se encontraron registros que coincidan con la búsqueda.</p>
         </div>
 
-        <!-- Table Footer / Pagination -->
+        <!-- PAGINACIÓN -->
         <div class="table-footer">
             <div class="pagination-info"></div>
+
             <div class="pagination-buttons">
                 <span class="page-number-text"></span>
                 <button class="btn-page btn-prev">&lt; Prev</button>
@@ -73,11 +90,12 @@
         </div>
     </div>
 
-    <!-- BOTÓN AGREGAR (FAB) -->
+    <!-- BOTÓN AGREGAR -->
     <a href="{% url 'modificacion_crear' %}" class="btn-agregar-wrapper">
         <button class="btn-agregar" id="btn-agregar" title="Agregar registro">+</button>
     </a>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
