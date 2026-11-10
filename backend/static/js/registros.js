@@ -87,9 +87,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (estadoLower === 'listo') claseEstado = 'badge-listo';
                 else if (estadoLower === 'revisar') claseEstado = 'badge-revisar';
 
-                // Los borradores de Imputación, Refuerzo y Modificación todavía no tienen detalle
-                // definitivo para "ver": se retoman con el botón de editar
-                const esBorradorSinVer = esRevisar && ['Imputación', 'Refuerzo', 'Modificación'].includes(reg.tipo);
+                // Ningún borrador (en 'revisar') tiene detalle definitivo para "ver": se retoma
+                // con el botón de editar. Aplica a todos los tipos.
+                const esBorradorSinVer = esRevisar;
 
                 // Ver: visible en todos los registros, salvo los borradores indicados arriba
                 const btnVer = esBorradorSinVer
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         </button>`
                     : '';
 
-                // Historial de intervenciones (el servidor lo informa solo para Refuerzo)
+                // Historial de intervenciones (el servidor lo informa con url_auditoria en todos los tipos)
                 const bloqueHistorial = reg.url_auditoria
                     ? `<div>
                                 <strong>Historial:</strong>
@@ -239,6 +239,12 @@ document.addEventListener('DOMContentLoaded', function () {
                   + 'No se modificarán saldos ni se generarán movimientos presupuestarios. '
                   + 'Quedará registrado quién lo eliminó y cuándo.',
         'Orden de Pago': '¿Está seguro de que desea eliminar este borrador de Orden de Pago? Esta acción no se puede deshacer. '
+                  + 'No se modificarán saldos ni se generarán movimientos presupuestarios. '
+                  + 'Quedará registrado quién lo eliminó y cuándo.',
+        'Orden de Pago Personal': '¿Está seguro de que desea eliminar este borrador de Orden de Pago Personal? Esta acción no se puede deshacer. '
+                  + 'No se modificarán saldos ni se generarán movimientos presupuestarios. '
+                  + 'Quedará registrado quién lo eliminó y cuándo.',
+        'Modificación': '¿Está seguro de que desea eliminar este borrador de Modificación? Esta acción no se puede deshacer. '
                   + 'No se modificarán saldos ni se generarán movimientos presupuestarios. '
                   + 'Quedará registrado quién lo eliminó y cuándo.',
     };

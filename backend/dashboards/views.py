@@ -24,6 +24,7 @@ from dashboards.models import (
     ActividadObra, Partida, FuenteFinanciamiento,
     OrdenPagoPersonal, OrdenPagoPersonalBeneficiario, OrdenPagoPersonalPartida,
     OrdenPagoPersonalBorradorPartida,
+    ModificacionAuditoria, OrdenPagoPersonalAuditoria,
 )
 from django.db.models.deletion import ProtectedError
 from decimal import Decimal, InvalidOperation
@@ -1971,6 +1972,69 @@ def _clave_fila(rol, linea_id, programa_id, proyecto_id, actividad_id, partida_i
             fuente_id, imputacion_detalle_id, importe, orden)
 
 
+# ── Auditoría de Modificación (historial de intervenciones) ──────────────────
+MODIFICACION_AUDITORIA_VENTANA = REFUERZO_AUDITORIA_VENTANA
+
+
+def _registrar_auditoria_modificacion(modificacion, operacion, usuario, detalle=None, agrupar=False, estado=None):
+    """Registra una intervención real sobre la Modificación. Se llama DENTRO de la transacción
+    y con la fila bloqueada. Solo escribe en modificacion_auditoria: no toca el presupuesto."""
+    ahora   = timezone.now()
+    detalle = detalle or {}
+
+    if agrupar:
+        ultima = ModificacionAuditoria.objects.filter(modificacion_id=modificacion.id).order_by('-id').first()
+        if (ultima is not None and ultima.operacion == 'EDITAR'
+                and ultima.usuario_id == usuario.id
+                and ahora - ultima.fecha_ultima <= MODIFICACION_AUDITORIA_VENTANA):
+            campos = sorted(set(ultima.detalle.get('campos', [])) | set(detalle.get('campos', [])))
+            ultima.detalle      = {'campos': campos}
+            ultima.fecha_ultima = ahora
+            ultima.cantidad    += 1
+            ultima.save(update_fields=['detalle', 'fecha_ultima', 'cantidad'])
+            return ultima
+
+    return ModificacionAuditoria.objects.create(
+        modificacion_id   = modificacion.id,
+        operacion         = operacion,
+        usuario           = usuario,
+        fecha             = ahora,
+        fecha_ultima      = ahora,
+        estado_resultante = estado or modificacion.estado_formulario,
+        detalle           = detalle,
+    )
+
+
+def _modificacion_campos_modificados(modificacion, cabecera, filas):
+    """Lista de campos que REALMENTE cambiarían al aplicar lo recibido. Vacía = nada que
+    guardar (reemplaza a _modificacion_sin_cambios y además dice QUÉ cambió)."""
+    campos = []
+    if cabecera['fecha'] and cabecera['fecha'] != modificacion.fecha:
+        campos.append('fecha')
+    if (cabecera['nro_expediente'] or MODIFICACION_EXPEDIENTE_PLACEHOLDER) != modificacion.nro_expediente:
+        campos.append('nro_expediente')
+    if cabecera['nro_decreto'] != modificacion.nro_decreto:
+        campos.append('nro_decreto')
+    if cabecera['tipo_transferente'] != modificacion.tipo_transferente:
+        campos.append('tipo_transferente')
+
+    guardadas = list(modificacion.borradores_detalle.order_by('rol', 'orden'))
+    for rol, nombre in (('TRANSFERENTE', 'transferentes'), ('RECEPTORA', 'receptoras')):
+        viejas = [
+            _clave_fila(b.rol, b.linea_presupuestaria_id, b.programa_id, b.proyecto_id, b.actividad_id,
+                        b.partida_id, b.fuente_id, b.imputacion_detalle_id, b.importe, b.orden)
+            for b in guardadas if b.rol == rol
+        ]
+        nuevas = [
+            _clave_fila(f['rol'], f['linea_id'], f['programa_id'], f['proyecto_id'], f['actividad_id'],
+                        f['partida_id'], f['fuente_id'], f['imputacion_detalle_id'], f['importe'], f['orden'])
+            for f in sorted((f for f in filas if f['rol'] == rol), key=lambda f: f['orden'])
+        ]
+        if viejas != nuevas:
+            campos.append(nombre)
+    return campos
+
+
 def _modificacion_sin_cambios(modificacion, cabecera, filas):
     """True si lo recibido es idéntico a lo ya guardado. En ese caso NO se escribe nada:
     así un guardado sin cambios reales no altera 'editado por' ni la fecha de modificación."""
@@ -2107,6 +2171,7 @@ def api_modificacion_borrador_crear(request):
                 estado_formulario    = 'REVISAR',
             )
             _reemplazar_borradores_modificacion(modificacion, filas)
+            _registrar_auditoria_modificacion(modificacion, 'CREAR', request.user)
 
     except _ModificacionError as e:
         return _respuesta_error(e)
@@ -2134,7 +2199,8 @@ def api_modificacion_borrador_actualizar(request, modificacion_id):
             _verificar_version(modificacion, body.get('version'))
 
             # Sin cambios reales no se escribe nada: "editado por" y la fecha quedan como estaban
-            if _modificacion_sin_cambios(modificacion, cabecera, filas):
+            campos = _modificacion_campos_modificados(modificacion, cabecera, filas)
+            if not campos:
                 return JsonResponse({'ok': True, 'version': _version(modificacion), 'sin_cambios': True})
 
             if cabecera['fecha']:
@@ -2147,6 +2213,8 @@ def api_modificacion_borrador_actualizar(request, modificacion_id):
             modificacion.save()                                # (modificacion.usuario NO se toca)
 
             _reemplazar_borradores_modificacion(modificacion, filas)
+            _registrar_auditoria_modificacion(modificacion, 'EDITAR', request.user,
+                                              {'campos': campos}, agrupar=True)
 
     except _ModificacionError as e:
         return _respuesta_error(e)
@@ -2297,6 +2365,9 @@ def api_modificacion_completar(request, modificacion_id):
             # El borrador ya no hace falta
             modificacion.borradores_detalle.all().delete()
 
+            _registrar_auditoria_modificacion(modificacion, 'COMPLETAR', request.user,
+                                              {'importe_total': str(total_transferente)}, estado='LISTO')
+
     except _ModificacionError as e:
         return _respuesta_error(e)
     except Exception:
@@ -2309,6 +2380,124 @@ def api_modificacion_completar(request, modificacion_id):
         'importe_total':   str(total_transferente),
         'version':         _version(modificacion),
     })
+
+
+# ==========================================
+#  API — ELIMINAR BORRADOR DE MODIFICACIÓN (solo estado REVISAR)
+# ==========================================
+# Eliminación FÍSICA del borrador: no tiene transferentes/receptoras reales (los triggers de
+# saldo solo se disparan al insertar en esas tablas), así que NO modifica saldos ni genera
+# movimientos. Queda una fila en modificacion_auditoria (sin FK) con quién y cuándo lo eliminó.
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_modificacion_borrador_eliminar(request, modificacion_id):
+    try:
+        body = _json_body(request) if request.body else {}
+
+        with transaction.atomic():
+            modificacion = _obtener_modificacion_bloqueada(modificacion_id)   # 404 / 409 si ya es LISTO
+
+            # La versión es opcional; si el listado la envía no se borra un borrador que
+            # alguien modificó después de cargarlo.
+            if body.get('version'):
+                _verificar_version(modificacion, body.get('version'))
+
+            # Defensa: un borrador nunca debería tener filas definitivas.
+            if modificacion.transferentes.exists() or modificacion.receptoras.exists():
+                raise _ModificacionError(
+                    'Esta Modificación ya tiene detalles presupuestarios y no se puede eliminar como borrador', 409)
+
+            filas = list(modificacion.borradores_detalle.all())
+            instantanea = {
+                'fecha':             modificacion.fecha.isoformat(),
+                'nro_expediente':    '' if modificacion.nro_expediente == MODIFICACION_EXPEDIENTE_PLACEHOLDER
+                                        else modificacion.nro_expediente,
+                'nro_decreto':       modificacion.nro_decreto,
+                'tipo_transferente': modificacion.tipo_transferente,
+                'importe_total':     str(modificacion.importe_total),
+                'transferentes':     sum(1 for b in filas if b.rol == 'TRANSFERENTE'),
+                'receptoras':        sum(1 for b in filas if b.rol == 'RECEPTORA'),
+                'creado_por':        modificacion.usuario.nombre if modificacion.usuario_id else None,
+                'creado_en':         modificacion.fecha_creacion.isoformat(),
+            }
+            if modificacion.usuario_modificacion_id:
+                instantanea['editado_por'] = modificacion.usuario_modificacion.nombre
+
+            _registrar_auditoria_modificacion(modificacion, 'ELIMINAR', request.user,
+                                              {'instantanea': instantanea}, estado='ELIMINADO')
+            modificacion.delete()   # borra en cascada ModificacionBorradorDetalle
+
+    except _ModificacionError as e:
+        return _respuesta_error(e)
+    except ProtectedError:
+        return JsonResponse(
+            {'error': 'La Modificación tiene registros relacionados y no se puede eliminar.'}, status=409)
+    except Exception:
+        _logger.exception('Error al eliminar el borrador de Modificación %s', modificacion_id)
+        return JsonResponse({'error': 'Error interno: el borrador NO se eliminó'}, status=500)
+
+    return JsonResponse({'ok': True})
+
+
+# ==========================================
+#  API — HISTORIAL DE INTERVENCIONES DE UNA MODIFICACIÓN (solo lectura)
+# ==========================================
+_MODIFICACION_AUDITORIA_TEXTOS = {
+    'CREAR':     'Creó el borrador',
+    'EDITAR':    'Editó el borrador',
+    'COMPLETAR': 'Confirmó como Listo',
+    'ELIMINAR':  'Eliminó el borrador',
+}
+_MODIFICACION_CAMPOS_TEXTOS = {
+    'fecha':             'Fecha',
+    'nro_expediente':    'N° de expediente',
+    'nro_decreto':       'Decreto / Resolución',
+    'tipo_transferente': 'Modalidad del transferente',
+    'transferentes':     'Transferentes',
+    'receptoras':        'Receptoras',
+}
+
+
+@rol_requerido('admin', 'adminprincipal')
+def api_modificacion_auditoria(request, modificacion_id):
+    """Solo lectura (GET): consultar el historial NO genera ningún registro."""
+    eventos      = list(ModificacionAuditoria.objects.filter(modificacion_id=modificacion_id)
+                        .select_related('usuario').order_by('fecha', 'id'))
+    modificacion = Modificacion.objects.select_related('usuario').filter(id=modificacion_id).first()
+    if modificacion is None and not eventos:
+        return JsonResponse({'error': 'Modificación no encontrada'}, status=404)
+
+    def _fmt(dt):
+        return timezone.localtime(dt).strftime('%d/%m/%Y - %H:%M')
+
+    data = []
+    # Modificaciones anteriores a la auditoría: se reconstruye la creación desde la cabecera
+    if modificacion is not None and not any(e.operacion == 'CREAR' for e in eventos):
+        data.append({
+            'operacion':    'CREAR',
+            'texto':        'Creó la Modificación (anterior al registro de auditoría)',
+            'usuario':      modificacion.usuario.nombre,
+            'fecha':        _fmt(modificacion.fecha_creacion),
+            'fecha_ultima': None,
+            'cantidad':     1,
+            'estado':       None,
+            'campos':       [],
+        })
+
+    for e in eventos:
+        campos = [_MODIFICACION_CAMPOS_TEXTOS.get(c, c) for c in e.detalle.get('campos', [])]
+        data.append({
+            'operacion':    e.operacion,
+            'texto':        _MODIFICACION_AUDITORIA_TEXTOS.get(e.operacion, e.operacion),
+            'usuario':      e.usuario.nombre,
+            'fecha':        _fmt(e.fecha),
+            'fecha_ultima': _fmt(e.fecha_ultima) if e.cantidad > 1 else None,
+            'cantidad':     e.cantidad,
+            'estado':       e.estado_resultante,
+            'campos':       campos,
+        })
+
+    return JsonResponse({'modificacion_id': modificacion_id, 'eventos': data})
 
 
 # ==========================================
@@ -3126,6 +3315,69 @@ def api_imputacion_borrador_eliminar(request, imputacion_id):
         )
 
     return JsonResponse({'ok': True})
+
+# ==========================================
+#  API — HISTORIAL DE INTERVENCIONES DE UNA IMPUTACIÓN (solo lectura)
+#  Lee ImputacionAuditoria (que ya se escribe en cada borrador/confirmación/eliminación) y
+#  lo adapta al formato que espera el modal del listado (mismo que Refuerzo y OP).
+# ==========================================
+_IMPUTACION_AUDITORIA_OPERACION = {
+    'CREACION':     'CREAR',
+    'EDICION':      'EDITAR',
+    'CONFIRMACION': 'COMPLETAR',
+    'ELIMINACION':  'ELIMINAR',
+}
+_IMPUTACION_AUDITORIA_TEXTOS = {
+    'CREAR':     'Creó el borrador',
+    'EDITAR':    'Editó el borrador',
+    'COMPLETAR': 'Confirmó como Listo',
+    'ELIMINAR':  'Eliminó el borrador',
+}
+
+
+@rol_requerido('admin', 'adminprincipal')
+def api_imputacion_auditoria(request, imputacion_id):
+    """Solo lectura (GET): consultar el historial NO genera ningún registro."""
+    eventos    = list(ImputacionAuditoria.objects.filter(imputacion_id=imputacion_id)
+                      .select_related('usuario').order_by('fecha', 'id'))
+    imputacion = Imputacion.objects.select_related('usuario').filter(id=imputacion_id).first()
+    if imputacion is None and not eventos:
+        return JsonResponse({'error': 'Imputación no encontrada'}, status=404)
+
+    def _fmt(dt):
+        return timezone.localtime(dt).strftime('%d/%m/%Y - %H:%M')
+
+    data = []
+    # Imputaciones anteriores a la auditoría: se reconstruye la creación desde la cabecera
+    if imputacion is not None and not any(e.tipo == 'CREACION' for e in eventos):
+        data.append({
+            'operacion':    'CREAR',
+            'texto':        'Creó la Imputación (anterior al registro de auditoría)',
+            'usuario':      imputacion.usuario.nombre if imputacion.usuario_id else 'S/N',
+            'fecha':        _fmt(imputacion.fecha_creacion),
+            'fecha_ultima': None,
+            'cantidad':     1,
+            'estado':       None,
+            'campos':       [],
+        })
+
+    for e in eventos:
+        operacion = _IMPUTACION_AUDITORIA_OPERACION.get(e.tipo, e.tipo)
+        # En EDICION 'detalle' es la lista de campos tocados separada por comas
+        campos = [c for c in e.detalle.split(', ') if c] if e.tipo == 'EDICION' else []
+        data.append({
+            'operacion':    operacion,
+            'texto':        _IMPUTACION_AUDITORIA_TEXTOS.get(operacion, operacion),
+            'usuario':      e.usuario.nombre,
+            'fecha':        _fmt(e.fecha),
+            'fecha_ultima': _fmt(e.fecha_ultima) if e.cantidad > 1 and e.fecha_ultima else None,
+            'cantidad':     e.cantidad,
+            'estado':       None,
+            'campos':       campos,
+        })
+
+    return JsonResponse({'imputacion_id': imputacion_id, 'eventos': data})
+
 
 # ── Variantes SIN filtrar por líneas ya cargadas ──────────────────────────
 # Las de arriba (api_programas / api_proyectos / api_actividades) sólo
@@ -4689,6 +4941,8 @@ def api_historial_registros(request):
             'nro_expediente':     '' if imp.nro_expediente == 'BORRADOR' else imp.nro_expediente,
         }
 
+        item['url_auditoria'] = reverse('api_imputacion_auditoria', args=[imp.id])
+
         if es_borrador:
             # Creador, Administrador y Administrador principal pueden retomar y eliminar
             # (los permisos reales se vuelven a verificar en el backend de cada API).
@@ -4729,7 +4983,6 @@ def api_historial_registros(request):
             'referencia_id':         op.id,
             'nro_expediente':        op.imputacion.nro_expediente if op.imputacion else 'S/N',
             'url_auditoria':         reverse('api_op_auditoria', args=[op.id]),
-            'url_ver':               reverse('ordenpago_ver', args=[op.id]),
         }
 
         if es_borrador and puede_editar_op(request.user, op):
@@ -4737,6 +4990,10 @@ def api_historial_registros(request):
             item['url_editar']   = reverse('ordenpago_editar', args=[op.id])
             item['url_eliminar'] = reverse('api_op_borrador_eliminar', args=[op.id])
             item['version']      = op.version
+
+        # Un borrador no tiene detalle definitivo para "ver": se retoma con editar
+        if not es_borrador:
+            item['url_ver'] = reverse('ordenpago_ver', args=[op.id])
 
         registros.append(item)
 
@@ -4768,12 +5025,17 @@ def api_historial_registros(request):
             'estado':             'Revisar' if es_borrador else 'Listo',
             'referencia_id':      op.id,
             'nro_expediente':     op.nro_expediente,
-            'url_ver':            reverse('ordenpagopersonal_ver', args=[op.id]),
+            'url_auditoria':      reverse('api_op_personal_auditoria', args=[op.id]),
         }
 
         if es_borrador:
-            # Cualquier admin / adminprincipal puede retomar el borrador
-            item['url_editar'] = reverse('ordenpagopersonal_editar', args=[op.id])
+            # Cualquier admin / adminprincipal puede retomar y eliminar el borrador
+            # (el endpoint vuelve a validar rol y estado)
+            item['url_editar']   = reverse('ordenpagopersonal_editar', args=[op.id])
+            item['url_eliminar'] = reverse('api_op_personal_borrador_eliminar', args=[op.id])
+            item['version']      = _version(op)
+        else:
+            item['url_ver'] = reverse('ordenpagopersonal_ver', args=[op.id])
 
         registros.append(item)
 
@@ -4807,9 +5069,13 @@ def api_historial_registros(request):
             'nro_expediente':     '' if mod.nro_expediente == MODIFICACION_EXPEDIENTE_PLACEHOLDER else mod.nro_expediente,
         }
 
+        item['url_auditoria'] = reverse('api_modificacion_auditoria', args=[mod.id])
         if es_borrador:
-            # Cualquier admin / adminprincipal puede retomar el borrador
-            item['url_editar'] = reverse('modificacion_editar', args=[mod.id])
+            # Cualquier admin / adminprincipal puede retomar y eliminar el borrador
+            # (el endpoint vuelve a validar rol y estado)
+            item['url_editar']   = reverse('modificacion_editar', args=[mod.id])
+            item['url_eliminar'] = reverse('api_modificacion_borrador_eliminar', args=[mod.id])
+            item['version']      = _version(mod)
         else:
             item['url_ver'] = f'/modificacion/ver/{mod.id}/'
 
@@ -5147,6 +5413,76 @@ def _opp_contenido_igual(opp, cab, beneficiarios, erogaciones):
     return actual_ero == nueva_ero
 
 
+# ── Auditoría de OP Personal (historial de intervenciones) ────────────────────
+OPP_AUDITORIA_VENTANA = REFUERZO_AUDITORIA_VENTANA
+
+
+def _registrar_auditoria_opp(opp, operacion, usuario, detalle=None, agrupar=False, estado=None):
+    """Registra una intervención real sobre la OP Personal. Se llama DENTRO de la transacción
+    y con la fila bloqueada. Solo escribe en orden_pago_personal_auditoria: no toca el presupuesto."""
+    ahora   = timezone.now()
+    detalle = detalle or {}
+
+    if agrupar:
+        ultima = OrdenPagoPersonalAuditoria.objects.filter(
+            orden_pago_personal_id=opp.id).order_by('-id').first()
+        if (ultima is not None and ultima.operacion == 'EDITAR'
+                and ultima.usuario_id == usuario.id
+                and ahora - ultima.fecha_ultima <= OPP_AUDITORIA_VENTANA):
+            campos = sorted(set(ultima.detalle.get('campos', [])) | set(detalle.get('campos', [])))
+            ultima.detalle      = {'campos': campos}
+            ultima.fecha_ultima = ahora
+            ultima.cantidad    += 1
+            ultima.save(update_fields=['detalle', 'fecha_ultima', 'cantidad'])
+            return ultima
+
+    return OrdenPagoPersonalAuditoria.objects.create(
+        orden_pago_personal_id = opp.id,
+        operacion              = operacion,
+        usuario                = usuario,
+        fecha                  = ahora,
+        fecha_ultima           = ahora,
+        estado_resultante      = estado or opp.estado_formulario,
+        detalle                = detalle,
+    )
+
+
+def _opp_campos_modificados(opp, cab, beneficiarios, erogaciones):
+    """Lista de campos que REALMENTE cambiarían al aplicar lo recibido. Vacía = nada que
+    guardar (equivale a _opp_contenido_igual, pero además dice QUÉ cambió)."""
+    campos = []
+    for nombre in ('nro_orden_pago', 'nro_expediente', 'u_presupuestaria', 'codigo',
+                   'concepto', 'observaciones', 'fecha', 'importe_total'):
+        if getattr(opp, nombre) != cab[nombre]:
+            campos.append(nombre)
+
+    cero = Decimal('0.00')
+    actual_ben = [
+        (b.codigo, b.nomina_beneficiarios, b.importe_parcial)
+        for b in opp.beneficiarios.order_by('id')
+    ]
+    nueva_ben = [
+        (f['codigo'], f['nomina'], f['importe_parcial'] if f['importe_parcial'] is not None else cero)
+        for f in beneficiarios
+    ]
+    if actual_ben != nueva_ben:
+        campos.append('beneficiarios')
+
+    actual_ero = [
+        (b.linea_presupuestaria_id, b.programa_id, b.proyecto_id, b.actividad_id,
+         b.partida_id, b.fuente_id, b.importe)
+        for b in opp.borradores_partida.order_by('orden')
+    ]
+    nueva_ero = [
+        (f['linea_id'], f['programa_id'], f['proyecto_id'], f['actividad_id'],
+         f['partida_id'], f['fuente_id'], f['importe'])
+        for f in erogaciones
+    ]
+    if actual_ero != nueva_ero:
+        campos.append('erogaciones')
+    return campos
+
+
 # ── Datos para repoblar el formulario (misma forma que arma el JS al guardar) ─
 def _opp_datos(opp):
     beneficiarios = [
@@ -5296,6 +5632,7 @@ def api_op_personal_borrador_crear(request):
                 _opp_asignar_cabecera(opp, cab)
                 opp.save()
                 _opp_reemplazar_filas(opp, beneficiarios, erogaciones, request.user)
+                _registrar_auditoria_opp(opp, 'CREAR', request.user)
         except IntegrityError:
             # Dos pedidos simultáneos con la misma clave: gana el primero.
             existente = (
@@ -5335,7 +5672,8 @@ def api_op_personal_borrador_actualizar(request, opp_id):
             opp = _obtener_opp_bloqueada(request.user, opp_id)
 
             # Sin cambios reales: no se escribe nada, así "Editado por" no se altera.
-            if _opp_contenido_igual(opp, cab, beneficiarios, erogaciones):
+            campos = _opp_campos_modificados(opp, cab, beneficiarios, erogaciones)
+            if not campos:
                 return JsonResponse({'ok': True, 'version': _version(opp), 'sin_cambios': True})
 
             _verificar_version(opp, body.get('version'))
@@ -5349,6 +5687,7 @@ def api_op_personal_borrador_actualizar(request, opp_id):
                 'usuario_modificacion', 'fecha_modificacion',
             ])
             _opp_reemplazar_filas(opp, beneficiarios, erogaciones, request.user)
+            _registrar_auditoria_opp(opp, 'EDITAR', request.user, {'campos': campos}, agrupar=True)
 
     except _RefuerzoError as e:
         return _respuesta_error(e)
@@ -5534,6 +5873,9 @@ def api_op_personal_completar(request, opp_id):
             # El borrador de erogaciones ya no hace falta
             opp.borradores_partida.all().delete()
 
+            _registrar_auditoria_opp(opp, 'COMPLETAR', request.user,
+                                     {'imputacion_id': imputacion.id}, estado='LISTO')
+
             # ── NOTIFICACIÓN DE ORDEN DE PAGO PERSONAL ─────────────────
             crear_notificaciones_admins(
                 titulo="Nueva orden de pago personal registrada",
@@ -5560,6 +5902,127 @@ def api_op_personal_completar(request, opp_id):
         'version':       _version(opp),
         'url_ver':       reverse('ordenpagopersonal_ver', args=[opp.id]),
     })
+
+
+# ==========================================
+#  API — ELIMINAR BORRADOR DE OP PERSONAL (solo estado REVISAR)
+# ==========================================
+# Eliminación FÍSICA: un borrador nunca tiene imputación (CHECK opp_revisar_sin_imputacion),
+# ni partidas reales, ni movimientos; sus beneficiarios y borradores de partida caen en
+# cascada. NO modifica saldos. Queda una fila en orden_pago_personal_auditoria (sin FK).
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_op_personal_borrador_eliminar(request, opp_id):
+    try:
+        body = _json_body(request) if request.body else {}
+
+        with transaction.atomic():
+            opp = _obtener_opp_bloqueada(request.user, opp_id)   # 404 / 403 / 409 si ya es LISTO
+
+            # La versión es opcional; si el listado la envía no se borra un borrador que
+            # alguien modificó después de cargarlo.
+            if body.get('version'):
+                _verificar_version(opp, body.get('version'))
+
+            # Defensa: un borrador no debería tener ninguna de estas consecuencias.
+            if opp.imputacion_id or OrdenPagoPersonalPartida.objects.filter(orden_pago_personal=opp).exists():
+                raise _RefuerzoError(
+                    'Esta OP Personal tiene registros presupuestarios asociados y no se puede '
+                    'eliminar como borrador', 409)
+
+            instantanea = {
+                'nro_orden_pago': opp.nro_orden_pago,
+                'nro_expediente': opp.nro_expediente,
+                'concepto':       opp.concepto,
+                'fecha':          opp.fecha.isoformat() if opp.fecha else None,
+                'importe_total':  str(opp.importe_total) if opp.importe_total is not None else None,
+                'beneficiarios':  opp.beneficiarios.count(),
+                'erogaciones':    opp.borradores_partida.count(),
+                'creado_por':     opp.usuario.nombre if opp.usuario_id else None,
+                'creado_en':      opp.fecha_creacion.isoformat(),
+            }
+            if opp.usuario_modificacion_id:
+                instantanea['editado_por'] = opp.usuario_modificacion.nombre
+
+            _registrar_auditoria_opp(opp, 'ELIMINAR', request.user,
+                                     {'instantanea': instantanea}, estado='ELIMINADO')
+            opp.delete()   # borra en cascada beneficiarios y borradores de partida
+
+    except _RefuerzoError as e:
+        return _respuesta_error(e)
+    except ProtectedError:
+        return JsonResponse(
+            {'error': 'La OP Personal tiene registros relacionados y no se puede eliminar.'}, status=409)
+    except Exception:
+        _logger.exception('Error al eliminar el borrador de OP Personal %s', opp_id)
+        return JsonResponse({'error': 'Error interno: el borrador NO se eliminó'}, status=500)
+
+    return JsonResponse({'ok': True})
+
+
+# ==========================================
+#  API — HISTORIAL DE INTERVENCIONES DE UNA OP PERSONAL (solo lectura)
+# ==========================================
+_OPP_AUDITORIA_TEXTOS = {
+    'CREAR':     'Creó el borrador',
+    'EDITAR':    'Editó el borrador',
+    'COMPLETAR': 'Confirmó como Listo',
+    'ELIMINAR':  'Eliminó el borrador',
+}
+_OPP_CAMPOS_TEXTOS = {
+    'nro_orden_pago':   'N° de orden de pago',
+    'nro_expediente':   'N° de expediente',
+    'u_presupuestaria': 'Unidad presupuestaria',
+    'codigo':           'Código',
+    'concepto':         'Concepto',
+    'observaciones':    'Observaciones',
+    'fecha':            'Fecha',
+    'importe_total':    'Importe O.P.',
+    'beneficiarios':    'Beneficiarios',
+    'erogaciones':      'Erogaciones',
+}
+
+
+@rol_requerido('admin', 'adminprincipal')
+def api_op_personal_auditoria(request, opp_id):
+    """Solo lectura (GET): consultar el historial NO genera ningún registro."""
+    eventos = list(OrdenPagoPersonalAuditoria.objects.filter(orden_pago_personal_id=opp_id)
+                   .select_related('usuario').order_by('fecha', 'id'))
+    opp = OrdenPagoPersonal.objects.select_related('usuario').filter(id=opp_id).first()
+    if opp is None and not eventos:
+        return JsonResponse({'error': 'OP Personal no encontrada'}, status=404)
+
+    def _fmt(dt):
+        return timezone.localtime(dt).strftime('%d/%m/%Y - %H:%M')
+
+    data = []
+    # OP Personal anteriores a la auditoría: se reconstruye la creación desde la cabecera
+    if opp is not None and not any(e.operacion == 'CREAR' for e in eventos):
+        data.append({
+            'operacion':    'CREAR',
+            'texto':        'Creó la OP Personal (anterior al registro de auditoría)',
+            'usuario':      opp.usuario.nombre,
+            'fecha':        _fmt(opp.fecha_creacion),
+            'fecha_ultima': None,
+            'cantidad':     1,
+            'estado':       None,
+            'campos':       [],
+        })
+
+    for e in eventos:
+        campos = [_OPP_CAMPOS_TEXTOS.get(c, c) for c in e.detalle.get('campos', [])]
+        data.append({
+            'operacion':    e.operacion,
+            'texto':        _OPP_AUDITORIA_TEXTOS.get(e.operacion, e.operacion),
+            'usuario':      e.usuario.nombre,
+            'fecha':        _fmt(e.fecha),
+            'fecha_ultima': _fmt(e.fecha_ultima) if e.cantidad > 1 else None,
+            'cantidad':     e.cantidad,
+            'estado':       e.estado_resultante,
+            'campos':       campos,
+        })
+
+    return JsonResponse({'opp_id': opp_id, 'eventos': data})
 
 
 # ==========================================

@@ -73,6 +73,8 @@ urlpatterns = [
     path('api/modificacion/borrador/crear/', views.api_modificacion_borrador_crear, name='api_modificacion_borrador_crear'),
     path('api/modificacion/borrador/<int:modificacion_id>/actualizar/', views.api_modificacion_borrador_actualizar, name='api_modificacion_borrador_actualizar'),
     path('api/modificacion/<int:modificacion_id>/completar/', views.api_modificacion_completar, name='api_modificacion_completar'),
+    path('api/modificacion/borrador/<int:modificacion_id>/eliminar/', views.api_modificacion_borrador_eliminar, name='api_modificacion_borrador_eliminar'),
+    path('api/modificacion/<int:modificacion_id>/auditoria/', views.api_modificacion_auditoria, name='api_modificacion_auditoria'),
 
     # ── APIs: imputación ───────────────────────────────────────────────────
     path('api/imputacion/crear/', views.api_crear_imputacion, name='api_crear_imputacion'),
@@ -81,6 +83,7 @@ urlpatterns = [
     path('api/imputacion/borrador/<int:imputacion_id>/obtener/', views.api_imputacion_borrador_obtener, name='api_imputacion_borrador_obtener'),
     path('api/imputacion/<int:imputacion_id>/completar/', views.api_imputacion_completar, name='api_imputacion_completar'),
     path('api/imputacion/borrador/<int:imputacion_id>/eliminar/', views.api_imputacion_borrador_eliminar, name='api_imputacion_borrador_eliminar'),
+    path('api/imputacion/<int:imputacion_id>/auditoria/', views.api_imputacion_auditoria, name='api_imputacion_auditoria'),
     path('api/imputacion/<int:imputacion_id>/detalle/', views.api_detalle_imputacion, name='api_detalle_imputacion'),
     path('api/imputacion/<int:imputacion_id>/ups/', views.api_ups_imputacion, name='api_ups_imputacion'),
     path('admin-dashboard/imputacion/ver/<int:imputacion_id>/', views.imputacion_ver, name='imputacion_ver'),
@@ -112,6 +115,8 @@ urlpatterns = [
     path('api/op-personal/borrador/crear/', views.api_op_personal_borrador_crear, name='api_op_personal_borrador_crear'),
     path('api/op-personal/borrador/<int:opp_id>/actualizar/', views.api_op_personal_borrador_actualizar, name='api_op_personal_borrador_actualizar'),
     path('api/op-personal/<int:opp_id>/completar/', views.api_op_personal_completar, name='api_op_personal_completar'),
+    path('api/op-personal/borrador/<int:opp_id>/eliminar/', views.api_op_personal_borrador_eliminar, name='api_op_personal_borrador_eliminar'),
+    path('api/op-personal/<int:opp_id>/auditoria/', views.api_op_personal_auditoria, name='api_op_personal_auditoria'),
 
     # ── Orden de pago: guardado automático (borrador "Revisar"), completado y ver ──
     # (se retiró api/orden-pago/crear/: creaba la OP y consumía fondos sin pasar por Revisar → Listo)

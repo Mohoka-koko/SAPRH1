@@ -586,6 +586,41 @@ class OrdenPagoPersonalBorradorPartida(models.Model):
     def __str__(self):
         return f'Borrador {self.orden_pago_personal_id} fila {self.orden}'
 
+class OrdenPagoPersonalAuditoria(models.Model):
+    """
+    Historial de INTERVENCIONES sobre una OP Personal (quién hizo qué y cuándo).
+    NO es un movimiento presupuestario: nunca toca saldos ni MovimientoHistorial.
+
+    - 'orden_pago_personal_id' es un entero SIN FK a propósito: el rastro de una
+      eliminación de borrador sobrevive al borrado de la OP Personal.
+    - Ediciones consecutivas del MISMO usuario dentro de una ventana de tiempo se agrupan.
+    - Consultas / aperturas del formulario NO generan filas.
+    """
+    OPERACION_CHOICES = [
+        ('CREAR',     'Creación del borrador'),
+        ('EDITAR',    'Edición del borrador'),
+        ('COMPLETAR', 'Confirmación como Listo'),
+        ('ELIMINAR',  'Eliminación del borrador'),
+    ]
+
+    orden_pago_personal_id = models.IntegerField(db_index=True)
+    operacion              = models.CharField(max_length=12, choices=OPERACION_CHOICES)
+    usuario                = models.ForeignKey(UsuarioPersonalizado, on_delete=models.PROTECT, related_name='auditoria_ordenes_pago_personal')
+    fecha                  = models.DateTimeField(default=timezone.now)
+    fecha_ultima           = models.DateTimeField(default=timezone.now)
+    cantidad               = models.PositiveIntegerField(default=1)
+    estado_resultante      = models.CharField(max_length=10)
+    detalle                = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = 'orden_pago_personal_auditoria'
+        ordering = ['fecha', 'id']
+        indexes  = [models.Index(fields=['orden_pago_personal_id', 'fecha'], name='opp_aud_opp_fecha_idx')]
+
+    def __str__(self):
+        return f'OP Personal {self.orden_pago_personal_id} — {self.operacion} por {self.usuario_id}'
+
+
 # ─────────────────────────────────────────────
 # REFUERZO
 # ─────────────────────────────────────────────
@@ -801,6 +836,42 @@ class ModificacionBorradorDetalle(models.Model):
 
     def __str__(self):
         return f'Borrador {self.modificacion_id} {self.rol} fila {self.orden}'
+
+
+class ModificacionAuditoria(models.Model):
+    """
+    Historial de INTERVENCIONES sobre una Modificación (quién hizo qué y cuándo).
+    NO es un movimiento presupuestario: nunca toca saldos ni MovimientoHistorial.
+
+    - 'modificacion_id' es un entero SIN FK a propósito: el rastro de una eliminación
+      de borrador sobrevive al borrado de la Modificación.
+    - Ediciones consecutivas del MISMO usuario dentro de una ventana de tiempo se
+      agrupan en una fila (el autoguardado dispara muchos guardados).
+    - Consultas / aperturas del formulario NO generan filas.
+    """
+    OPERACION_CHOICES = [
+        ('CREAR',     'Creación del borrador'),
+        ('EDITAR',    'Edición del borrador'),
+        ('COMPLETAR', 'Confirmación como Listo'),
+        ('ELIMINAR',  'Eliminación del borrador'),
+    ]
+
+    modificacion_id   = models.IntegerField(db_index=True)
+    operacion         = models.CharField(max_length=12, choices=OPERACION_CHOICES)
+    usuario           = models.ForeignKey(UsuarioPersonalizado, on_delete=models.PROTECT, related_name='auditoria_modificaciones')
+    fecha             = models.DateTimeField(default=timezone.now)
+    fecha_ultima      = models.DateTimeField(default=timezone.now)
+    cantidad          = models.PositiveIntegerField(default=1)
+    estado_resultante = models.CharField(max_length=10)
+    detalle           = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = 'modificacion_auditoria'
+        ordering = ['fecha', 'id']
+        indexes  = [models.Index(fields=['modificacion_id', 'fecha'], name='mod_aud_mod_fecha_idx')]
+
+    def __str__(self):
+        return f'Modificación {self.modificacion_id} — {self.operacion} por {self.usuario_id}'
 
 
 # ─────────────────────────────────────────────
