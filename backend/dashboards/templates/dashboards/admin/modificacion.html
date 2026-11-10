@@ -9,6 +9,12 @@
 
 <div class="pagina">
     <div class="header-pagina">
+        <!-- BOTÓN VOLVER -->
+        <a href="{% url 'registros' %}" class="btn-volver" title="Volver al Panel de Registro">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Volver</span>
+        </a>
+
         <!-- TÍTULO PRINCIPAL -->
         <h1 class="titulo-principal">Modificación</h1>
     </div>
@@ -30,7 +36,7 @@
                 </select>
             </div>
         </div>
-    
+
         <div class="busqueda-grupo">
             <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none;">
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,20 +64,14 @@
 
         <!-- Table Footer / Pagination -->
         <div class="table-footer">
-            <div class="pagination-info">
-            </div>
+            <div class="pagination-info"></div>
             <div class="pagination-buttons">
-                <!-- Texto a la izquierda de Prev -->
                 <span class="page-number-text"></span>
-              
-                <!-- Botones de navegación -->
                 <button class="btn-page btn-prev">&lt; Prev</button>
                 <button class="btn-page btn-next">Next &gt;</button>
-              </div>
+            </div>
         </div>
     </div>
-    
-    
 
     <!-- BOTÓN AGREGAR (FAB) -->
     <a href="{% url 'modificacion_crear' %}" class="btn-agregar-wrapper">
