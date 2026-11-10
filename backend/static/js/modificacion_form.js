@@ -2,6 +2,10 @@
  * modificacion_form.js
  * Modo A — UP Presupuesto General
  * Modo B — UP de una Imputación
+ *
+ * Guardado automático en la BD como borrador (estado Revisar), sin tocar saldos ni
+ * remanentes de imputaciones. "Guardar como completado": confirmación + validación en el
+ * servidor → estado Listo. Al abrir un borrador (editar) se vuelve a cargar todo lo guardado.
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -40,11 +44,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const mUsuario    = document.getElementById("m-usuario");
     const mDecreto    = document.getElementById("m-decreto");
     const mImporte    = document.getElementById("m-importe");
-    const btnGuardar  = document.getElementById("btn-guardar");
+    const btnCompletar = document.getElementById("btn-completar");
     const btnExportar = document.getElementById("btn-exportar");
 
+    let decretoNombre = "";   // el sistema guarda el nombre del archivo, no el PDF
     mDecreto.addEventListener("change", () => {
         const archivo = mDecreto.files[0];
+        decretoNombre = archivo ? archivo.name : "";
         document.getElementById("m-decreto-nombre").textContent =
             archivo ? archivo.name : "Sin archivos seleccionados";
     });
@@ -52,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ─── MODO VER: deshabilitar todos los controles ───────────────────────────
     if (MODO === 'ver') {
         // Ocultar botón Guardar
-        if (btnGuardar) btnGuardar.style.display = "none";
+        if (btnCompletar) btnCompletar.style.display = "none";
     
         // Deshabilitar radios de tipo UP
         document.querySelectorAll('input[name="tipoUpTransferente"]').forEach(r => r.disabled = true);
@@ -123,12 +129,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const esImputacion = (modo === 'imputacion');
         // Capturar todos los datos al inicio para que no muten durante la cascada asíncrona
         const _programa_id           = datos.programa_id           || null;
-        const _proyecto_id           = datos.proyecto_id           || null;
-        const _actividad_id          = datos.actividad_id          || null;
+        let   _proyecto_id           = datos.proyecto_id           || null;
+        let   _actividad_id          = datos.actividad_id          || null;
         const _partida_id            = datos.partida_id            || null;
-        const _fuente_id             = datos.fuente_id             || null;
+        let   _fuente_id             = datos.fuente_id             || null;
         const _linea_id              = datos.linea_id              || null;
-        const _imputacion_detalle_id = datos.imputacion_detalle_id || null;
+        let   _imputacion_detalle_id = datos.imputacion_detalle_id || null;
         const _importe               = datos.importe               || null;
 
         // ── Parte cascada (columna izquierda) ─────────────────────────────────
@@ -254,7 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const linea = data.lineas[0];
                     inputLineaId.value     = linea.linea_id;
                     const codigoFF         = linea.fuente_nombre.split(" - ")[0];
-                    selectFuente.innerHTML = `<option value="${linea.linea_id}">${codigoFF}</option>`;
+                    selectFuente.innerHTML = `<option value="${linea.linea_id}" data-fuente="${linea.fuente_id ?? ""}">${codigoFF}</option>`;
                     selectFuente.disabled  = true;
 
                     if (modo === 'general') {
@@ -277,15 +283,22 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                     selectFuente.disabled = false;
                 
-                    // Preseleccionar fuente en modo editar/ver
-                    if (_fuente_id) {
-                        const optFuente = Array.from(selectFuente.options).find(o =>
-                            String(o.dataset.fuente) === String(_fuente_id)
-                        );
+                    // Preseleccionar fuente en modo editar/ver (primero por la línea guardada)
+                    if (_linea_id || _fuente_id) {
+                        let optFuente = _linea_id
+                            ? Array.from(selectFuente.options).find(o => String(o.value) === String(_linea_id))
+                            : null;
+                        if (!optFuente && _fuente_id) {
+                            optFuente = Array.from(selectFuente.options).find(o =>
+                                String(o.dataset.fuente) === String(_fuente_id)
+                            );
+                        }
                         if (optFuente) {
                             selectFuente.value = optFuente.value;
                             selectFuente.dispatchEvent(new Event("change"));
                         }
+                        // Se usan una sola vez: si después el usuario cambia la partida, no se reaplican
+                        _fuente_id = null;
                     }
                 }
 
@@ -298,6 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // ── Cargar imputaciones para Modo B ────────────────────────────────────
         async function cargarImputaciones(lineaId) {
             if (!selectImputacion) return;
+            lineasResolviendo++;
             try {
                 const res  = await fetch(`/api/imputaciones-por-linea/?linea_id=${lineaId}`);
                 const data = await res.json();
@@ -320,14 +334,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 selectImputacion.disabled = false;
 
-                // DESPUÉS:
+                // Restaurar la imputación guardada (una sola vez)
                 if (_imputacion_detalle_id) {
                     selectImputacion.value = _imputacion_detalle_id;
+                    _imputacion_detalle_id = null;
                     selectImputacion.dispatchEvent(new Event("change"));
                 }
 
             } catch {
                 selectImputacion.innerHTML = `<option value="">⚠ Error al cargar</option>`;
+            } finally {
+                lineasResolviendo--;
             }
         }
 
@@ -347,6 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (opt.dataset.codigo) opt.textContent = opt.dataset.codigo;
             } else {
                 await cargarImputaciones(selectFuente.value);
+                notificarCambioLinea();
             }
         });
 
@@ -356,7 +374,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (!selectImputacion.value) {
                     inputDetalleId.value = "";
                     saldoInput.value     = "";
-                    fila.querySelector(".fila-saldo-imp").textContent = "";
+                    const saldoImp = fila.querySelector(".fila-saldo-imp");
+                    if (saldoImp) saldoImp.textContent = "";
                     return;
                 }
                 const opt            = selectImputacion.options[selectImputacion.selectedIndex];
@@ -380,6 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         p => p.codigo_proyecto, p => `${p.codigo_proyecto} - ${p.nombre}`, "Seleccione");
                     if (_proyecto_id) { 
                         selectPry.value = _proyecto_id;
+                        _proyecto_id = null;
                         selectPry.dispatchEvent(new Event("change"));
                     }
                 });
@@ -396,13 +416,19 @@ document.addEventListener("DOMContentLoaded", () => {
                         a => a.codigo_act_obra, a => `${a.codigo_act_obra} - ${a.nombre}`, "Seleccione");
                     if (_actividad_id) { 
                         selectAo.value = _actividad_id;
+                        _actividad_id = null;
                         selectAo.dispatchEvent(new Event("change"));
                     }
                 });
         });
 
-        selectAo.addEventListener("change", resolverLineas);
-        selectPar.addEventListener("change", resolverLineas);
+        async function resolverLineasYNotificar() {
+            lineasResolviendo++;
+            try { await resolverLineas(); } finally { lineasResolviendo--; }
+            notificarCambioLinea();
+        }
+        selectAo.addEventListener("change", resolverLineasYNotificar);
+        selectPar.addEventListener("change", resolverLineasYNotificar);
 
         getProgramas().then(programas => {
             llenarSelectConCodigo(selectPrg, programas, "id",
@@ -531,22 +557,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ─── RADIO BUTTONS: cambio de modo ────────────────────────────────────────
-    document.querySelectorAll('input[name="tipoUpTransferente"]').forEach(radio => {
-        radio.addEventListener("change", () => {
-            // Al cambiar de modo, limpiar transferentes y recrear una fila vacía
-            limpiarContenedor("contenedor-transferentes");
-            limpiarContenedor("bloque-saldos-transferentes");
-            limpiarContenedor("bloque-importes-transferentes");
-            crearFilaTransferente(
-                "contenedor-transferentes",
-                "bloque-saldos-transferentes",
-                "bloque-importes-transferentes",
-                {}, actualizarTotales
-            );
-            actualizarTotales();
-        });
-    });
+    // ─── RADIO BUTTONS: el cambio de modalidad se maneja en el bloque de guardado automático
 
     // ─── BOTONES + ────────────────────────────────────────────────────────────
     document.addEventListener("click", (e) => {
@@ -568,93 +579,586 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ─── VALIDAR ──────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════════
+    //  GUARDADO AUTOMÁTICO (borrador "Revisar") + GUARDAR COMO COMPLETADO
+    // ═════════════════════════════════════════════════════════════════════════
+    // Mientras se completa el formulario, los datos se guardan solos en la BD como
+    // borrador (estado Revisar). Un borrador es solo información: no modifica saldos
+    // ni consume el remanente de ninguna imputación. Recién "Guardar como completado"
+    // (confirmado y validado en el servidor) lo pasa a Listo y ejecuta la transferencia.
+    // Funciona igual en las dos modalidades (A: presupuesto general / B: imputación).
+    const esModoVer          = (MODO === "ver");
+    const SUFIJO_EXPEDIENTE  = "-GDESDE-APRH#MAMA";
+    const AUTOSAVE_MS        = 1500;   // pausa al escribir (debounce)
+    const AUTOSAVE_CAMBIO_MS = 400;    // al cambiar un select, salir de un campo, agregar o quitar filas
+    const REDIRECCION_FINAL  = "/admin-dashboard/registros/modificacion";
+    const indicadorAutosave  = document.getElementById("autosave-estado");
+    const cajaMensaje        = document.getElementById("mf-mensaje");
+    const modalCompletar     = document.getElementById("modal-completar");
+    const modalModalidad     = document.getElementById("modal-modalidad");
+
+    let modificacionId        = null;   // id del borrador en la BD (null hasta el primer guardado)
+    let version               = null;   // token de versión que devuelve el servidor en cada guardado
+    let ultimaInstantanea     = null;   // JSON de lo último que el servidor confirmó haber guardado
+    let autosaveTimer         = null;
+    let colaGuardado          = Promise.resolve(true);   // serializa los guardados: nunca hay dos en paralelo
+    let guardandoEnCurso      = false;
+    let ultimoGuardadoFallo   = false;
+    let reintentos            = 0;
+    let restaurando           = false;  // true mientras se vuelve a cargar un borrador existente
+    let completando           = false;
+    let completado            = false;
+    let autosaveBloqueado     = false;  // conflicto, borrador no restaurado, etc.: no se guarda nada más
+    let dialogoModalidadAbierto = false; // mientras se pregunta si cambiar de modalidad no se guarda
+    let lineasResolviendo     = 0;      // consultas de línea / imputación en curso
+    let modoActual            = "general";   // modalidad vigente (para poder revertir si se cancela el cambio)
+
+    // ─── Utilidades del bloque ────────────────────────────────────────────────
+    function aNum(v) {
+        if (v === undefined || v === null || v === "") return null;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+    }
+
+    // Vacío → null (un borrador puede no tener importe todavía); texto inválido → null
+    function importeOpcional(texto) {
+        if (texto === undefined || texto === null || String(texto).trim() === "") return null;
+        return parsearImporte(String(texto));
+    }
+
+    function aCentavos(n) { return Math.round((n || 0) * 100); }
+
+    function setEstadoAutosave(estado, texto, reemplazar = false) {
+        if (!indicadorAutosave) return;
+        const textos = {
+            guardando: "Guardando borrador…",
+            guardado:  "Borrador guardado (estado: Revisar)",
+            error:     "⚠ NO se pudieron guardar los cambios" + (texto ? `: ${texto}` : ""),
+        };
+        indicadorAutosave.className   = estado ? `mf-autosave ${estado}` : "mf-autosave";
+        indicadorAutosave.textContent = !estado ? "" : (reemplazar && texto ? texto : textos[estado]);
+    }
+
+    function mostrarMensaje(texto, tipo) {
+        if (!cajaMensaje) return;
+        cajaMensaje.textContent = texto;
+        cajaMensaje.className   = `mf-msg ${tipo}`;
+        cajaMensaje.hidden      = false;
+        cajaMensaje.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function ocultarMensaje() {
+        if (cajaMensaje) cajaMensaje.hidden = true;
+    }
+
     function limpiarErrores() {
         [mFecha, mExpediente, mUsuario].forEach(inp => inp && inp.classList.remove("error"));
         document.getElementById("error-receptora-supera").style.display = "none";
         document.getElementById("total-asignado-receptora").classList.remove("error-total");
     }
 
-    function validar() {
-        let ok = true;
-        limpiarErrores();
+    // ─── Payload (acepta datos parciales) ─────────────────────────────────────
+    function filasDe(contenedorId, bloqueImporteId, conDetalle) {
+        const filas = [];
 
-        if (!mFecha.value)             { mFecha.classList.add("error");      ok = false; }
-        if (!mExpediente.value.trim()) { mExpediente.classList.add("error"); ok = false; }
-        if (!mUsuario.value.trim())    { mUsuario.classList.add("error");    ok = false; }
+        document.querySelectorAll(`#${contenedorId} .fila-receptora-refuerzo`).forEach(fila => {
+            const filaId    = fila.dataset.filaId;
+            const importeEl = document.querySelector(
+                `#${bloqueImporteId} .mf-importe-fila[data-fila-id="${filaId}"] .fila-importe`
+            );
+            const optFuente = fila.querySelector(".fila-fuente")?.selectedOptions[0];
 
-        const transferentes = obtenerFilasTransferentes();
-        const receptoras    = obtenerFilasReceptoras();
+            const f = {
+                programa_id:  aNum(fila.querySelector(".fila-prg")?.value),
+                proyecto_id:  aNum(fila.querySelector(".fila-pry")?.value),
+                actividad_id: aNum(fila.querySelector(".fila-ao")?.value),
+                partida_id:   aNum(fila.querySelector(".fila-par")?.value),
+                fuente_id:    aNum(optFuente?.dataset.fuente),
+                linea_id:     aNum(fila.querySelector(".fila-linea-id")?.value),
+                importe:      importeOpcional(importeEl?.value),
+            };
+            if (conDetalle) f.imputacion_detalle_id = aNum(fila.querySelector(".fila-detalle-id")?.value);
 
-        if (transferentes.length === 0) {
-            alert("Agregá al menos una unidad transferente completa.");
-            ok = false;
-        }
-        if (receptoras.length === 0) {
-            alert("Agregá al menos una unidad receptora completa.");
-            ok = false;
-        }
-
-        // En Modo B verificar que todos tengan imputacion_detalle_id
-        if (getModo() === 'imputacion') {
-            const sinDetalle = transferentes.some(t => !t.imputacion_detalle_id);
-            if (sinDetalle) {
-                alert("En Modo B debés seleccionar una imputación para cada transferente.");
-                ok = false;
-            }
-        }
-
-        const totalTransf = calcularTotal("bloque-importes-transferentes");
-        const totalRecep  = calcularTotal("bloque-importes-receptoras");
-        if (totalTransf > 0 && totalRecep > totalTransf) { ok = false; }
-
-        return ok;
+            // Una fila totalmente vacía (por ejemplo, un "+" sin usar) no se guarda
+            const vacia = Object.values(f).every(v => v === null);
+            if (!vacia) filas.push(f);
+        });
+        return filas;
     }
 
-    // ─── GUARDAR ──────────────────────────────────────────────────────────────
-        
-    if (btnGuardar) {
-        btnGuardar.addEventListener("click", async () => {
-            if (!validar()) return;
+    function construirPayload() {
+        const expediente = mExpediente.value.trim();
+        return {
+            fecha:             mFecha.value || "",
+            nro_expediente:    expediente ? expediente + SUFIJO_EXPEDIENTE : "",
+            nro_decreto:       decretoNombre,
+            tipo_transferente: getModo(),
+            transferentes:     filasDe("contenedor-transferentes", "bloque-importes-transferentes", true),
+            receptoras:        filasDe("contenedor-receptoras",    "bloque-importes-receptoras",    false),
+        };
+    }
 
-            const transferentes = obtenerFilasTransferentes();
-            const receptoras    = obtenerFilasReceptoras();
+    function borradorVacio(p) {
+        return !p.nro_expediente && !p.nro_decreto && p.transferentes.length === 0 && p.receptoras.length === 0;
+    }
 
-            const body = {
-                fecha:             mFecha.value,
-                nro_expediente:    mExpediente.value.trim() + "-GDESDE-APRH#MAMA",
-                nro_decreto:       mDecreto.files[0] ? mDecreto.files[0].name : "",
-                tipo_transferente: getModo(),
-                transferentes,
-                receptoras,
-            };
+    // ─── Guardado (crea la primera vez, actualiza después) ────────────────────
+    async function ejecutarGuardado() {
+        if (autosaveBloqueado || completado || dialogoModalidadAbierto) return true;
 
-            try {
-                btnGuardar.disabled = true;
-                btnGuardar.querySelector(".mf-btn-texto").textContent = "Guardando...";
+        const payload     = construirPayload();
+        const instantanea = JSON.stringify(payload);
 
-                const url = MODO === "editar"
-                    ? `/api/modificacion/editar/${MODIFICACION.id}/`
-                    : "/api/modificacion/crear/";
+        // No crear un borrador vacío solo por abrir el formulario
+        if (!modificacionId && borradorVacio(payload)) return true;
+        // Nada nuevo respecto de lo que el servidor ya tiene
+        if (modificacionId && instantanea === ultimaInstantanea) return true;
 
-                const res  = await fetch(url, {
-                    method:  "POST",
-                    headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
-                    body:    JSON.stringify(body),
-                });
-                const data = await res.json();
+        guardandoEnCurso = true;
+        setEstadoAutosave("guardando");
+        try {
+            const url  = modificacionId
+                ? `/api/modificacion/borrador/${modificacionId}/actualizar/`
+                : "/api/modificacion/borrador/crear/";
+            const body = modificacionId ? { ...payload, version } : payload;
 
-                if (!res.ok) { alert(`Error: ${data.error}`); return; }
-                window.location.href = "/admin-dashboard/registros/modificacion";
+            const resp = await fetch(url, {
+                method:    "POST",
+                headers:   { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+                body:      JSON.stringify(body),
+                keepalive: true,
+            });
+            let data = {};
+            try { data = await resp.json(); } catch (_) {}
 
-            } catch (err) {
-                alert("Error de conexión con el servidor");
-                console.error(err);
-            } finally {
-                btnGuardar.disabled = false;
-                btnGuardar.querySelector(".mf-btn-texto").textContent = "Guardar";
+            // Un 200 que no es nuestro JSON suele ser la pantalla de login (sesión vencida)
+            if (!resp.ok || data.ok !== true) {
+                const err = new Error(
+                    data.error || (resp.ok
+                        ? "respuesta inesperada del servidor (¿se cerró la sesión? Recargá la página)"
+                        : `Error ${resp.status}`)
+                );
+                err.status = resp.status;
+                throw err;
+            }
+
+            if (!modificacionId && data.modificacion_id) {
+                modificacionId = data.modificacion_id;
+                // Si se recarga la página, vuelve este mismo borrador (y no un formulario vacío)
+                history.replaceState(null, "", `/modificacion/editar/${modificacionId}/`);
+            }
+            version             = data.version;
+            ultimaInstantanea   = instantanea;
+            ultimoGuardadoFallo = false;
+            reintentos          = 0;
+            setEstadoAutosave("guardado");
+            return true;
+
+        } catch (err) {
+            console.error("Error en el guardado automático:", err);
+            ultimoGuardadoFallo = true;
+
+            // 409 (otro usuario lo modificó / ya completado) o 404: seguir guardando pisaría datos ajenos
+            if (err.status === 409 || err.status === 404) {
+                autosaveBloqueado = true;
+                clearTimeout(autosaveTimer);
+                autosaveTimer = null;
+                setEstadoAutosave("error", err.message);
+                mostrarMensaje(`${err.message}\nEl guardado automático quedó desactivado.`, "error");
+                if (btnCompletar) btnCompletar.disabled = true;
+                return false;
+            }
+
+            setEstadoAutosave("error", err.name === "TypeError" ? "sin conexión con el servidor" : err.message);
+            if (!err.status || err.status >= 500) reintentarLuego();   // caída de red o error del servidor
+            return false;
+
+        } finally {
+            guardandoEnCurso = false;
+        }
+    }
+
+    function guardarBorrador() {
+        colaGuardado = colaGuardado.catch(() => true).then(ejecutarGuardado);
+        return colaGuardado;
+    }
+
+    function programarAutoguardado(ms = AUTOSAVE_MS) {
+        if (esModoVer || restaurando || completando || completado || autosaveBloqueado || dialogoModalidadAbierto) return;
+        reintentos = 0;
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(() => { autosaveTimer = null; guardarBorrador(); }, ms);
+    }
+
+    function reintentarLuego() {
+        if (reintentos >= 5 || autosaveBloqueado || completado) return;
+        reintentos++;
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(() => { autosaveTimer = null; guardarBorrador(); }, Math.min(5000 * reintentos, 30000));
+    }
+
+    // La línea y la imputación se resuelven de forma asíncrona después de elegir la fila:
+    // cuando terminan hay datos nuevos para guardar.
+    function notificarCambioLinea() {
+        programarAutoguardado(AUTOSAVE_CAMBIO_MS);
+    }
+
+    function volcarPendiente() {
+        if (autosaveTimer) {
+            clearTimeout(autosaveTimer);
+            autosaveTimer = null;
+            guardarBorrador();
+        }
+    }
+
+    function hayCambiosSinGuardar() {
+        return !!autosaveTimer || guardandoEnCurso || (ultimoGuardadoFallo && !autosaveBloqueado);
+    }
+
+    // ─── Cambio de modalidad (A ↔ B) ──────────────────────────────────────────
+    // Al cambiar se descartan los transferentes (receptoras no). Como el formulario se guarda
+    // solo, ese descarte quedaría guardado al instante: si ya hay transferentes cargados se
+    // pide confirmación antes. Si se cancela vuelve la modalidad anterior.
+    function hayTransferentesCargados() {
+        return filasDe("contenedor-transferentes", "bloque-importes-transferentes", true).length > 0;
+    }
+
+    function aplicarCambioDeModo() {
+        limpiarContenedor("contenedor-transferentes");
+        limpiarContenedor("bloque-saldos-transferentes");
+        limpiarContenedor("bloque-importes-transferentes");
+        crearFilaTransferente(
+            "contenedor-transferentes",
+            "bloque-saldos-transferentes",
+            "bloque-importes-transferentes",
+            {}, actualizarTotales
+        );
+        actualizarTotales();
+        modoActual = getModo();
+    }
+
+    function revertirCambioDeModo() {
+        dialogoModalidadAbierto = false;
+        const radio = document.querySelector(`input[name="tipoUpTransferente"][value="${modoActual}"]`);
+        if (radio) radio.checked = true;      // asignarlo por código no dispara "change"
+        if (modalModalidad && modalModalidad.open) modalModalidad.close();
+        // Un guardado que estaba en cola mientras se preguntaba se salteó: se reprograma para
+        // que ningún cambio quede sin guardar (si no hay nada nuevo, no se envía nada)
+        programarAutoguardado(AUTOSAVE_CAMBIO_MS);
+    }
+
+    document.querySelectorAll('input[name="tipoUpTransferente"]').forEach(radio => {
+        radio.addEventListener("change", () => {
+            if (getModo() === modoActual) return;
+
+            if (!esModoVer && modalModalidad && hayTransferentesCargados()) {
+                // Se frena el guardado hasta que el usuario decida (este handler corre antes
+                // que el listener general del formulario, que es quien programa el guardado)
+                dialogoModalidadAbierto = true;
+                clearTimeout(autosaveTimer);
+                autosaveTimer = null;
+                if (typeof modalModalidad.showModal === "function") {
+                    modalModalidad.showModal();
+                } else if (confirm("Al cambiar el tipo de UP se borrarán las unidades transferentes ya cargadas. ¿Desea continuar?")) {
+                    dialogoModalidadAbierto = false;
+                    aplicarCambioDeModo();
+                    programarAutoguardado(AUTOSAVE_CAMBIO_MS);
+                } else {
+                    revertirCambioDeModo();
+                }
+                return;
+            }
+            aplicarCambioDeModo();
+        });
+    });
+
+    if (modalModalidad) {
+        document.getElementById("modal-modalidad-confirmar")?.addEventListener("click", () => {
+            dialogoModalidadAbierto = false;
+            if (modalModalidad.open) modalModalidad.close();
+            aplicarCambioDeModo();
+            programarAutoguardado(AUTOSAVE_CAMBIO_MS);
+        });
+        document.getElementById("modal-modalidad-cancelar")?.addEventListener("click", revertirCambioDeModo);
+        modalModalidad.addEventListener("cancel", revertirCambioDeModo);   // Esc
+    }
+
+    // ─── Disparadores del guardado ────────────────────────────────────────────
+    // Solo cuentan los eventos reales del usuario (isTrusted): los "change" que el propio
+    // código dispara al volver a cargar un borrador no deben provocar guardados.
+    if (!esModoVer) {
+        const pagina  = document.querySelector(".mf-pagina");
+        const esCampo = (el) => el && el.matches && el.matches("input, select, textarea");
+
+        pagina.addEventListener("input", (e) => {
+            if (e.isTrusted && esCampo(e.target)) programarAutoguardado(AUTOSAVE_MS);
+        });
+        ["change", "focusout"].forEach(tipo => pagina.addEventListener(tipo, (e) => {
+            if (e.isTrusted && esCampo(e.target)) programarAutoguardado(AUTOSAVE_CAMBIO_MS);
+        }));
+        pagina.addEventListener("click", (e) => {
+            if (e.isTrusted && e.target.closest &&
+                e.target.closest("#btn-agregar-transferente, #btn-agregar-receptora, .btn-eliminar-fila")) {
+                programarAutoguardado(AUTOSAVE_CAMBIO_MS);
             }
         });
+
+        // Si cambia de pestaña o cierra, se guarda de inmediato lo pendiente
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") volcarPendiente();
+        });
+        window.addEventListener("pagehide", volcarPendiente);
+        window.addEventListener("beforeunload", (e) => {
+            if (hayCambiosSinGuardar()) {
+                volcarPendiente();
+                e.preventDefault();
+                e.returnValue = "";
+            }
+        });
+        // Al volver la conexión se reintenta lo que falló
+        window.addEventListener("online", () => {
+            if (ultimoGuardadoFallo && !autosaveBloqueado && !completado) guardarBorrador();
+        });
+    }
+
+    // ─── Validación previa a "completar" (el servidor valida de nuevo, es la definitiva) ───
+    function validarParaCompletar() {
+        const errores = [];
+        const p = construirPayload();
+
+        if (!p.fecha)          { mFecha.classList.add("error");      errores.push("Falta la fecha."); }
+        if (!p.nro_expediente) { mExpediente.classList.add("error"); errores.push("Falta el N° de expediente."); }
+        if (!p.nro_decreto)    { errores.push("Falta seleccionar el decreto / resolución."); }
+        if (p.transferentes.length === 0) errores.push("Cargá al menos una unidad transferente.");
+        if (p.receptoras.length === 0)    errores.push("Cargá al menos una unidad receptora.");
+
+        let totalT = 0, totalR = 0;
+        p.transferentes.forEach((d, i) => {
+            const n = i + 1;
+            if (!d.linea_id) errores.push(`Transferente fila ${n}: falta completar la línea presupuestaria (programa, proyecto, actividad, partida y fuente).`);
+            if (!(d.importe > 0)) errores.push(`Transferente fila ${n}: el importe debe ser mayor a cero.`);
+            if (p.tipo_transferente === "imputacion" && !d.imputacion_detalle_id) {
+                errores.push(`Transferente fila ${n}: en la modalidad "UP de una Imputación" hay que elegir la imputación.`);
+            }
+            totalT += d.importe || 0;
+        });
+        p.receptoras.forEach((d, i) => {
+            const n = i + 1;
+            if (!d.linea_id) errores.push(`Receptora fila ${n}: falta completar la línea presupuestaria (programa, proyecto, actividad, partida y fuente).`);
+            if (!(d.importe > 0)) errores.push(`Receptora fila ${n}: el importe debe ser mayor a cero.`);
+            totalR += d.importe || 0;
+        });
+
+        if (p.transferentes.length && p.receptoras.length && aCentavos(totalT) !== aCentavos(totalR)) {
+            if (aCentavos(totalR) > aCentavos(totalT)) {
+                document.getElementById("error-receptora-supera").style.display = "inline";
+                document.getElementById("total-asignado-receptora").classList.add("error-total");
+            }
+            errores.push(
+                `El total transferente ($ ${formatearImporte(totalT)}) no coincide con el total receptora ($ ${formatearImporte(totalR)}).`
+            );
+        }
+        return errores;
+    }
+
+    // ─── Guardar como completado ──────────────────────────────────────────────
+    async function pedirCompletar() {
+        if (esModoVer || completando || completado || autosaveBloqueado || restaurando) return;
+        ocultarMensaje();
+        limpiarErrores();
+        actualizarTotales();
+
+        const errores = validarParaCompletar();
+        if (errores.length) {
+            mostrarMensaje("Todavía no se puede completar. Revisá lo siguiente:\n• " + errores.join("\n• "), "error");
+            return;
+        }
+
+        // El servidor tiene que tener exactamente lo que se ve en pantalla
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        const ok = await guardarBorrador();
+        if (!ok || !modificacionId) {
+            mostrarMensaje("No se pudieron guardar los últimos cambios en el servidor. Reintentá antes de completar.", "error");
+            return;
+        }
+
+        if (modalCompletar && typeof modalCompletar.showModal === "function") {
+            modalCompletar.showModal();
+        } else if (confirm("¿Está seguro de que desea guardar esta Modificación Presupuestaria como completada?")) {
+            confirmarCompletar();
+        }
+    }
+
+    async function confirmarCompletar() {
+        const btnConfirmar = document.getElementById("modal-confirmar");
+        const btnCancelar  = document.getElementById("modal-cancelar");
+
+        completando = true;
+        clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        if (btnConfirmar) btnConfirmar.disabled = true;
+        if (btnCancelar)  btnCancelar.disabled  = true;
+
+        try {
+            const resp = await fetch(`/api/modificacion/${modificacionId}/completar/`, {
+                method:  "POST",
+                headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie("csrftoken") },
+                body:    JSON.stringify({ version }),
+            });
+            let data = {};
+            try { data = await resp.json(); } catch (_) {}
+            if (modalCompletar && modalCompletar.open) modalCompletar.close();
+
+            if (!resp.ok || data.ok !== true) {
+                // Sigue en estado Revisar: el usuario corrige y vuelve a intentar
+                if (resp.status === 409 || resp.status === 404) {
+                    autosaveBloqueado = true;
+                    if (btnCompletar) btnCompletar.disabled = true;
+                }
+                mostrarMensaje(
+                    data.error || (resp.ok
+                        ? "Respuesta inesperada del servidor (¿se cerró la sesión?). La Modificación NO se completó: revisá su estado en el historial de registros."
+                        : "No se pudo completar la Modificación."),
+                    "error"
+                );
+                return;
+            }
+
+            completado          = true;
+            ultimoGuardadoFallo = false;
+            setEstadoAutosave("");
+            bloquearFormularioCompletado();
+            mostrarMensaje(
+                `Modificación guardada como completada (estado Listo). Total transferido: $ ${formatearImporte(data.importe_total)}`,
+                "exito"
+            );
+            setTimeout(() => { window.location.href = REDIRECCION_FINAL; }, 1800);
+
+        } catch (err) {
+            console.error(err);
+            if (modalCompletar && modalCompletar.open) modalCompletar.close();
+            mostrarMensaje(
+                "Error de red: la Modificación NO se completó. Revisá su estado en el historial de registros antes de reintentar.",
+                "error"
+            );
+        } finally {
+            completando = false;
+            if (btnConfirmar) btnConfirmar.disabled = false;
+            if (btnCancelar)  btnCancelar.disabled  = false;
+        }
+    }
+
+    function bloquearFormularioCompletado() {
+        document.querySelectorAll(".mf-pagina input, .mf-pagina select").forEach(el => { el.disabled = true; });
+        document.querySelectorAll(".btn-eliminar-fila").forEach(el => { el.style.display = "none"; });
+        ["btn-agregar-transferente", "btn-agregar-receptora"].forEach(id => {
+            const b = document.getElementById(id);
+            if (b) b.style.display = "none";
+        });
+        const fileBtn = document.querySelector(".mf-file-btn");
+        if (fileBtn) fileBtn.style.display = "none";
+        if (btnCompletar) btnCompletar.style.display = "none";
+    }
+
+    if (btnCompletar) btnCompletar.addEventListener("click", pedirCompletar);
+    if (modalCompletar) {
+        document.getElementById("modal-cancelar")?.addEventListener("click", () => modalCompletar.close());
+        document.getElementById("modal-confirmar")?.addEventListener("click", confirmarCompletar);
+        // Con la confirmación en curso no se puede cerrar con Esc
+        modalCompletar.addEventListener("cancel", (e) => { if (completando) e.preventDefault(); });
+    }
+
+    // ─── Retomar un borrador ──────────────────────────────────────────────────
+    function esperarCondicion(fn, timeoutMs, intervaloMs = 100) {
+        return new Promise(resolve => {
+            const inicio = Date.now();
+            (function chequear() {
+                if (fn()) return resolve(true);
+                if (Date.now() - inicio > timeoutMs) return resolve(false);
+                setTimeout(chequear, intervaloMs);
+            })();
+        });
+    }
+
+    function bloquearEdicion(bloquear) {
+        document.querySelectorAll(".mf-card").forEach(card => {
+            card.inert               = bloquear;
+            card.style.pointerEvents = bloquear ? "none" : "";
+            card.style.opacity       = bloquear ? "0.6" : "";
+        });
+    }
+
+    // La imputación guardada puede dejar de estar disponible (se agotó su remanente o se anuló):
+    // el listado solo trae imputaciones con saldo. Se avisa para que se elija otra.
+    function imputacionYaNoDisponible(fila, esperado) {
+        if (!esperado.imputacion_detalle_id) return false;
+        const sel = fila.querySelector(".fila-imputacion");
+        if (!sel) return false;
+        return !Array.from(sel.options).some(o => String(o.value) === String(esperado.imputacion_detalle_id));
+    }
+
+    // ¿La fila ya muestra lo que el servidor tenía guardado?
+    function filaRestaurada(fila, esperado) {
+        const coincide = (selector, id) => !id || (fila.querySelector(selector)?.value || "") === String(id);
+        const base = coincide(".fila-prg",      esperado.programa_id)
+                  && coincide(".fila-pry",      esperado.proyecto_id)
+                  && coincide(".fila-ao",       esperado.actividad_id)
+                  && coincide(".fila-par",      esperado.partida_id)
+                  && coincide(".fila-linea-id", esperado.linea_id);
+        if (!base) return false;
+        if (!esperado.imputacion_detalle_id) return true;
+        // Modalidad B: la imputación elegida, o bien (ya cargado el listado) que ya no figure en él
+        return coincide(".fila-detalle-id", esperado.imputacion_detalle_id)
+            || imputacionYaNoDisponible(fila, esperado);
+    }
+
+    // La cascada de selects y las imputaciones se rearman con varias consultas encadenadas.
+    // Hasta que termina, el formulario queda bloqueado y NO se guarda nada: un guardado a mitad
+    // de la carga pisaría con datos incompletos lo que ya estaba guardado.
+    async function restaurarBorrador(datos) {
+        restaurando = true;
+        bloquearEdicion(true);
+        if (btnCompletar) btnCompletar.disabled = true;
+        setEstadoAutosave("guardando", "Cargando borrador…", true);
+
+        const filasT = Array.from(document.querySelectorAll("#contenedor-transferentes .fila-receptora-refuerzo"));
+        const filasR = Array.from(document.querySelectorAll("#contenedor-receptoras .fila-receptora-refuerzo"));
+        const esperadosT = datos.transferentes || [];
+        const esperadosR = datos.receptoras || [];
+
+        const ok = await esperarCondicion(
+            () => lineasResolviendo === 0
+               && esperadosT.every((e, i) => filasT[i] && filaRestaurada(filasT[i], e))
+               && esperadosR.every((e, i) => filasR[i] && filaRestaurada(filasR[i], e)),
+            20000
+        );
+
+        if (!ok) {
+            // Se deja el formulario bloqueado y sin guardado automático para no pisar el borrador guardado
+            autosaveBloqueado = true;
+            const aviso = "No se pudo cargar el borrador completo. El guardado automático quedó desactivado para no pisar los datos ya guardados: recargá la página.";
+            setEstadoAutosave("error", aviso, true);
+            mostrarMensaje(aviso, "error");
+            return;
+        }
+
+        ultimaInstantanea = JSON.stringify(construirPayload());   // lo que el servidor tiene ahora
+        restaurando = false;
+        bloquearEdicion(false);
+        if (btnCompletar) btnCompletar.disabled = false;
+        setEstadoAutosave("guardado");
+
+        const sinImputacion = esperadosT
+            .map((e, i) => (filasT[i] && imputacionYaNoDisponible(filasT[i], e)) ? i + 1 : null)
+            .filter(n => n !== null);
+        if (sinImputacion.length) {
+            mostrarMensaje(
+                `La imputación elegida en la fila ${sinImputacion.join(", ")} de transferentes ya no tiene saldo disponible ` +
+                `(o fue anulada). Elegí otra antes de completar.`,
+                "error"
+            );
+        }
     }
 
     if (btnExportar) {
@@ -985,13 +1489,15 @@ document.addEventListener("DOMContentLoaded", () => {
             mExpediente.value = expCompleto.endsWith(sufijo)
                 ? expCompleto.slice(0, -sufijo.length)
                 : expCompleto;
+            decretoNombre = MODIFICACION.nro_decreto || "";
             document.getElementById("m-decreto-nombre").textContent =
-                MODIFICACION.nro_decreto || "Sin archivos seleccionados";
+                decretoNombre || "Sin archivos seleccionados";
 
             // Restaurar modo del radio button
             const tipoGuardado = MODIFICACION.tipo_transferente || 'general';
             const radioRestore = document.querySelector(`input[name="tipoUpTransferente"][value="${tipoGuardado}"]`);
             if (radioRestore) radioRestore.checked = true;
+            modoActual = getModo();
 
             (MODIFICACION.transferentes || []).forEach(t =>
                 crearFilaTransferente(
@@ -1029,6 +1535,22 @@ document.addEventListener("DOMContentLoaded", () => {
                     actualizarTotales
                 )
             );
+
+            // Un borrador sin filas guardadas igual necesita una fila para seguir completándolo
+            if (!(MODIFICACION.transferentes || []).length && MODO === "editar") {
+                crearFilaTransferente("contenedor-transferentes", "bloque-saldos-transferentes",
+                    "bloque-importes-transferentes", {}, actualizarTotales);
+            }
+            if (!(MODIFICACION.receptoras || []).length && MODO === "editar") {
+                crearFilaReceptora("contenedor-receptoras", "bloque-saldos-receptoras",
+                    "bloque-importes-receptoras", {}, actualizarTotales);
+            }
+
+            if (MODO === "editar") {
+                modificacionId = MODIFICACION.id;
+                version        = MODIFICACION.version;
+                restaurarBorrador(MODIFICACION);
+            }
 
         } else {
             crearFilaTransferente(
