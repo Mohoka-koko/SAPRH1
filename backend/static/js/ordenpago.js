@@ -627,13 +627,6 @@
     document.getElementById("btnAddBeneficiario")?.addEventListener("click", agregarFilaBeneficiario);
     document.getElementById("btnDelBeneficiario")?.addEventListener("click", eliminarFilaBeneficiario);
     document.getElementById("btnExportarPDF")?.addEventListener("click", exportarAPDF);
-    document.getElementById('btnCancelarOP')?.addEventListener('click', () => {
-      OP_ESTADO.cancelando = true;
-      clearTimeout(OP_ESTADO.timer);
-      OP_ESTADO.guardadoController?.abort();
-      const destino = document.getElementById('ordenpagoPage')?.dataset.registrosUrl || '/';
-      window.location.href = destino;
-    });
 
     inicializarPanelSaldos();
   }
@@ -1068,22 +1061,44 @@
     });
   }
 
+  /* ── Carteles flotantes (autoguardado / OP completada) ─────────────────── */
+  function mostrarCartel(el, duracion) {
+    if (!el) return;
+    clearTimeout(el._cartelTimer);
+    el.classList.add('visible');
+    if (duracion) el._cartelTimer = setTimeout(() => ocultarCartel(el), duracion);
+  }
+
+  function ocultarCartel(el) {
+    if (!el) return;
+    clearTimeout(el._cartelTimer);
+    el.classList.remove('visible');
+  }
+
+  /** Solo el éxito confirmado por el servidor muestra «Borrador guardado»; el resto de los
+   *  estados (nuevo, previo, pendiente, guardando, sincambios) no muestra nada. */
   function mostrarEstadoGuardado(estado, texto) {
     const el = document.getElementById('estadoGuardado');
-    if (!el) return;
-    const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-    const textos = {
-      nuevo:       'Se guarda automáticamente a medida que completás los campos.',
-      previo:      'Borrador recuperado. Los cambios se guardan automáticamente.',
-      pendiente:   'Cambios sin guardar…',
-      guardando:   'Guardando…',
-      guardado:    `Guardado automáticamente a las ${hora}`,
-      sinconexion: 'Sin conexión: se reintentará automáticamente.',
-      error:       texto || 'No se pudo guardar el borrador.',
-    };
-    el.textContent = textos[estado] || '';
+    if (!el || OP_ESTADO.cancelando) return;
+    if (estado === 'guardado') {
+      el.textContent = 'Borrador guardado (estado: Revisar)';
+      el.classList.remove('op-cartel--error');
+      mostrarCartel(el, 2500);
+    } else if (estado === 'error' || estado === 'sinconexion') {
+      el.textContent = estado === 'sinconexion'
+        ? 'Sin conexión: se reintentará automáticamente.'
+        : (texto || 'No se pudo guardar el borrador.');
+      el.classList.add('op-cartel--error');
+      mostrarCartel(el, OP_ESTADO.bloqueado ? 0 : 6000);
+    }
     el.dataset.estado = estado;
-    el.style.color = (estado === 'error' || estado === 'sinconexion') ? '#b91c1c' : '';
+  }
+
+  function mostrarCartelCompletado(total) {
+    ocultarCartel(document.getElementById('estadoGuardado'));
+    const importe = document.getElementById('opCartelImporte');
+    if (importe) importe.textContent = `$ ${formatearImporte(total)}`;
+    mostrarCartel(document.getElementById('opCartelCompletado'), 0);
   }
 
   function mostrarAviso(mensaje, { recargar = false, irRegistros = false } = {}) {
@@ -1182,7 +1197,7 @@
     const instantanea = JSON.stringify(contenido);
 
     if (!forzar && instantanea === OP_ESTADO.ultimoGuardado) {
-      if (OP_ESTADO.id) mostrarEstadoGuardado('guardado');
+      if (OP_ESTADO.id) mostrarEstadoGuardado('sincambios');
       return { ok: true, sinCambios: true };
     }
 
@@ -1379,8 +1394,9 @@
       if (resp.ok) {
         OP_ESTADO.bloqueado = true;
         clearTimeout(OP_ESTADO.timer);
-        alert(`Orden de Pago completada correctamente.\nTotal: $${formatearImporte(parseFloat(data.importe_total))}`);
-        window.location.href = (document.getElementById('ordenpagoPage')?.dataset.registrosUrl || '/');
+        mostrarCartelCompletado(parseFloat(data.importe_total));
+        const destinoRegistros = (document.getElementById('ordenpagoPage')?.dataset.registrosUrl || '/');
+        setTimeout(() => { window.location.href = destinoRegistros; }, 2200);
         return;
       }
 
@@ -1438,6 +1454,7 @@
     if (estado) {
       estado.textContent = `Orden de Pago completada (solo lectura). Creada por ${datos.creado_por}` +
         (datos.editado_por ? ` · última intervención: ${datos.editado_por}` : '');
+      mostrarCartel(estado, 0);
     }
   }
 
@@ -1478,14 +1495,15 @@
     document.getElementById('btnConfirmarCompletar')?.addEventListener('click', confirmarCompletar);
     document.getElementById('btnCancelarCompletar')?.addEventListener('click', cerrarConfirmacionCompletar);
 
-    // Salir: primero se vacía el guardado pendiente
-    document.getElementById('btnSalir')?.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const destino = e.currentTarget.href;
-      const r = await guardarBorrador();
-      if (r.ok || OP_ESTADO.bloqueado || confirm('No se pudo guardar el último cambio. ¿Salir de todos modos?')) {
-        window.location.href = destino;
-      }
+    // Cancelar: sale SIN guardar ni completar. El borrador queda como el servidor lo confirmó por
+    // última vez (estado Revisar). La navegación la hace el propio <a href>; acá solo se frena el
+    // autoguardado para que nada se dispare mientras se abandona la página.
+    document.getElementById('btnSalir')?.addEventListener('click', (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+      if (OP_ESTADO.cancelando) { e.preventDefault(); return; }   // doble clic
+      OP_ESTADO.cancelando = true;
+      clearTimeout(OP_ESTADO.timer);
+      OP_ESTADO.guardadoController?.abort();
     });
 
     window.addEventListener('beforeunload', (e) => {

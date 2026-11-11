@@ -18,13 +18,9 @@
             <i class="fa-solid fa-floppy-disk"></i>
             Guardar como completado
         </button>
-        <a href="{% url 'registros' %}" class="btn-accion btn-link" id="btnSalir">
-            &larr; Salir
+        <a href="{% url 'lista_imputaciones' %}" class="btn-accion btn-link" id="btnSalir">
+            X Cancelar
         </a>
-        <button type="button" class="btn-accion btn-link" id="btnCancelarOP">
-            Cancelar
-        </button>
-        <span id="estadoGuardado" class="estado-guardado" role="status" aria-live="polite"></span>
     </div>
 
     <!-- Avisos del guardado automático (conflicto, borrador ya completado, etc.) -->
@@ -37,8 +33,8 @@
             <div class="encabezado">
                 <div class="enc-izquierda">
                     <div class="logo-box">
-    <img src="{% static 'img/logo1.png' %}" alt="Logo">
-</div>
+                        <img src="{% static 'img/logo1.png' %}" alt="Logo">
+                    </div>
                     <div class="organismo">
                         <span class="input-like organismo-nombre" readonly>ADM. PCIAL. DE RECURSOS HIDRICOS</span>
                         <span class="input-like provincia" readonly>Santiago del Estero</span>
@@ -248,22 +244,36 @@
 
 </div>
 
+<!-- Carteles flotantes: autoguardado (azul) y Orden de Pago completada (verde) -->
+<div class="op-carteles no-print">
+    <div id="estadoGuardado" class="op-cartel op-cartel--info op-cartel--compacto" role="status" aria-live="polite"></div>
+    <div id="opCartelCompletado" class="op-cartel op-cartel--exito op-cartel--completado" role="status" aria-live="polite">
+        <span class="op-cartel__icono" aria-hidden="true"><i class="fa-solid fa-circle-check"></i></span>
+        <div class="op-cartel__cuerpo">
+            <p class="op-cartel__titulo">Orden de Pago completada (estado Listo)</p>
+            <p class="op-cartel__total">
+                <span class="op-cartel__total-etiqueta">TOTAL</span>
+                <span class="op-cartel__importe" id="opCartelImporte"></span>
+            </p>
+        </div>
+    </div>
+</div>
+
 <!-- Datos del borrador a recuperar (null cuando se está creando una OP nueva) -->
 <script>window.OP_DATOS = {{ op_datos|default:"null"|safe }};</script>
 <script>window.OP_MODO = "{{ modo|default:"crear"|escapejs }}";</script>
 
 <!-- MODAL DE CONFIRMACIÓN PARA COMPLETAR -->
-<div id="modalConfirmarCompletar" class="modal-validacion-overlay" style="display:none;">
+<div id="modalConfirmarCompletar" style="display:none;">
     <div class="modal-validacion-caja">
         <h3 class="modal-validacion-titulo">Guardar como completada</h3>
         <p class="modal-validacion-subtitulo">¿Está seguro de que desea guardar esta Orden de Pago como completada?</p>
-        <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;">
-            <button type="button" id="btnCancelarCompletar" class="modal-validacion-btn" style="background:#6b7280;">Cancelar</button>
-            <button type="button" id="btnConfirmarCompletar" class="modal-validacion-btn">Confirmar</button>
+        <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:12px;flex-wrap:wrap;">
+            <button type="button" id="btnCancelarCompletar" class="modal-validacion-btn" style="background:#64748b;color:#ffffff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;">Cancelar</button>
+            <button type="button" id="btnConfirmarCompletar" class="modal-validacion-btn" style="background:#2563eb;color:#ffffff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;">Confirmar</button>
         </div>
     </div>
 </div>
-
 <!-- MODAL DE VALIDACIÓN -->
 <div id="modalValidacion" class="modal-validacion-overlay" style="display:none;">
     <div class="modal-validacion-caja">

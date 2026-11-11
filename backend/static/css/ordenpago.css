@@ -46,6 +46,7 @@
     .botones-accion,
     .tabla-acciones,
     #panelSaldos,
+    .op-carteles,
     .modal-validacion-overlay {
         display: none !important;
     }
@@ -529,19 +530,19 @@ input[type="number"]:focus {
 }
 
 /* ==========================================================
-   MODAL DE VALIDACIÓN (DISEÑO PROFESIONAL - SOLO CSS)
+   MODALES FLOTANTES (CONFIRMACIÓN Y VALIDACIÓN)
    ========================================================== */
 
-/* Fondo oscuro con desenfoque (Overlay) */
-#modalValidacion {
+#modalValidacion,
+#modalConfirmarCompletar {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
     background-color: rgba(15, 23, 42, 0.65);
-    backdrop-filter: blur(4px); /* Efecto cristal moderno */
-    display: none; /* JS lo cambia a flex al activarlo */
+    backdrop-filter: blur(4px);
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 99999;
@@ -550,15 +551,15 @@ input[type="number"]:focus {
     box-sizing: border-box;
 }
 
-/* Contenedor principal del Modal (Tarjeta) */
-#modalValidacion > div {
+/* Contenedores principales de las tarjetas modales */
+#modalValidacion > div,
+#modalConfirmarCompletar > div {
     background-color: #ffffff;
     width: 100%;
     max-width: 500px;
     max-height: 85vh;
     border-radius: 12px;
     padding: 32px;
-    /* Sombra multicapa para dar profundidad real */
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
@@ -566,9 +567,12 @@ input[type="number"]:focus {
     overflow-y: auto;
     position: relative;
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
 }
 
-/* Barra superior indicadora de alerta (roja) */
+/* Franja superior de alerta (roja para validación) */
 #modalValidacion > div::before {
     content: "";
     position: absolute;
@@ -577,6 +581,19 @@ input[type="number"]:focus {
     width: 100%;
     height: 5px;
     background: #ef4444; 
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+/* Franja superior corporativa (azul para confirmación) */
+#modalConfirmarCompletar > div::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: #2563eb; 
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
 }
@@ -593,38 +610,39 @@ input[type="number"]:focus {
     }
 }
 
-/* Títulos */
+/* Títulos y textos generales de los modales */
 #modalValidacion h2,
-#modalValidacion h3 {
+#modalValidacion h3,
+#modalConfirmarCompletar h2,
+#modalConfirmarCompletar h3 {
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
-    color: #0f172a; /* Gris muy oscuro */
+    color: #0f172a;
 }
 
-/* Texto descriptivo */
-#modalValidacion p {
+#modalValidacion p,
+#modalConfirmarCompletar p {
     margin: 0;
     font-size: 0.95rem;
-    color: #475569; /* Gris medio */
+    color: #475569;
     line-height: 1.5;
 }
 
-/* Contenedor de la lista de errores */
+/* Lista de errores */
 #modalValidacionLista {
     margin: 8px 0;
     padding: 0;
-    list-style: none; /* Quitamos los puntos clásicos */
+    list-style: none;
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-/* Items de error rediseñados como "tarjetas de alerta" */
 #modalValidacionLista li {
-    background-color: #fef2f2; /* Fondo rojo ultra claro */
-    border-left: 4px solid #ef4444; /* Borde izquierdo rojo vivo */
-    color: #7f1d1d; /* Texto rojo oscuro para legibilidad */
+    background-color: #fef2f2;
+    border-left: 4px solid #ef4444;
+    color: #7f1d1d;
     padding: 12px 16px;
     border-radius: 0 6px 6px 0;
     font-size: 0.9rem;
@@ -632,12 +650,10 @@ input[type="number"]:focus {
     line-height: 1.4;
 }
 
-/* Botón Entendido */
-#modalValidacionCerrar {
+/* Botones principales de los modales (Cerrar / Confirmar / Cancelar) */
+#modalValidacionCerrar,
+#modalConfirmarCompletar button {
     margin-top: 12px;
-    align-self: flex-end;
-    background-color: #2563eb; /* Azul corporativo */
-    color: #ffffff;
     border: none;
     padding: 10px 24px;
     border-radius: 8px;
@@ -648,46 +664,49 @@ input[type="number"]:focus {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-#modalValidacionCerrar:hover {
+#modalValidacionCerrar,
+#btnConfirmarCompletar {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+
+#modalValidacionCerrar:hover,
+#btnConfirmarCompletar:hover {
     background-color: #1d4ed8;
     transform: translateY(-1px);
 }
 
-#modalValidacionCerrar:active {
-    transform: translateY(0) scale(0.98);
+#btnCancelarCompletar {
+    background-color: #64748b;
+    color: #ffffff;
 }
 
-/* ==========================================================
-   SCROLLBAR PERSONALIZADO PARA EL MODAL
-   ========================================================== */
-
-/* Estándar para Firefox */
-#modalValidacion > div {
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
+#btnCancelarCompletar:hover {
+    background-color: #475569;
 }
 
-/* Estilos para Chrome, Edge y Safari */
-#modalValidacion > div::-webkit-scrollbar {
-    width: 8px; /* Hace la barra más delgada */
+/* Scrollbars personalizados para ambos modales */
+#modalValidacion > div::-webkit-scrollbar,
+#modalConfirmarCompletar > div::-webkit-scrollbar {
+    width: 8px;
 }
 
-/* El fondo (carril) de la barra */
-#modalValidacion > div::-webkit-scrollbar-track {
+#modalValidacion > div::-webkit-scrollbar-track,
+#modalConfirmarCompletar > div::-webkit-scrollbar-track {
     background: transparent;
     border-radius: 8px;
 }
 
-/* El indicador (thumb) que se desliza */
-#modalValidacion > div::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1; /* Color gris suave */
-    border-radius: 8px; /* Bordes redondeados */
-    border: 2px solid #ffffff; /* Borde blanco para simular margen y que no toque los bordes */
+#modalValidacion > div::-webkit-scrollbar-thumb,
+#modalConfirmarCompletar > div::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 8px;
+    border: 2px solid #ffffff;
 }
 
-/* Cambio de color al pasar el cursor sobre la barra */
-#modalValidacion > div::-webkit-scrollbar-thumb:hover {
-    background-color: #94a3b8; /* Gris un poco más oscuro */
+#modalValidacion > div::-webkit-scrollbar-thumb:hover,
+#modalConfirmarCompletar > div::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
 }
 
 .btn-cambiar-fecha {
@@ -1225,4 +1244,181 @@ html.exportando-pdf .tabla-partidas .pdf-value {
     width: 100%;
     padding: 0;
     border-bottom: 0;
+}
+
+/* ==========================================================
+   BOTÓN «GUARDAR COMO COMPLETADO»
+   (no tenía fondo propio y quedaba transparente)
+   ========================================================== */
+.ordenpago-page .botones-accion #btnCompletar {
+    background: #1e3a8a;
+    color: #ffffff;
+    border: 1px solid #1e3a8a;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .05s ease;
+}
+
+.ordenpago-page .botones-accion #btnCompletar i {
+    color: inherit;
+}
+
+.ordenpago-page .botones-accion #btnCompletar:hover:not(:disabled) {
+    background: #172e6e;
+    border-color: #172e6e;
+    color: #ffffff;
+}
+
+.ordenpago-page .botones-accion #btnCompletar:active:not(:disabled) {
+    background: #112459;
+    border-color: #112459;
+    transform: translateY(1px);
+}
+
+.ordenpago-page .botones-accion #btnCompletar:focus-visible {
+    outline: 3px solid rgba(30, 58, 138, 0.4);
+    outline-offset: 2px;
+}
+
+.ordenpago-page .botones-accion #btnCompletar:disabled {
+    background: #1e3a8a;
+    color: #ffffff;
+    opacity: .65;
+    cursor: not-allowed;
+}
+
+/* ==========================================================
+   CARTELES FLOTANTES (autoguardado / Orden de Pago completada)
+   Mismo lenguaje visual que el cartel de Imputación guardada.
+   ========================================================== */
+.op-carteles {
+    position: fixed;
+    top: 84px;                 /* debajo de la barra superior */
+    left: 16px;
+    z-index: 9990;             /* por debajo del modal de validación (99999) */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: calc(100vw - 32px);
+    pointer-events: none;      /* nunca bloquea clics ni la escritura */
+}
+
+.op-carteles .op-cartel {
+    --cartel-fondo: #dbeafe;
+    --cartel-borde: #1d4ed8;
+    --cartel-texto: #1e3a8a;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: min(440px, 100%);
+    margin: 0;
+    padding: 10px 16px;
+    border: 2px solid var(--cartel-borde);
+    border-radius: 10px;
+    background: var(--cartel-fondo);
+    color: var(--cartel-texto);
+    font: 700 0.95rem/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity .25s ease, transform .25s ease, visibility 0s linear .25s;
+}
+
+.op-carteles .op-cartel.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity .25s ease, transform .25s ease, visibility 0s;
+}
+
+.op-carteles .op-cartel--compacto {
+    padding: 8px 14px;
+    font-size: 0.88rem;
+}
+
+.op-carteles .op-cartel--exito {
+    --cartel-fondo: #dcfce7;
+    --cartel-borde: #15803d;
+    --cartel-texto: #166534;
+}
+
+.op-carteles .op-cartel--error {
+    --cartel-fondo: #fef2f2;
+    --cartel-borde: #b91c1c;
+    --cartel-texto: #7f1d1d;
+}
+
+.op-carteles .op-cartel--completado {
+    padding: 12px 18px;
+}
+
+.op-cartel__icono {
+    flex: 0 0 auto;
+    font-size: 1.7rem;
+    line-height: 1;
+}
+
+.op-cartel__cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.op-cartel__titulo,
+.op-cartel__total {
+    margin: 0;
+}
+
+.op-cartel__titulo {
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+}
+
+.op-cartel__total {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.op-cartel__total-etiqueta {
+    font-size: 0.75rem;
+    letter-spacing: .08em;
+    opacity: .8;
+}
+
+.op-cartel__importe {
+    font-size: 1.45rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+@media screen and (max-width: 600px) {
+    .op-carteles {
+        top: 72px;
+        left: 8px;
+        right: 8px;
+        max-width: none;
+    }
+
+    .op-carteles .op-cartel {
+        max-width: 100%;
+        font-size: 0.85rem;
+    }
+
+    .op-cartel__importe {
+        font-size: 1.25rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .op-carteles .op-cartel,
+    .op-carteles .op-cartel.visible {
+        transition: none;
+        transform: none;
+    }
 }
