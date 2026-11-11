@@ -1014,29 +1014,106 @@ body.exportando-pdf textarea::placeholder {
    GUARDADO AUTOMÁTICO, AVISOS Y MODO VER
    ========================================================= */
 
-/* Indicador "Guardando… / Guardado / Error al guardar" */
-.autosave-estado {
-    min-height: 14px;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 10px;
-    font-weight: 600;
-    text-align: center;
-    color: #666;
+/* Cartel flotante del autoguardado (mismo diseño azul que en Imputación) */
+.imp-carteles {
+    position: fixed;
+    top: 84px;                 /* debajo de la barra superior */
+    left: 16px;
+    z-index: 9990;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: calc(100vw - 32px);
+    pointer-events: none;      /* nunca bloquea clics ni la escritura */
 }
-.autosave-estado.guardando { color: #8a6d00; }
-.autosave-estado.guardado  { color: #2e7d32; }
-.autosave-estado.error     { color: #c62828; }
 
-/* Botón principal de la barra */
+.imp-carteles .imp-cartel {
+    --cartel-fondo: #dbeafe;
+    --cartel-borde: #1d4ed8;
+    --cartel-texto: #1e3a8a;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: min(440px, 100%);
+    margin: 0;
+    padding: 8px 14px;
+    border: 2px solid var(--cartel-borde);
+    border-radius: 10px;
+    background: var(--cartel-fondo);
+    color: var(--cartel-texto);
+    font: 700 0.88rem/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity .25s ease, transform .25s ease, visibility 0s linear .25s;
+}
+
+.imp-carteles .imp-cartel.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity .25s ease, transform .25s ease, visibility 0s;
+}
+
+.imp-carteles .imp-cartel--error {
+    --cartel-fondo: #fef2f2;
+    --cartel-borde: #b91c1c;
+    --cartel-texto: #7f1d1d;
+}
+
+@media screen and (max-width: 600px) {
+    .imp-carteles { top: 72px; left: 8px; right: 8px; max-width: none; }
+    .imp-carteles .imp-cartel { max-width: 100%; font-size: 0.85rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .imp-carteles .imp-cartel,
+    .imp-carteles .imp-cartel.visible { transition: none; transform: none; }
+}
+
+@media print {
+    .imp-carteles { display: none !important; }
+}
+
+/* Botón principal de la barra: azul oscuro (igual que "Guardar como completado" de Imputación) */
 .toolbar button.btn-completar {
     white-space: normal;
     line-height: 1.25;
-    background: #e8f3e8;
-    border-color: #8fbf8f;
-    color: #1f5a1f;
+    background: #1e3a8a;
+    border-color: rgba(30, 58, 138, 0.12);
+    color: #ffffff;
 }
-.toolbar button.btn-completar:hover { background: #d9ecd9; }
+.toolbar button.btn-completar:hover { background: #172a66; border-color: #172a66; }
+.toolbar button.btn-completar:active { background: #12204f; }
 .toolbar button.btn-completar:disabled { opacity: 0.6; cursor: wait; }
+
+/* Cancelar: vuelve al panel de registros */
+.toolbar a.btn-cancelar-opp {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid #1e293b;
+    border-radius: 6px;
+    padding: 8px 5px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.toolbar a.btn-cancelar-opp:hover {
+    background: #fef2f2;
+    border-color: #b91c1c;
+    color: #b91c1c;
+}
 
 /* Avisos sobre la hoja */
 .opp-mensaje {
@@ -1054,6 +1131,7 @@ body.exportando-pdf textarea::placeholder {
 .opp-mensaje-error { background: #fdf2f2; border-color: #e0a0a0; color: #8f1d1d; }
 .opp-mensaje-aviso { background: #fff8e1; border-color: #e6cf80; color: #6b5200; }
 .opp-mensaje-info  { background: #eef5fb; border-color: #a9c7e3; color: #1d4a73; }
+.opp-mensaje-exito { background: #dcfce7; border-color: #15803d; color: #166534; font-weight: 700; }
 .opp-mensaje button {
     padding: 4px 10px;
     border: 1px solid #999;
@@ -1141,7 +1219,8 @@ body.exportando-pdf textarea::placeholder {
         padding-bottom: 0;
     }
 
-    .toolbar button {
+    .toolbar button,
+    .toolbar a.btn-cancelar-opp {
         width: 100%;
         min-width: 0;
         padding: 9px 4px;
@@ -1154,7 +1233,8 @@ body.exportando-pdf textarea::placeholder {
 @media (max-width: 480px) {
     .toolbar { left: 4px; right: 4px; bottom: 4px; padding: 6px 4px; }
     .toolbar .toolbar-group { padding: 0 4px; }
-    .toolbar button { font-size: 9.5px; }
+    .toolbar button,
+    .toolbar a.btn-cancelar-opp { font-size: 9.5px; }
 }
 
 /* ---------- Impresión: sin escala ---------- */

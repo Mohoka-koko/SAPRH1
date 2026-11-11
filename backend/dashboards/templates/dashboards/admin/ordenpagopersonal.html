@@ -7,6 +7,11 @@
 
 {% block content %}
 <div class="oppersonal-page{% if modo == 'ver' %} modo-ver{% endif %}">
+    <!-- Cartel flotante del autoguardado (arriba a la izquierda, igual que en Imputación) -->
+    <div class="imp-carteles no-print">
+        <div id="autosave-estado" class="imp-cartel" role="status" aria-live="polite"></div>
+    </div>
+
     <!-- ===== BARRA FLOTANTE LATERAL ===== -->
     <div class="toolbar no-print">
         <div class="toolbar-group solo-edicion">
@@ -18,10 +23,9 @@
             <button id="btnDelErogacion" type="button">− Erogación</button>
         </div>
         <div class="toolbar-group">
-            <!-- Estado del guardado automático: "Guardando…" / "Guardado" / "Error al guardar" -->
-            <div id="autosave-estado" class="autosave-estado solo-edicion" role="status" aria-live="polite"></div>
             <button id="btnCompletar" type="button" class="btn-completar solo-edicion">✔ Guardar como completado</button>
             <button id="btnExportarPDF" type="button">⭳ Exportar a PDF</button>
+            <a href="{% url 'registros' %}" class="btn-cancelar-opp" id="btnCancelarOPP">Cancelar</a>
         </div>
     </div>
 

@@ -1285,13 +1285,29 @@
      origenMensaje = null;
    }
    
+   /**
+    * Cartel flotante del autoguardado (mismo comportamiento que en Imputación):
+    * solo el guardado confirmado muestra "Borrador guardado (estado: Revisar)" y se
+    * oculta solo; el error queda visible hasta el próximo guardado correcto.
+    */
    function setEstadoAutosave(estado, detalle) {
      const el = document.getElementById("autosave-estado");
      if (!el) return;
-     el.className = `autosave-estado solo-edicion ${estado}`;
-     const textos = { guardando: "Guardando…", guardado: "Guardado", error: "Error al guardar" };
-     el.textContent = textos[estado] || "";
-     el.title = detalle || "";
+     clearTimeout(el._cartelTimer);
+   
+     if (estado === "guardado") {
+       el.textContent = "Borrador guardado (estado: Revisar)";
+       el.classList.remove("imp-cartel--error");
+       el.classList.add("visible");
+       el._cartelTimer = setTimeout(() => el.classList.remove("visible"), 2500);
+     } else if (estado === "error") {
+       el.textContent = "⚠ NO se pudieron guardar los cambios" + (detalle ? `: ${detalle}` : "");
+       el.classList.add("imp-cartel--error", "visible");
+     } else {
+       // "guardando" o "" → sin cartel
+       el.classList.remove("visible");
+     }
+     el.dataset.estado = estado || "";
    }
    
    /* ------------------------------------------------------------------------
@@ -1674,7 +1690,17 @@
   
       salidaPermitida = true;
       borrarCopiaLocal(oppId);
-      alert(`OP Personal guardada como completada.\nAsiento N°: ${data.asiento_nro}`);
+
+      // Cartel de éxito (mismo texto que en Imputación). La página pasa a modo "ver",
+      // así que el aviso se guarda y se muestra al cargar esa pantalla.
+      const contenidoFinal = construirContenido();
+      const totalFinal = contenidoFinal.erogaciones.reduce((s, e) => s + aCentavos(e.importe), 0) / 100;
+      try {
+        sessionStorage.setItem(
+          "opp_aviso_exito",
+          `Orden de Pago Personal guardada como completada (estado Listo). Asiento N° ${data.asiento_nro}. Total: $ ${formatearImporte(totalFinal)}`
+        );
+      } catch (_) {}
       window.location.href = data.url_ver;
     } catch (err) {
       console.error(err);
@@ -1700,6 +1726,17 @@
      document.querySelectorAll("#hoja select").forEach((el) => {
        el.tabIndex = -1; // el CSS (.modo-ver) bloquea además el puntero
      });
+   
+     let avisoExito = null;
+     try {
+       avisoExito = sessionStorage.getItem("opp_aviso_exito");
+       sessionStorage.removeItem("opp_aviso_exito");
+     } catch (_) {}
+   
+     if (avisoExito) {
+       mostrarMensaje(avisoExito, "exito");
+       return;
+     }
    
      const asiento = OPP_DATOS && OPP_DATOS.asiento_nro ? ` Asiento N° ${OPP_DATOS.asiento_nro}.` : "";
      mostrarMensaje(`OP Personal completada (estado Listo).${asiento} Solo lectura.`, "info");
