@@ -154,6 +154,28 @@ function calcularVariacionPorcentual(movimiento) {
   return (calcularVariacion(movimiento) / movimiento.saldoInicial) * 100;
 }
 
+// Porcentaje del programa sobre el presupuesto oficial modificado total.
+// Con presupuestos muy desparejos un programa puede valer 0,003%: con
+// 1 decimal se veía "0%". Se muestran hasta 2 decimales y "<0,01" cuando
+// es positivo pero menor a eso.
+function formatPercent(value) {
+  const n = Number(value) || 0;
+  if (n <= 0) return "0";
+  if (n < 0.01) return "<0,01";
+  if (n < 100 && n >= 99.995) return "99,99";
+  return n.toLocaleString("es-AR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
+// Ancho de la barra: si el programa tiene saldo, al menos 2% para que se vea.
+function progressBarWidth(value) {
+  const n = Number(value) || 0;
+  if (n <= 0) return 0;
+  return Math.min(100, Math.max(n, 2));
+}
+
 // =========================================================
 // RENDER: TARJETAS DE PROGRAMAS
 // =========================================================
@@ -171,7 +193,7 @@ function renderPrograms() {
     card.setAttribute("role", "button");
     card.setAttribute(
       "aria-label",
-      `Programa ${programa.codigo}: ${programa.nombre}, ${programa.porcentaje}% ejecutado`
+      `Programa ${programa.codigo}: ${programa.nombre}, ${formatPercent(programa.porcentaje)}% del presupuesto oficial modificado`
     );
 
     card.innerHTML = `
@@ -181,9 +203,9 @@ function renderPrograms() {
       </div>
       <div class="program-progress-row">
         <div class="program-progress-track">
-          <div class="program-progress-fill" style="width: ${programa.porcentaje}%"></div>
+          <div class="program-progress-fill" style="width: ${progressBarWidth(programa.porcentaje)}%"></div>
         </div>
-        <span class="program-percent">${programa.porcentaje}%</span>
+        <span class="program-percent">${formatPercent(programa.porcentaje)}%</span>
       </div>
     `;
 

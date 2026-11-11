@@ -551,7 +551,7 @@ def api_home_lineas(request):
 
         porcentaje = 0
         if presupuesto_modificado:
-            porcentaje = round(float(monto_actual / presupuesto_modificado * 100), 1)
+            porcentaje = round(float(monto_actual / presupuesto_modificado * 100), 4)
 
         programas_data.append({
             'codigo':     str(programa.codigo_programa).zfill(2),
