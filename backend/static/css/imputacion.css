@@ -7,6 +7,8 @@
   gap: 1rem;
   font-size: 1.1rem;
   font-family: inherit;
+  /* Avoid content being hidden behind fixed action bar */
+  padding-bottom: 5rem; /* space for the fixed buttons */
 }
 
 .mensaje-validacion {
@@ -108,22 +110,12 @@
 .btn-accion.btn-link {
   background: #ffffff;
   color: #1e293b;
-  border: 1px solid #64748b;
+  border: 1px solid #e5e7eb;
 }
 
 .btn-accion.btn-link i { color: #1e293b; }
 
-.btn-accion.btn-link:hover {
-  background: #f8fafc;
-  border-color: #475569;
-  box-shadow: 0 8px 18px rgba(16,24,40,0.06);
-}
-
-.btn-accion.btn-link:focus-visible {
-  border-color: #475569;
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
-}
+.btn-accion.btn-link:hover { background: #f8fafc; box-shadow: 0 8px 18px rgba(16,24,40,0.06); }
 
 @media (max-width: 760px) {
   .botones-accion {
@@ -137,71 +129,11 @@
   }
 }
 
-/* Avoid content being hidden behind fixed action bar */
-.imputacion-page {
-  padding-bottom: 5rem; /* space for the fixed buttons */
-}
-
-@media print {
-  .botones-accion,
-  .tabla-acciones,
-  #panelSaldos,
-  .mensaje-validacion {
-    display: none !important;
-  }
-}
-
 .btn-link {
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-@media print {
-  .header,
-  .botones-accion,
-  .tabla-acciones,
-  #panelSaldos,
-  .mensaje-validacion {
-      display: none !important;
-  }
-
-  @page {
-      size: A4 portrait;
-      margin: 10mm;
-  }
-
-  body {
-      background: #ffffff;
-  }
-
-  .main-content {
-      padding: 0;
-  }
-
-  .imputacion-page {
-      gap: 0;
-      padding-bottom: 0;
-  }
-
-  .form-wrap {
-      box-shadow: none;
-      margin: 0;
-      padding: 0;
-      border-radius: 0;
-  }
-
-  tr,
-  .compromiso-texto,
-  .compromiso-footer {
-      break-inside: avoid;
-      page-break-inside: avoid;
-  }
-
-  thead {
-      display: table-header-group;
-  }
 }
 
 .form-wrap {
@@ -213,6 +145,7 @@
   max-width: 100%;
   margin: 0 auto;
   border: none;
+  box-sizing: border-box;
 }
 
 /* --- Encabezado --- */
@@ -236,20 +169,6 @@
 .logo-box img {
   max-width: 150%;
   max-height: 150%;
-  object-fit: contain;
-}
-
-.imputacion-page .header-row .logo-box {
-  min-width: 0;
-  overflow: hidden;
-}
-
-.imputacion-page .header-row .logo-box img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  max-width: 100%;
-  max-height: 100%;
   object-fit: contain;
 }
 
@@ -293,7 +212,7 @@
 .expediente-input-group input {
   border: none;
   outline: none;
-  padding: 0 0.8rem;
+  padding: 0 0.6rem;
   height: 100%;
   text-align: right;
   background-color: #f7f476 !important;
@@ -302,7 +221,7 @@
 
 .expediente-fijo {
   background-color: #f7f476 !important;
-  padding: 0 0.8rem;
+  padding: 0 0.6rem;
   height: 100%;
   display: flex;
   align-items: center;
@@ -311,27 +230,6 @@
   border-left: 1px solid #000000;
   font-size: 1.05rem;
 }
-
-.expediente-input-group input {
-  border: none;
-  outline: none;
-  padding: 0 0.6rem;
-  height: 100%;
-  text-align: right;
-  background-color: #f7f476 !important;
-}
-
-.expediente-fijo {
-  background-color: #f7f476 !important;
-  padding: 0 0.6rem;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  font-weight: 500;
-  white-space: nowrap;
-  border-left: 1px solid #000000;
-}
-
 
 .titulo-part {
   font-size: 1.5rem;
@@ -404,9 +302,6 @@
 
 /* --- Tabla principal --- */
 table#main-table {
-  display: block;
-  max-width: 100%;
-  overflow-x: auto;
   width: 100%;
   border-collapse: collapse;
   font-size: 1.1rem;
@@ -609,10 +504,6 @@ select.id-user {
 
 .proveedor-cell {
   padding: 0.85rem 1rem;
-}
-
-.proveedor-cell {
-  padding: 0.85rem 1rem;
   border-right: 1px solid #374151;
 }
 
@@ -623,7 +514,7 @@ select.id-user {
 }
 
 .importe-cell {
-  padding: 0.85rem 1rem;
+  padding: 1.5rem 2rem;
   border-left: 1px solid #374151;
 }
 
@@ -640,12 +531,6 @@ textarea.proveedor-input {
   outline: none;
   color: #000000;
   font-family: inherit;
-}
-
-
-
-.importe-cell {
-  padding: 1.5rem 2rem;
 }
 
 input.importe-input {
@@ -1027,7 +912,7 @@ select.cod:focus,
   max-width: 440px;
   width: 90%;
   box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
-  
+
   /* Propiedades para centrarlo correctamente en la pantalla */
   position: fixed;
   top: 50%;
@@ -1082,204 +967,411 @@ select.cod:focus,
 #modal-confirmar:hover {
   background: #172a66;
 }
-@media print { .autosave-estado, .modal-confirmar { display: none; } }
 
-@media (max-width: 1100px) {
-  .botones-accion:has(#guardar-imputacion-btn) {
-    box-sizing: border-box;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem;
+
+/* =====================================================================
+   RESPONSIVO
+   Va al final a propósito (tiene que ganar a las reglas de arriba).
+   Usa "screen" para que la impresión siga con el diseño de escritorio.
+   ===================================================================== */
+
+.imputacion-page { min-width: 0; }
+
+/* ---------------------------------------------------------------------
+   TABLET / LAPTOP CHICA  (hasta 1100px)
+   --------------------------------------------------------------------- */
+@media screen and (max-width: 1100px) {
+
+  .form-wrap { padding: 1.5rem 1.25rem 1rem; }
+
+  .compromiso-texto {
+    width: calc(100% + 2.5rem);
+    margin: 0 -1.25rem 0;
+    padding: 1rem 1.25rem 0;
   }
 
-  .botones-accion:has(#guardar-imputacion-btn) .btn-accion {
-    flex: 0 1 auto;
-    width: auto;
-    max-width: 100%;
-    min-height: 44px;
-    padding: 0.55rem 0.75rem;
-    white-space: normal;
-  }
+  .header-org { font-size: 1.3rem; }
+  .header-sub { font-size: 1.1rem; padding-left: 20px; }
+  .nro-expediente { font-size: 1.15rem; }
 
-  .botones-accion:has(#guardar-imputacion-btn) .autosave-estado {
-    min-width: 0;
-    max-width: 100%;
-    overflow-wrap: anywhere;
-  }
+  table#main-table col.concepto-column { width: 200px; }
+  table#main-table col.importe-column  { width: 150px; }
+
+  .proveedor-header { width: 200px; min-width: 0; }
+  .importe-header   { width: 150px; min-width: 0; }
+
+  table#main-table td,
+  table#main-table th { padding: 0.6rem 0.6rem; }
+
+  table#main-table td.importe-cell { padding: 0.75rem 0.75rem; }
+
+  textarea.proveedor-input,
+  input.importe-input { font-size: 1rem !important; }
 }
 
-@media (max-width: 800px) {
-  body:has(.imputacion-page) .main-content {
-    min-width: 0;
-    padding: clamp(0.5rem, 2vw, 1rem);
-  }
+/* ---------------------------------------------------------------------
+   CELULAR / TABLET VERTICAL  (hasta 760px)
+   Cada línea de la tabla pasa a ser una tarjeta.
+   --------------------------------------------------------------------- */
+@media screen and (max-width: 760px) {
 
   .imputacion-page {
-    min-width: 0;
-    padding-bottom: 10rem;
-    gap: 0.75rem;
-  }
-
-  .form-wrap {
-    min-width: 0;
-    padding: clamp(0.75rem, 3vw, 1.25rem);
-  }
-
-  .imputacion-page .header-row .logo-box {
-    flex: 0 0 clamp(44px, 12vw, 60px);
-    width: clamp(44px, 12vw, 60px);
-    height: clamp(44px, 12vw, 60px);
-  }
-
-  .header-text {
-    min-width: 0;
-    padding-left: 0;
-  }
-
-  .header-org {
-    font-size: clamp(1rem, 3.5vw, 1.35rem);
-    overflow-wrap: anywhere;
-  }
-
-  .header-sub {
-    padding-left: 0;
-    font-size: clamp(0.9rem, 3vw, 1.15rem);
-  }
-
-  .nro-expediente {
-    text-align: left;
     font-size: 1rem;
+    padding-bottom: 10rem;      /* espacio para la barra fija de botones */
   }
 
-  .mensaje-validacion {
-    overflow-wrap: anywhere;
+  /* ---- Barra de botones: 2 por fila, con fondo ---- */
+  .botones-accion {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -4px 14px rgba(16, 24, 40, 0.08);
   }
 
-  .encabezado-campos {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.4rem;
+  .botones-accion .btn-accion {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: center;
+    padding: 0.6rem 0.5rem;
+    font-size: 0.82rem;
+    text-align: center;
   }
+
+  .autosave-estado {
+    order: -1;
+    flex: 1 1 100%;
+    margin: 0;
+    text-align: center;
+  }
+  .autosave-estado:empty { display: none; }
+
+  .mensaje-validacion { top: 64px; font-size: 0.9rem; }
+
+  /* ---- Encabezado ---- */
+  .form-wrap {
+    padding: 1rem 0.85rem 0.85rem;
+    border-radius: 6px;
+  }
+
+  .header-row { gap: 8px; margin-bottom: 1rem; }
+  .logo-box { width: 48px; height: 48px; }
+  .header-text { padding-left: 12px; }
+  .header-org { font-size: 1rem; line-height: 1.25; }
+  .header-sub { font-size: 0.9rem; padding-left: 0; }
+
+  .nro-expediente { text-align: left; font-size: 1rem; }
+  .nro-expediente label { display: block; margin-bottom: 0.3rem; }
 
   .expediente-input-group {
     display: flex;
     width: 100%;
-    max-width: 100%;
+    height: 40px;
   }
-
   .expediente-input-group input {
     flex: 1 1 auto;
     min-width: 0;
+    font-size: 1rem;
+  }
+  .expediente-fijo {
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+    padding: 0 0.5rem;
   }
 
-  .expediente-fijo {
-    flex: 0 1 auto;
+  .titulo-part { font-size: 1.1rem; margin: 1rem 0; }
+  .seccion-titulo { font-size: 1rem; padding: 0.7rem 0.5rem; }
+
+  /* ---- Tabla -> tarjetas ---- */
+  table#main-table,
+  table#main-table tbody,
+  table#main-table tfoot,
+  table#main-table tr,
+  table#main-table td {
+    display: block;
+  }
+
+  table#main-table { background: transparent; margin-bottom: 1rem; }
+  table#main-table colgroup,
+  table#main-table thead { display: none; }
+
+  /* cada línea = grilla de 7 columnas */
+  #filas-body tr {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    margin-top: 0.75rem;
+    border: 1.5px solid #374151;
+    background: #f7f476;
+  }
+
+  #filas-body tr > td { box-sizing: border-box; min-width: 0; }
+
+  /* códigos */
+  #filas-body tr > .cod-cell {
+    position: relative;
+    width: auto;
     min-width: 0;
-    white-space: normal;
-    overflow-wrap: anywhere;
+    padding: 1.15rem 0.1rem 0.35rem !important;
+  }
+
+  /* etiqueta sobre cada código (::after porque ::before lo usa
+     .mostrar-codigo para mostrar el valor elegido) */
+  #filas-body tr > .cod-cell::after {
+    position: absolute;
+    top: 0.25rem;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #374151;
+    pointer-events: none;
+  }
+  #filas-body tr > .cod-cell:nth-child(1)::after { content: "JUR"; }
+  #filas-body tr > .cod-cell:nth-child(2)::after { content: "PRG"; }
+  #filas-body tr > .cod-cell:nth-child(3)::after { content: "SPRG"; }
+  #filas-body tr > .cod-cell:nth-child(4)::after { content: "PRY"; }
+  #filas-body tr > .cod-cell:nth-child(5)::after { content: "A/O"; }
+  #filas-body tr > .cod-cell:nth-child(6)::after { content: "PAR"; }
+  #filas-body tr > .cod-cell:nth-child(7)::after { content: "FF"; }
+
+  /* el valor mostrado baja un poco para dejar lugar a la etiqueta */
+  .cod-cell.mostrar-codigo::before { top: calc(50% + 0.45rem); }
+
+  select.cod,
+  input.cod { font-size: 0.9rem !important; }
+
+  /* concepto e importe: ancho completo con su etiqueta */
+  #filas-body tr > td.proveedor-cell,
+  #filas-body tr > td.importe-cell {
+    grid-column: 1 / -1;
+    border: 1px solid #374151;
+    padding: 0.5rem 0.75rem;
+  }
+
+  #filas-body tr > td.proveedor-cell::before,
+  #filas-body tr > td.importe-cell::before {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #374151;
+  }
+
+  #filas-body tr > td.proveedor-cell::before {
+    content: "CONCEPTO";
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  #filas-body tr > td.importe-cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  #filas-body tr > td.importe-cell::before { content: "IMPORTE"; }
+
+  textarea.proveedor-input {
+    height: 4rem;
+    font-size: 1rem !important;
+  }
+  input.importe-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 1.1rem !important;
+  }
+
+  /* ---- Pie: contabilizado / total / asiento / fecha ---- */
+  table#main-table tfoot tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  table#main-table tfoot td[colspan="7"]:empty { display: none; }
+
+  table#main-table tfoot td.foot-field {
+    flex: 1 1 100%;
+    padding: 0.25rem 0;
+  }
+
+  table#main-table tfoot td.label-total {
+    flex: 0 0 auto;
+    padding: 0;
     font-size: 0.85rem;
   }
 
-  .titulo-part {
-    font-size: clamp(1.1rem, 4vw, 1.35rem);
-    overflow-wrap: anywhere;
+  table#main-table tfoot td.total-box {
+    flex: 1 1 0;
+    min-height: 2.4rem;
+    box-sizing: border-box;
+    text-align: right;
+    background: #ffffff;
   }
 
-  .seccion-titulo {
-    padding: 0.75rem;
-    font-size: clamp(1rem, 3.5vw, 1.2rem);
-    overflow-wrap: anywhere;
+  table#main-table tfoot td.fecha-box { flex: 1 1 0; }
+
+  table#main-table tfoot td.asiento-foot-cell {
+    flex: 1 1 100%;
+    padding: 0;
   }
 
-  .compromiso-texto {
-    width: 100%;
-    margin: 0;
-    padding: 1rem 0.25rem 0;
-    border-top-width: 1rem;
-  }
-
-  table#main-table {
-    min-width: 0;
-    font-size: 1rem;
-  }
-
+  /* ---- Agregar / borrar línea ---- */
   .tabla-acciones {
-    flex-wrap: wrap;
     gap: 0.5rem;
+    justify-content: stretch;
   }
-
   .tabla-acciones .btn-add-row,
   .tabla-acciones .btn-remove-row {
-    flex: 1 1 9rem;
+    flex: 1 1 0;
     justify-content: center;
+    padding: 0.6rem 0.5rem;
   }
 
-  .total-box {
-    overflow-wrap: anywhere;
+  /* ---- Compromiso ---- */
+  .compromiso-texto {
+    width: calc(100% + 1.7rem);
+    margin: 0 -0.85rem 0;
+    padding: 1rem 0.85rem 0;
+    border-top-width: 1rem;
   }
+  .compromiso-line { font-size: 0.95rem; }
+  .compromiso-line-fill.short { flex: 1 1 5rem; }
+  .compromiso-footer { margin-top: 1.25rem; }
 
-  .importe-input,
-  .fecha-input {
-    min-width: 0;
-  }
-
+  /* ---- Panel de saldos: arriba de la barra de botones ---- */
   .panel-saldos-widget {
-    position: static;
-    width: 100%;
-    max-width: 100%;
-    margin-top: 1rem;
+    left: 10px;
+    bottom: 9.5rem;
+    width: min(290px, calc(100vw - 20px));
+  }
+  .panel-saldos-widget.minimizado { width: 44px; height: 44px; }
+
+  /* ---- Modal ---- */
+  .modal-confirmar { padding: 18px; }
+  .modal-confirmar-acciones { flex-wrap: wrap; }
+  .modal-confirmar-acciones .btn-accion { flex: 1 1 100%; justify-content: center; }
+}
+
+/* ---------------------------------------------------------------------
+   CELULARES MUY CHICOS (hasta 380px)
+   --------------------------------------------------------------------- */
+@media screen and (max-width: 380px) {
+  .botones-accion .btn-accion { flex-basis: 100%; }
+  .imputacion-page { padding-bottom: 13rem; }
+  .panel-saldos-widget { bottom: 12.5rem; }
+
+  select.cod,
+  input.cod { font-size: 0.8rem !important; }
+
+  #filas-body tr > .cod-cell::after { font-size: 0.55rem; }
+}
+
+
+/* =====================================================================
+   IMPRESIÓN / PDF  –  una sola hoja A4
+   Va al final del archivo para ganarle a las reglas de pantalla.
+   ===================================================================== */
+@media print {
+
+  /* margin 0 => el navegador no dibuja fecha, título, URL ni nº de página */
+  @page {
+      size: A4 portrait;
+      margin: 0;
   }
 
-  .panel-saldos-body {
-    max-width: 100%;
-    overflow-x: auto;
-  }
-
+  .header,
+  .botones-accion,
+  .tabla-acciones,
+  #panelSaldos,
+  .mensaje-validacion,
+  .autosave-estado,
   .modal-confirmar {
-    width: calc(100vw - 1rem);
-    max-width: 440px;
-    max-height: calc(100vh - 1rem);
-    padding: 1rem;
-    overflow-y: auto;
+      display: none !important;
   }
 
-  .modal-confirmar-acciones {
-    flex-wrap: wrap;
+  html,
+  body {
+      background: #ffffff;
+      margin: 0;
+      padding: 0;
+      height: auto;
   }
 
-  .modal-confirmar-acciones .btn-accion {
-    flex: 1 1 7rem;
-    justify-content: center;
+  .main-content {
+      padding: 0;
+      margin: 0;
   }
 
-  .botones-accion:has(#guardar-imputacion-btn) {
-    left: 0.5rem;
-    right: 0.5rem;
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 0.5rem;
+  .imputacion-page {
+      gap: 0;
+      padding-bottom: 0;
   }
 
-  .botones-accion:has(#guardar-imputacion-btn) .btn-accion {
-    min-width: 0;
-    flex: 0 1 auto;
-    width: auto;
-    max-width: 100%;
-    min-height: 44px;
-    justify-content: center;
-    padding: 0.5rem 0.7rem;
-    text-align: center;
-    white-space: normal;
+  /* el margen de la hoja lo da el padding del formulario */
+  .form-wrap {
+      box-shadow: none;
+      margin: 0;
+      padding: 10mm;
+      border-radius: 0;
+      break-after: avoid;
+      page-break-after: avoid;
+
+      /* ocupa toda la hoja A4 (296mm y no 297 para evitar una 2ª hoja en blanco) */
+      display: flex;
+      flex-direction: column;
+      height: 296mm;
+      overflow: hidden;
   }
 
-  .botones-accion:has(#guardar-imputacion-btn) .autosave-estado {
-    flex: 1 0 100%;
-    margin: 0;
-    text-align: center;
-    overflow-wrap: anywhere;
+  /* fuerza el fondo amarillo */
+  .form-wrap,
+  table#main-table {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+  }
+
+  /* ---- Compactación para que entre todo en 1 hoja ---- */
+  .header-row   { margin-bottom: 0.5rem; }
+  .nro-expediente { font-size: 1.1rem; margin-bottom: 0.4rem; }
+  .titulo-part  { font-size: 1.25rem; margin: 0.6rem 0; }
+  .seccion-titulo { font-size: 1.1rem; padding: 0.5rem 1rem; }
+
+  table#main-table { margin-bottom: 0.5rem; }
+
+  table#main-table td,
+  table#main-table th { padding: 0.4rem 0.6rem; }
+
+  table#main-table td.importe-cell { padding: 0.6rem 1rem; }
+  table#main-table td.proveedor-cell { padding: 0.4rem 0.6rem; }
+
+  textarea.proveedor-input { height: 2.8rem; }
+
+  .foot-field { padding: 0.4rem 1rem; }
+  .asiento-foot-cell { padding: 0 1rem 0.4rem; }
+
+  /* el Compromiso se estira y reparte el espacio sobrante;
+     el pie [ 171 ] queda pegado abajo de la hoja */
+  .compromiso-texto {
+      flex: 1 1 auto;
+      align-content: space-evenly;
+      border-top-width: 0.5rem;
+      padding: 0.5rem 2rem 0;
+      gap: 0.35rem;
+  }
+  .compromiso-line { font-size: 1.05rem; }
+  .compromiso-line-fill { min-height: 1.3rem; }
+  .compromiso-footer { margin-top: auto; padding-top: 0.5rem; }
+
+  tr,
+  .compromiso-texto,
+  .compromiso-footer {
+      break-inside: avoid;
+      page-break-inside: avoid;
+  }
+
+  thead {
+      display: table-header-group;
   }
 }

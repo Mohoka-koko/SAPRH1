@@ -279,9 +279,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<div id="imputacion-data" data-json="{{ imputacion|default:'null' }}" hidden></div>
 <script>
     const MODO = "{{ modo|default:'crear' }}";
-    const IMPUTACION = {{ imputacion|safe|default:"null" }};
+    const IMPUTACION = JSON.parse(document.getElementById('imputacion-data').dataset.json);
     const USUARIO_ACTUAL = "{{ usuario.nombre }}";
 </script>
 <script src="{% static 'js/imputacion.js'%}"></script>
