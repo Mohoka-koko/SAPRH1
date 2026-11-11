@@ -627,6 +627,13 @@
     document.getElementById("btnAddBeneficiario")?.addEventListener("click", agregarFilaBeneficiario);
     document.getElementById("btnDelBeneficiario")?.addEventListener("click", eliminarFilaBeneficiario);
     document.getElementById("btnExportarPDF")?.addEventListener("click", exportarAPDF);
+    document.getElementById('btnCancelarOP')?.addEventListener('click', () => {
+      OP_ESTADO.cancelando = true;
+      clearTimeout(OP_ESTADO.timer);
+      OP_ESTADO.guardadoController?.abort();
+      const destino = document.getElementById('ordenpagoPage')?.dataset.registrosUrl || '/';
+      window.location.href = destino;
+    });
 
     inicializarPanelSaldos();
   }
@@ -1015,6 +1022,8 @@
     activo: false,          // true cuando terminó de cargar y restaurar
     bloqueado: false,       // true ante conflicto / borrador completado o inexistente
     completando: false,
+    cancelando: false,
+    guardadoController: null,
   };
 
   function generarUUID() {
@@ -1045,11 +1054,12 @@
     return !isNaN(f.getTime()) && f.toISOString().slice(0, 10) === iso;
   }
 
-  function postJSON(url, cuerpo) {
+  function postJSON(url, cuerpo, opciones = {}) {
     return fetch(url, {
       method: 'POST',
       credentials: 'same-origin',
       keepalive: true,
+      signal: opciones.signal,
       headers: {
         'Content-Type': 'application/json',
         'X-CSRFToken': getCookie('csrftoken') || '',
@@ -1152,7 +1162,7 @@
   }
 
   function programarGuardado(demora = OP_AUTOGUARDADO_MS) {
-    if (!OP_ESTADO.activo || OP_ESTADO.bloqueado || OP_ESTADO.completando) return;
+    if (!OP_ESTADO.activo || OP_ESTADO.bloqueado || OP_ESTADO.completando || OP_ESTADO.cancelando) return;
     clearTimeout(OP_ESTADO.timer);
     mostrarEstadoGuardado('pendiente');
     OP_ESTADO.timer = setTimeout(() => guardarBorrador(), demora);
@@ -1161,12 +1171,13 @@
   /** Un solo guardado a la vez (en orden). Devuelve { ok, sinCambios }. */
   function guardarBorrador({ forzar = false } = {}) {
     clearTimeout(OP_ESTADO.timer);
+    if (OP_ESTADO.cancelando) return Promise.resolve({ ok: false, cancelado: true });
     OP_ESTADO.cola = OP_ESTADO.cola.then(() => ejecutarGuardado(forzar)).catch(() => ({ ok: false }));
     return OP_ESTADO.cola;
   }
 
   async function ejecutarGuardado(forzar) {
-    if (OP_ESTADO.bloqueado) return { ok: false };
+    if (OP_ESTADO.bloqueado || OP_ESTADO.cancelando) return { ok: false, cancelado: OP_ESTADO.cancelando };
     const contenido = recolectarContenido();
     const instantanea = JSON.stringify(contenido);
 
@@ -1176,6 +1187,8 @@
     }
 
     mostrarEstadoGuardado('guardando');
+    const controller = new AbortController();
+    OP_ESTADO.guardadoController = controller;
     try {
       let resp, data;
       if (!OP_ESTADO.id) {
@@ -1183,7 +1196,7 @@
           ...contenido,
           imputacion_id: OP_ESTADO.imputacionId,
           clave_idempotencia: OP_ESTADO.clave,
-        });
+        }, { signal: controller.signal });
         data = await resp.json().catch(() => ({}));
         if (resp.ok) {
           OP_ESTADO.id = data.orden_pago_id;
@@ -1200,7 +1213,7 @@
         resp = await postJSON(`/api/orden-pago/borrador/${OP_ESTADO.id}/actualizar/`, {
           ...contenido,
           version: OP_ESTADO.version,
-        });
+        }, { signal: controller.signal });
         data = await resp.json().catch(() => ({}));
         if (resp.ok) OP_ESTADO.version = data.version;
       }
@@ -1212,10 +1225,13 @@
       }
       return manejarErrorGuardado(resp.status, data);
     } catch (err) {
+      if (OP_ESTADO.cancelando) return { ok: false, cancelado: true };
       console.error('Error de red guardando el borrador:', err);
       mostrarEstadoGuardado('sinconexion');
       OP_ESTADO.timer = setTimeout(() => guardarBorrador(), 5000);
       return { ok: false, red: true };
+    } finally {
+      if (OP_ESTADO.guardadoController === controller) OP_ESTADO.guardadoController = null;
     }
   }
 
@@ -1473,14 +1489,14 @@
     });
 
     window.addEventListener('beforeunload', (e) => {
-      if (!OP_ESTADO.activo || OP_ESTADO.bloqueado) return;
+      if (!OP_ESTADO.activo || OP_ESTADO.bloqueado || OP_ESTADO.cancelando) return;
       if (JSON.stringify(recolectarContenido()) !== OP_ESTADO.ultimoGuardado) {
         e.preventDefault();
         e.returnValue = '';
       }
     });
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden' && OP_ESTADO.activo && !OP_ESTADO.bloqueado && !OP_ESTADO.completando) guardarBorrador();
+      if (document.visibilityState === 'hidden' && OP_ESTADO.activo && !OP_ESTADO.bloqueado && !OP_ESTADO.completando && !OP_ESTADO.cancelando) guardarBorrador();
     });
   }
 

@@ -108,12 +108,22 @@
 .btn-accion.btn-link {
   background: #ffffff;
   color: #1e293b;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #64748b;
 }
 
 .btn-accion.btn-link i { color: #1e293b; }
 
-.btn-accion.btn-link:hover { background: #f8fafc; box-shadow: 0 8px 18px rgba(16,24,40,0.06); }
+.btn-accion.btn-link:hover {
+  background: #f8fafc;
+  border-color: #475569;
+  box-shadow: 0 8px 18px rgba(16,24,40,0.06);
+}
+
+.btn-accion.btn-link:focus-visible {
+  border-color: #475569;
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
 
 @media (max-width: 760px) {
   .botones-accion {
