@@ -20,41 +20,166 @@ let currentPrograma = "todos";
 const PAGE_SIZE = 4;
 let currentPage = 1;
 
-// Cambiar esta fecha a 1 de enero para activar el aviso desde el inicio del ejercicio.
-const BUDGET_ALERT_START_DATE = new Date(2026, 8, 30);
+// FECHASSS
+// =========================================================
+// ALERTA DE PRESUPUESTO (versión con depuración)
+// Reemplaza la función setupBudgetAlert() completa en home.js
+// =========================================================
+async function setupBudgetAlert() {
+  const LOG = "[ALERTA PRESUPUESTO]";
+  console.group(LOG);
+  console.log("Versión de home.js cargada: debug-v2 (si no ves este log, el navegador usa un JS viejo en caché)");
 
-function setupBudgetAlert() {
-  const alert = document.getElementById("budgetAlert");
-  const button = document.getElementById("loadBudgetButton");
-  if (!alert || !button) return;
+  try {
+    // ---------- 1. Elementos del DOM ----------
+    const alertBox = document.getElementById("budgetAlert");
+    const button = document.getElementById("loadBudgetButton");
+    const displayedYearEl = document.getElementById("displayedExerciseYear");
+    const requiredYearEl = document.getElementById("requiredBudgetYear");
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  if (today < BUDGET_ALERT_START_DATE) return;
+    console.log("Elementos DOM:", {
+      budgetAlert: alertBox,
+      loadBudgetButton: button,
+      displayedExerciseYear: displayedYearEl,
+      requiredBudgetYear: requiredYearEl,
+    });
 
-  const displayedExerciseYear = today.getFullYear();
-  const requiredBudgetYear = displayedExerciseYear + 1;
-  const storageKey = `budget-creation-started-${requiredBudgetYear}`;
-  const finalizedStorageKey = `budget-creation-finalized-${requiredBudgetYear}`;
+    if (!alertBox || !button) {
+      console.error("FALTA budgetAlert o loadBudgetButton en home.html: revisá los id. Se corta acá.");
+      return;
+    }
 
-  if (localStorage.getItem(finalizedStorageKey) === "true") return;
+    // ---------- 2. Fechas ----------
+    const now = new Date();
+    const anioEnCurso = now.getFullYear();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    const startDate = new Date(anioEnCurso, 0, 1); // 1 de enero del año en curso
 
-  document.getElementById("displayedExerciseYear").textContent = displayedExerciseYear;
-  document.getElementById("requiredBudgetYear").textContent = requiredBudgetYear;
-  alert.hidden = false;
+    console.log("Fecha del navegador (now):", now.toString());
+    console.log("anioEnCurso:", anioEnCurso, "| today:", today.toISOString(), "| startDate:", startDate.toISOString());
 
-  const updateButtonLabel = () => {
-    const hasStarted = localStorage.getItem(storageKey) === "true";
-    button.textContent = hasStarted
-      ? `CONTINUAR CARGANDO PRESUPUESTO ${requiredBudgetYear}`
-      : `CREAR PRESUPUESTO ${requiredBudgetYear}`;
-  };
+    if (today < startDate) {
+      console.warn("Todavía no llegó el 1 de enero: no se muestra la alerta.");
+      return;
+    }
 
-  updateButtonLabel();
-  button.addEventListener("click", () => {
-    localStorage.setItem(storageKey, "true");
-    updateButtonLabel();
-  });
+    const displayedExerciseYear = anioEnCurso - 1;
+    const requiredBudgetYear = anioEnCurso;
+    const storageKey = `budget-creation-started-${requiredBudgetYear}`;
+    const finalizedStorageKey = `budget-creation-finalized-${requiredBudgetYear}`;
+
+    console.log("Años:", { displayedExerciseYear, requiredBudgetYear });
+    console.log("localStorage:", {
+      origen: window.location.origin, // localhost y 127.0.0.1 tienen localStorage distinto
+      [storageKey]: localStorage.getItem(storageKey),
+      [finalizedStorageKey]: localStorage.getItem(finalizedStorageKey),
+    });
+
+    // ---------- Helper: mostrar el cartel ----------
+    const showAlert = (motivo) => {
+      console.log("MOSTRANDO ALERTA. Motivo:", motivo);
+      if (displayedYearEl) displayedYearEl.textContent = displayedExerciseYear;
+      if (requiredYearEl) requiredYearEl.textContent = requiredBudgetYear;
+
+      alertBox.hidden = false;
+      alertBox.removeAttribute("hidden");
+
+      const hasStarted = localStorage.getItem(storageKey) === "true";
+      button.textContent = hasStarted
+        ? `CONTINUAR CARGANDO PRESUPUESTO ${requiredBudgetYear}`
+        : `CREAR PRESUPUESTO ${requiredBudgetYear}`;
+
+      button.onclick = () => {
+        localStorage.setItem(storageKey, "true");
+        window.location.href = "/seleccion-ejercicio/";
+      };
+
+      // Verificamos que el CSS no lo esté ocultando igual
+      const cs = window.getComputedStyle(alertBox);
+      console.log("Estado visual del cartel:", {
+        hidden: alertBox.hidden,
+        display: cs.display,
+        visibility: cs.visibility,
+        alto: alertBox.offsetHeight,
+      });
+      if (cs.display === "none" || alertBox.offsetHeight === 0) {
+        console.error("El cartel está en el DOM pero el CSS lo oculta (display:none / alto 0). Revisá .budget-alert en el CSS.");
+      }
+    };
+
+    // ---------- 3. Consulta al backend (la BD manda, no el localStorage) ----------
+    const url = `/api/home/lineas/?ejercicio=${requiredBudgetYear}`;
+    console.log("Consultando:", url);
+
+    let data;
+    try {
+      const resp = await fetch(url, {
+        method: "GET",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+
+      console.log("Respuesta HTTP:", {
+        status: resp.status,
+        ok: resp.ok,
+        redirected: resp.redirected,
+        urlFinal: resp.url,
+        contentType: resp.headers.get("content-type"),
+      });
+
+      const rawText = await resp.text();
+      console.log("Primeros 300 caracteres de la respuesta:", rawText.slice(0, 300));
+
+      if (!resp.ok) throw new Error(`El backend respondió ${resp.status}`);
+      data = JSON.parse(rawText); // si es HTML (login, 404) lanza error y va al catch
+    } catch (fetchErr) {
+      console.error("Falló la consulta al backend:", fetchErr);
+      showAlert("error al consultar el backend");
+      return;
+    }
+
+    // ---------- 4. Interpretar la respuesta ----------
+    const cantidadLineas = Array.isArray(data.lineas) ? data.lineas.length : 0;
+    const ejercicioDevuelto = Number(data.ejercicio);
+    const backendRespetaEjercicio = ejercicioDevuelto === requiredBudgetYear;
+
+    console.log("Datos recibidos:", {
+      ejercicioPedido: requiredBudgetYear,
+      ejercicioDevuelto: data.ejercicio,
+      cantidadLineas,
+      backendRespetaEjercicio,
+    });
+
+    if (!backendRespetaEjercicio) {
+      console.warn(
+        `El backend devolvió datos del ejercicio ${data.ejercicio} aunque se pidió ${requiredBudgetYear}. ` +
+        "Probablemente la vista Django ignora ?ejercicio= o hace fallback al último ejercicio con datos."
+      );
+    }
+
+    // Presupuesto cargado SOLO si hay líneas Y son del año requerido
+    const existePresupuesto = cantidadLineas > 0 && backendRespetaEjercicio;
+
+    if (existePresupuesto) {
+      console.log(`Ya existe presupuesto ${requiredBudgetYear}: no se muestra la alerta.`);
+      return;
+    }
+
+    if (localStorage.getItem(finalizedStorageKey) === "true") {
+      console.warn(
+        `La marca "${finalizedStorageKey}" está en true pero la BD NO tiene líneas de ${requiredBudgetYear}. ` +
+        "Se ignora (la BD es la fuente de verdad)."
+      );
+    }
+
+    showAlert(`no hay líneas del ejercicio ${requiredBudgetYear} en la BD`);
+  } catch (err) {
+    console.error("Error inesperado en setupBudgetAlert:", err);
+  } finally {
+    console.groupEnd();
+  }
 }
 
 // =========================================================

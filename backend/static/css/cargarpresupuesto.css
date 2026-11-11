@@ -1467,3 +1467,32 @@ button:disabled:hover {
     }
 
 }
+/* =========================================
+   BANNER DE AÑO DE CARGA
+   ========================================= */
+.banner-anio-carga {
+    background-color: #e8f0fe;
+    border: 2px solid #0b3d91;
+    color: #0b3d91;
+    padding: 15px 20px;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(11, 61, 145, 0.1);
+    animation: slideDown 0.4s ease-out;
+}
+
+.banner-anio-carga strong {
+    font-size: 1.4rem;
+    background-color: #0b3d91;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    margin-left: 8px;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
+}

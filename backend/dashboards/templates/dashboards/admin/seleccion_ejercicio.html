@@ -1,0 +1,56 @@
+{% extends 'dashboards/admin/admin_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/seleccion_ejercicio.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="seleccion-page">
+    
+    <!-- Contenedor principal (Izquierda) -->
+    <div class="seleccion-main">
+        <div class="seleccion-card">
+            <h2>Gestión de Presupuesto</h2>
+            <p>Para comenzar a operar en el sistema, debe crear el presupuesto para el año en curso.</p>
+            <button type="button" id="btnNuevoEjercicio" class="btn-azul">
+                Cargar nuevo ejercicio del año en curso
+            </button>
+        </div>
+    </div>
+
+    <!-- Panel Lateral (Derecha) -->
+    <div class="seleccion-sidebar">
+        <h3>Ejercicios Anteriores</h3>
+        <ul id="listaAnios" class="lista-anios">
+            <li>Cargando...</li>
+        </ul>
+    </div>
+
+</div>
+
+<!-- MODAL DE INGRESO DE AÑO -->
+<div id="modalAnio" class="modal-overlay">
+    <div class="modal-box">
+        <h3>Nuevo Ejercicio</h3>
+        <p>Ingresá el año para el cual querés cargar el presupuesto.</p>
+        
+        <!-- Alerta flotante de error -->
+        <div id="alertaFlotanteError" class="alerta-flotante error" style="display: none;">
+            <span id="textoAlertaError"></span>
+            <button type="button" onclick="document.getElementById('alertaFlotanteError').style.display='none'">X</button>
+        </div>
+
+        <input type="number" id="inputAnio" placeholder="Ej: 2027" min="2000" max="2100">
+        
+        <div class="modal-acciones">
+            <button type="button" class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+            <button type="button" class="btn-aceptar" onclick="verificarYContinuar()">Aceptar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/seleccion_ejercicio.js' %}"></script>
+{% endblock %}

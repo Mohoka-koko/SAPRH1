@@ -340,6 +340,27 @@ def api_crear_linea_presupuestaria(request):
     partida_id   = body.get('partida_id')
     fuente_id    = body.get('fuente_id')
     presupuesto  = body.get('presupuesto_inicial')
+    
+    # 👇 ESTO ES LO NUEVO
+    anio_raw     = body.get('ejercicio') 
+
+    campos_requeridos = [programa_id, proyecto_id, actividad_id, partida_id, fuente_id]
+    if any(x is None or x == '' for x in campos_requeridos) or presupuesto is None or presupuesto == '':
+        return JsonResponse({'error': 'Faltan campos obligatorios'}, status=400)
+
+    try:
+        presupuesto_str = str(presupuesto).replace(',', '.')
+        presupuesto = Decimal(presupuesto_str)
+        if presupuesto < 0:
+            return JsonResponse({'error': 'El presupuesto inicial no puede ser negativo'}, status=400)
+    except Exception:
+        return JsonResponse({'error': 'El formato del presupuesto inicial es inválido'}, status=400)
+
+    # 👇 ESTO ES LO NUEVO
+    try:
+        ejercicio = int(anio_raw) if anio_raw else timezone.now().year
+    except ValueError:
+        ejercicio = timezone.now().year
 
     # 1. Verificar presencia sin que el número 0 sea considerado "vacio"
     campos_requeridos = [programa_id, proyecto_id, actividad_id, partida_id, fuente_id]
@@ -357,7 +378,6 @@ def api_crear_linea_presupuestaria(request):
     except Exception:
         return JsonResponse({'error': 'El formato del presupuesto inicial es inválido'}, status=400)
 
-    ejercicio = timezone.now().year
 
     try:
         programa  = Programa.objects.get(id=programa_id)
@@ -5921,6 +5941,11 @@ def api_op_personal_completar(request, opp_id):
         'url_ver':       reverse('ordenpagopersonal_ver', args=[opp.id]),
     })
 
+@rol_requerido('admin', 'adminprincipal')
+def seleccion_ejercicio(request):
+    context = {'usuario': request.user}
+    return render(request, 'dashboards/admin/seleccion_ejercicio.html', context)
+
 
 # ==========================================
 #  API — ELIMINAR BORRADOR DE OP PERSONAL (solo estado REVISAR)
@@ -6363,3 +6388,153 @@ def cambiar_foto_perfil(request):
         'mensaje': 'Foto de perfil actualizada correctamente.',
         'foto_url': request.user.foto_perfil.url
     })
+
+@rol_requerido('admin', 'adminprincipal')
+def api_listar_lineas(request):
+    from django.db.models import Max
+
+    anio_raw = request.GET.get('ejercicio')
+    try:
+        ejercicio = int(anio_raw) if anio_raw else timezone.now().year
+    except ValueError:
+        ejercicio = timezone.now().year
+
+    heredar = request.GET.get('heredar') == '1'
+    orden = ('programa__codigo_programa', 'proyecto__codigo_proyecto',
+             'actividad_obra__codigo_act_obra')
+
+    base = LineaPresupuestaria.objects.select_related(
+        'programa', 'proyecto', 'actividad_obra', 'partida', 'fuente_financiamiento'
+    )
+
+    def _serializar(l, plantilla):
+        return {
+            'id':            None if plantilla else l.id,
+            'es_plantilla':  plantilla,
+            'prog':          l.programa.codigo_programa,
+            'subp':          '00',
+            'py':            l.proyecto.codigo_proyecto,
+            'ao':            l.actividad_obra.codigo_act_obra,
+            'partida':       l.partida.codigo,
+            'denominacion':  l.partida.denominacion,
+            'fuente':        l.fuente_financiamiento.codigo,
+            'saldo_inicial': '0.00' if plantilla else str(l.saldo_inicial),
+            'saldo_actual':  '0.00' if plantilla else str(l.saldo_actual),
+            # IDs de las relaciones, necesarios para insertar la plantilla al guardar
+            'programa_id':   l.programa_id,
+            'proyecto_id':   l.proyecto_id,
+            'actividad_id':  l.actividad_obra_id,
+            'partida_id':    l.partida_id,
+            'fuente_id':     l.fuente_financiamiento_id,
+        }
+
+    propias = list(base.filter(ejercicio=ejercicio).order_by(*orden))
+    if propias:
+        return JsonResponse({
+            'lineas': [_serializar(l, False) for l in propias],
+            'ejercicio_origen': None,
+        })
+
+    # Ejercicio sin líneas propias: plantillas SOLO LECTURA del anterior más reciente con datos.
+    ejercicio_origen = None
+    plantillas = []
+    if heredar:
+        ejercicio_origen = LineaPresupuestaria.objects.filter(
+            ejercicio__lt=ejercicio
+        ).aggregate(m=Max('ejercicio'))['m']
+        if ejercicio_origen is not None:
+            plantillas = list(base.filter(ejercicio=ejercicio_origen).order_by(*orden))
+
+    return JsonResponse({
+        'lineas': [_serializar(l, True) for l in plantillas],
+        'ejercicio_origen': ejercicio_origen,
+    })
+
+@rol_requerido('admin', 'adminprincipal')
+@require_POST
+def api_guardar_lineas_ejercicio(request):
+    """Inserta en un solo lote (atómico e idempotente) las UP de un ejercicio nuevo."""
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    if not isinstance(body, dict):
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    try:
+        ejercicio = int(body.get('ejercicio'))
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Ejercicio inválido'}, status=400)
+    if not 2000 <= ejercicio <= 2100:
+        return JsonResponse({'error': 'Ejercicio fuera de rango'}, status=400)
+
+    items = body.get('lineas')
+    if not isinstance(items, list) or not items:
+        return JsonResponse({'error': 'No hay líneas para guardar'}, status=400)
+    if len(items) > 2000:
+        return JsonResponse({'error': 'Demasiadas líneas en un solo guardado'}, status=400)
+
+    try:
+        filas = []
+        for n, it in enumerate(items, start=1):
+            if not isinstance(it, dict):
+                raise ValueError(f'Fila {n}: formato inválido')
+            try:
+                ids = {k: int(it[k]) for k in
+                       ('programa_id', 'proyecto_id', 'actividad_id', 'partida_id', 'fuente_id')}
+                monto = Decimal(str(it.get('saldo_inicial', 0)).replace(',', '.')).quantize(Decimal('0.01'))
+            except (KeyError, TypeError, ValueError, InvalidOperation):
+                raise ValueError(f'Fila {n}: datos inválidos')
+            if monto < 0 or monto >= Decimal(10) ** 16:
+                raise ValueError(f'Fila {n}: el monto no es válido')
+            filas.append((n, ids, monto))
+
+        programas   = Programa.objects.in_bulk(list({f[1]['programa_id'] for f in filas}))
+        proyectos   = Proyecto.objects.in_bulk(list({f[1]['proyecto_id'] for f in filas}))
+        actividades = ActividadObra.objects.in_bulk(list({f[1]['actividad_id'] for f in filas}))
+        partidas    = Partida.objects.in_bulk(list({f[1]['partida_id'] for f in filas}))
+        fuentes     = FuenteFinanciamiento.objects.in_bulk(list({f[1]['fuente_id'] for f in filas}))
+
+        validadas = []
+        for n, ids, monto in filas:
+            prog = programas.get(ids['programa_id'])
+            proy = proyectos.get(ids['proyecto_id'])
+            act  = actividades.get(ids['actividad_id'])
+            par  = partidas.get(ids['partida_id'])
+            fue  = fuentes.get(ids['fuente_id'])
+            if None in (prog, proy, act, par, fue):
+                raise ValueError(f'Fila {n}: alguna referencia ya no existe')
+            if proy.programa_id != prog.id or act.proyecto_id != proy.id:
+                raise ValueError(f'Fila {n}: programa, proyecto y actividad no son consistentes')
+            validadas.append((prog, proy, act, par, fue, monto))
+
+        resultado = []
+        with transaction.atomic():
+            for prog, proy, act, par, fue, monto in validadas:
+                linea, creada = LineaPresupuestaria.objects.get_or_create(
+                    actividad_obra=act, partida=par, fuente_financiamiento=fue, ejercicio=ejercicio,
+                    defaults={
+                        'jurisdiccion_id':      prog.jurisdiccion_id,
+                        'programa':             prog,
+                        'proyecto':             proy,
+                        'saldo_inicial':        monto,
+                        'saldo_actual':         monto,
+                        'usuario_creacion':     request.user,
+                        'usuario_modificacion': request.user,
+                    },
+                )
+                resultado.append({
+                    'id':            linea.id,
+                    'creada':        creada,
+                    'saldo_inicial': str(linea.saldo_inicial),
+                })
+
+    except ValueError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    except IntegrityError:
+        return JsonResponse({'error': 'Conflicto al guardar (otro usuario cargó lo mismo). Recargá la página.'}, status=409)
+    except Exception:
+        _logger.exception('Error al guardar líneas del ejercicio %s', ejercicio)
+        return JsonResponse({'error': 'Error interno: no se guardó nada'}, status=500)
+
+    return JsonResponse({'ok': True, 'ejercicio': ejercicio, 'lineas': resultado})

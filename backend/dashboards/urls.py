@@ -40,9 +40,11 @@ urlpatterns = [
 
     path('admin-dashboard/home/carga-catalogos/', views.carga_catalogos, name='carga_catalogos'),
     path('ejercicios-anteriores-prueba/', views.ejerciciosanteriores_prueba, name='ejerciciosanteriores_prueba'),
+    path('seleccion-ejercicio/', views.seleccion_ejercicio, name='seleccion_ejercicio'),
     path('admin-dashboard/crear-usuario/', views.crear_usuario, name='crear_usuario'),
     path('admin-dashboard/usuarios-baja/<int:usuario_id>/', views.dar_baja_usuario, name='dar_baja_usuario'),
     path('admin-dashboard/usuarios-reactivar/<int:usuario_id>/', views.reactivar_usuario, name='reactivar_usuario'),
+
 
     # ── APIs: líneas presupuestarias ───────────────────────────────────────
     path('api/linea-presupuestaria/crear/', views.api_crear_linea_presupuestaria, name='api_crear_linea_presupuestaria'),
@@ -50,6 +52,7 @@ urlpatterns = [
     path('api/linea-presupuestaria/editar-monto/<int:linea_id>/', views.api_editar_monto_linea, name='api_editar_monto_linea'),
     path('api/linea-presupuestaria/eliminar/<int:linea_id>/', views.api_eliminar_linea, name='api_eliminar_linea'),
     path('api/lineas-presupuestarias/', views.api_lineas_presupuestarias, name='api_lineas_presupuestarias'),
+    path('api/linea-presupuestaria/guardar-lote/', views.api_guardar_lineas_ejercicio, name='api_guardar_lineas_ejercicio'),
     path('api/home/lineas/', views.api_home_lineas, name='api_home_lineas'),
     path('api/home/lineas/<int:linea_id>/movimientos/', views.api_movimientos_linea, name='api_movimientos_linea'),
 
