@@ -686,13 +686,25 @@ document.addEventListener("DOMContentLoaded", function () {
     // ── Indicador visual ──────────────────────────────────────────
     function setEstadoAutosave(estado, detalle) {
         if (!indicadorAutosave) return;
-        indicadorAutosave.className = "autosave-estado " + estado;
-        const textos = {
-            guardando: "Guardando borrador…",
-            guardado:  "Borrador guardado (estado: Revisar)",
-            error:     "⚠ NO se pudieron guardar los cambios" + (detalle ? `: ${detalle}` : ""),
-        };
-        indicadorAutosave.textContent = textos[estado] || "";
+        clearTimeout(indicadorAutosave._cartelTimer);
+
+        if (estado === "guardado") {
+            // Solo el éxito confirmado muestra el cartel y se oculta solo
+            indicadorAutosave.textContent = "Borrador guardado (estado: Revisar)";
+            indicadorAutosave.classList.remove("imp-cartel--error");
+            indicadorAutosave.classList.add("visible");
+            indicadorAutosave._cartelTimer = setTimeout(() => {
+                indicadorAutosave.classList.remove("visible");
+            }, 2500);
+        } else if (estado === "error") {
+            // Los errores quedan visibles hasta el próximo guardado correcto
+            indicadorAutosave.textContent = "⚠ NO se pudieron guardar los cambios" + (detalle ? `: ${detalle}` : "");
+            indicadorAutosave.classList.add("imp-cartel--error", "visible");
+        } else {
+            // "guardando" o "" → sin cartel
+            indicadorAutosave.classList.remove("visible");
+        }
+        indicadorAutosave.dataset.estado = estado || "";
     }
 
     // ── Payload del borrador (acepta datos parciales) ─────────────
@@ -1007,6 +1019,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
             // Ocultar botones de eliminar fila si existieran
             document.querySelectorAll(".btn-eliminar-fila").forEach(el => el.style.display = "none");
+
+            // Cartel fijo de solo lectura (mismo estilo que en Orden de Pago)
+            if (indicadorAutosave) {
+                clearTimeout(indicadorAutosave._cartelTimer);
+                indicadorAutosave.textContent = "Imputación completada (solo lectura)";
+                indicadorAutosave.classList.remove("imp-cartel--error");
+                indicadorAutosave.classList.add("visible");
+            }
         }
     }
 

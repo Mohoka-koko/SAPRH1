@@ -241,6 +241,16 @@
 
     </div>
 </div>
+
+<!-- ===== MODAL DE CONFIRMACIÓN PARA COMPLETAR ===== -->
+<dialog id="modalConfirmarOPP" class="modal-confirmar">
+    <p>¿Está seguro de que desea guardar esta Orden de Pago Personal como completada? Una vez confirmada, se guardará con estado Listo.</p>
+    <div class="modal-confirmar-acciones">
+        <button type="button" id="btnModalCancelar" class="btn-accion" id="modal-cancelar">Cancelar</button>
+        <button type="button" id="btnModalAceptar" class="btn-accion" id="modal-confirmar">Aceptar</button>
+    </div>
+</dialog>
+
 {% endblock %}
 
 {% block extra_js %}

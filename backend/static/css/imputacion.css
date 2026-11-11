@@ -110,12 +110,15 @@
 .btn-accion.btn-link {
   background: #ffffff;
   color: #1e293b;
-  border: 1px solid #e5e7eb;
+  border: 1.5px solid #1e293b; /* borde oscuro para diferenciarlo del fondo */
 }
 
 .btn-accion.btn-link i { color: #1e293b; }
 
 .btn-accion.btn-link:hover { background: #f8fafc; box-shadow: 0 8px 18px rgba(16,24,40,0.06); }
+
+/* Cancelar: vuelve al panel de registros */
+.btn-accion.btn-cancelar:hover { background: #fef2f2; border-color: #b91c1c; color: #b91c1c; }
 
 @media (max-width: 760px) {
   .botones-accion {
@@ -900,9 +903,65 @@ select.cod:focus,
   pointer-events: none;
 }
 
-.autosave-estado { font-size: 13px; margin-left: 12px; color: #667085; }
-.autosave-estado.guardado { color: #16845d; }
-.autosave-estado.error    { color: #c0392b; font-weight: 700; }
+/* --- Cartel flotante del autoguardado (mismo diseño azul que la Orden de Pago) --- */
+.imp-carteles {
+  position: fixed;
+  top: 84px;                 /* debajo de la barra superior */
+  left: 16px;
+  z-index: 9990;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+  pointer-events: none;      /* nunca bloquea clics ni la escritura */
+}
+
+.imp-carteles .imp-cartel {
+  --cartel-fondo: #dbeafe;
+  --cartel-borde: #1d4ed8;
+  --cartel-texto: #1e3a8a;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(440px, 100%);
+  margin: 0;
+  padding: 8px 14px;
+  border: 2px solid var(--cartel-borde);
+  border-radius: 10px;
+  background: var(--cartel-fondo);
+  color: var(--cartel-texto);
+  font: 700 0.88rem/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity .25s ease, transform .25s ease, visibility 0s linear .25s;
+}
+
+.imp-carteles .imp-cartel.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity .25s ease, transform .25s ease, visibility 0s;
+}
+
+.imp-carteles .imp-cartel--error {
+  --cartel-fondo: #fef2f2;
+  --cartel-borde: #b91c1c;
+  --cartel-texto: #7f1d1d;
+}
+
+@media screen and (max-width: 600px) {
+  .imp-carteles { top: 72px; left: 8px; right: 8px; max-width: none; }
+  .imp-carteles .imp-cartel { max-width: 100%; font-size: 0.85rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .imp-carteles .imp-cartel,
+  .imp-carteles .imp-cartel.visible { transition: none; transform: none; }
+}
 
 /* --- Modal de Confirmación --- */
 .modal-confirmar {
@@ -1037,14 +1096,6 @@ select.cod:focus,
     font-size: 0.82rem;
     text-align: center;
   }
-
-  .autosave-estado {
-    order: -1;
-    flex: 1 1 100%;
-    margin: 0;
-    text-align: center;
-  }
-  .autosave-estado:empty { display: none; }
 
   .mensaje-validacion { top: 64px; font-size: 0.9rem; }
 
@@ -1286,7 +1337,7 @@ select.cod:focus,
   .tabla-acciones,
   #panelSaldos,
   .mensaje-validacion,
-  .autosave-estado,
+  .imp-carteles,
   .modal-confirmar {
       display: none !important;
   }

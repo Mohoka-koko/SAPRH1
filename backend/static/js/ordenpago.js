@@ -1452,8 +1452,7 @@
 
     const estado = document.getElementById('estadoGuardado');
     if (estado) {
-      estado.textContent = `Orden de Pago completada (solo lectura). Creada por ${datos.creado_por}` +
-        (datos.editado_por ? ` · última intervención: ${datos.editado_por}` : '');
+      estado.textContent = 'Orden de Pago completada (solo lectura)';
       mostrarCartel(estado, 0);
     }
   }

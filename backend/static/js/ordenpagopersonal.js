@@ -148,6 +148,47 @@
      marcarValidacion(input, esValido, "Este campo es obligatorio.");
      return esValido;
    }
+  
+  /*
+  ====================
+  VARIABLES AUXILIARES
+  ====================
+  */
+
+  function mostrarModalConfirmacion(mensaje) {
+    return new Promise((resolve) => {
+      const modal = document.getElementById("modalConfirmarOPP");
+      const p = modal.querySelector("p");
+      if (p) p.textContent = mensaje;
+      
+      // Abre el modal de forma nativa con su backdrop oscuro
+      if (typeof modal.showModal === "function") {
+        modal.showModal();
+      } else {
+        modal.style.display = "block"; // Fallback por seguridad
+      }
+  
+      const btnAceptar = document.getElementById("btnModalAceptar");
+      const btnCancelar = document.getElementById("btnModalCancelar");
+  
+      function cerrar(resultado) {
+        if (typeof modal.close === "function") {
+          modal.close();
+        } else {
+          modal.style.display = "none";
+        }
+        btnAceptar.removeEventListener("click", onAceptar);
+        btnCancelar.removeEventListener("click", onCancelar);
+        resolve(resultado);
+      }
+  
+      function onAceptar() { cerrar(true); }
+      function onCancelar() { cerrar(false); }
+  
+      btnAceptar.addEventListener("click", onAceptar);
+      btnCancelar.addEventListener("click", onCancelar);
+    });
+  }
    
    /* ------------------------------------------------------------------------
       SECTOR IZQUIERDO: NÓMINA DE BENEFICIARIOS
@@ -1585,67 +1626,67 @@
      return null;
    }
    
-   async function completarOP() {
-     if (esModoVer || completando || bloqueado) return;
-     ocultarMensaje();
-   
-     const error = validarParaCompletar();
-     if (error) { mostrarMensaje(error, "error"); return; }
-   
-     const btn = document.getElementById("btnCompletar");
-     completando = true; // frena el autoguardado programado y los dobles clics mientras dura todo
-     clearTimeout(autosaveTimer);
-     autosaveTimer = null;
-     if (btn) btn.disabled = true;
-   
-     try {
-       // El servidor confirma lo que tiene guardado: tiene que ser exactamente lo que se ve en pantalla
-       const ok = await guardarBorrador();
-       if (!ok || !oppId) {
-         mostrarMensaje("No se pudieron guardar los últimos cambios en el servidor. Reintentá antes de completar.", "error");
-         return;
-       }
-   
-       if (!confirm("¿Está seguro de que desea guardar esta Orden de Pago Personal como completada?")) {
-         return; // sigue editando el borrador, sin cambios de estado
-       }
-   
-       const resp = await fetch(`/api/op-personal/${oppId}/completar/`, {
-         method: "POST",
-         headers: { "Content-Type": "application/json", "X-CSRFToken": getCookieOP("csrftoken") },
-         body: JSON.stringify({ version: oppVersion }),
-       });
-       let data = {};
-       try { data = await resp.json(); } catch (_) {}
-   
-       if (!resp.ok) {
-         // Sigue en Revisar (o ya estaba completada): no se generó nada nuevo.
-         if (data.completado || data.conflicto) bloqueado = true;
-         mostrarMensaje(
-           data.error || "No se pudo completar la OP Personal.",
-           "error",
-           data.completado || data.conflicto
-             ? [{ texto: "Recargar página", fn: () => { salidaPermitida = true; location.reload(); } }]
-             : []
-         );
-         return;
-       }
-   
-       salidaPermitida = true;
-       borrarCopiaLocal(oppId);
-       alert(`OP Personal guardada como completada.\nAsiento N°: ${data.asiento_nro}`);
-       window.location.href = data.url_ver;
-     } catch (err) {
-       console.error(err);
-       mostrarMensaje(
-         "Error de red: no se pudo confirmar si la OP Personal se completó. Revisá su estado en el historial de registros antes de reintentar.",
-         "error"
-       );
-     } finally {
-       completando = false;
-       if (btn) btn.disabled = false;
-     }
-   }
+  async function completarOP() {
+    if (esModoVer || completando || bloqueado) return;
+    ocultarMensaje();
+  
+    const error = validarParaCompletar();
+    if (error) { mostrarMensaje(error, "error"); return; }
+  
+    const btn = document.getElementById("btnCompletar");
+    completando = true;
+    clearTimeout(autosaveTimer);
+    autosaveTimer = null;
+    if (btn) btn.disabled = true;
+  
+    try {
+      const ok = await guardarBorrador();
+      if (!ok || !oppId) {
+        mostrarMensaje("No se pudieron guardar los últimos cambios en el servidor. Reintentá antes de completar.", "error");
+        return;
+      }
+  
+      // Reemplazo del confirm() nativo por el modal flotante centrado
+      const confirmado = await mostrarModalConfirmacion("¿Está seguro de que desea guardar esta Orden de Pago Personal como completada?");
+      if (!confirmado) {
+        return; // sigue editando el borrador, sin cambios de estado
+      }
+  
+      const resp = await fetch(`/api/op-personal/${oppId}/completar/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-CSRFToken": getCookieOP("csrftoken") },
+        body: JSON.stringify({ version: oppVersion }),
+      });
+      let data = {};
+      try { data = await resp.json(); } catch (_) {}
+  
+      if (!resp.ok) {
+        if (data.completado || data.conflicto) bloqueado = true;
+        mostrarMensaje(
+          data.error || "No se pudo completar la OP Personal.",
+          "error",
+          data.completado || data.conflicto
+            ? [{ texto: "Recargar página", fn: () => { salidaPermitida = true; location.reload(); } }]
+            : []
+        );
+        return;
+      }
+  
+      salidaPermitida = true;
+      borrarCopiaLocal(oppId);
+      alert(`OP Personal guardada como completada.\nAsiento N°: ${data.asiento_nro}`);
+      window.location.href = data.url_ver;
+    } catch (err) {
+      console.error(err);
+      mostrarMensaje(
+        "Error de red: no se pudo confirmar si la OP Personal se completó. Revisá su estado en el historial de registros antes de reintentar.",
+        "error"
+      );
+    } finally {
+      completando = false;
+      if (btn) btn.disabled = false;
+    }
+  }
    
    /* ------------------------------------------------------------------------
       MODO VER (OP Personal ya completada): todo en solo lectura
