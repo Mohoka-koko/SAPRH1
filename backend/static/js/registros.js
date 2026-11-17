@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 // Editar: solo si el estado es 'revisar' Y el servidor indicó adónde ir
                 // (en los borradores de Imputación url_editar viene solo para quien los creó; en los de
-                // Refuerzo y Modificación, para cualquier administrador / administrador principal)
+                // Refuerzo y Modificación, para cualquier administrador / personal administrativo)
                 const btnEditar = (esRevisar && reg.url_editar)
                     ? `<a href="${reg.url_editar}" class="btn-accion btn-editar" title="Retomar borrador" aria-label="Retomar borrador">
                             <i class="fa-solid fa-pen-to-square"></i>

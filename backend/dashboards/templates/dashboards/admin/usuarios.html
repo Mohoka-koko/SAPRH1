@@ -53,25 +53,13 @@
           <label for="nuevo-rol">Rol:</label>
           <select id="nuevo-rol" name="rol" required>
             <option value="">Seleccionar</option>
-            <option value="adminprincipal">Administrador Principal</option>
             <option value="admin">Administrador</option>
-            <option value="usuariovip">Usuario VIP</option>
-            <option value="usuariocomun">Usuario Común</option>
+            <option value="personal_administrativo">Personal administrativo</option>
+            
           </select>
         </div>
 
-        <div class="form-group">
-          <label for="select-area">Área:</label>
-          <select name="area" id="select-area" required>
-            <option value="">Seleccionar</option>
-            <option value="construccion">Construcción</option>
-            <option value="planificacion">Planificación</option>
-            <option value="mantenimiento">Mantenimiento</option>
-            <option value="todas">Todas</option>
-          </select>
-          <!-- Solo se envía cuando el select de área está deshabilitado (roles con acceso a todas) -->
-          <input type="hidden" name="area" id="area-hidden" value="todas" disabled>
-        </div>
+        
       </div>
 
       <div class="form-actions">

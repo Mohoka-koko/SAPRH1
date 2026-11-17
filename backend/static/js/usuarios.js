@@ -113,7 +113,7 @@ const areaHidden = document.getElementById('area-hidden');
 
 if (selectRol && selectArea) {
     selectRol.addEventListener('change', function () {
-        const rolesAdmin = ['admin', 'adminprincipal', 'usuariovip'];
+        const rolesAdmin = ['admin', 'personal_administrativo', 'usuariovip'];
         if (rolesAdmin.includes(this.value)) {
             // El select deshabilitado no se envía: lo reemplaza el campo oculto
             selectArea.value    = 'todas';

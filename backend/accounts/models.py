@@ -45,7 +45,7 @@ class UsuarioPersonalizado(AbstractBaseUser, PermissionsMixin):
 
     # Roles disponibles en el sistema
     ROL_CHOICES = [
-        ('adminprincipal', 'Administrador Principal'),
+        ('personal_administrativo', 'Personal administrativo'),
         ('admin',         'Administrador'),
         ('usuariovip',    'Usuario VIP'),
         ('usuariocomun',  'Usuario Común'),
@@ -55,7 +55,7 @@ class UsuarioPersonalizado(AbstractBaseUser, PermissionsMixin):
     nombre        = models.CharField(max_length=100, verbose_name='Nombre completo')
     foto_perfil = models.ImageField(upload_to='perfiles/', null=True, blank=True, verbose_name='Foto de perfil')
     rol           = models.CharField(
-                        max_length=20,
+                        max_length=30,
                         choices=ROL_CHOICES,
                         default='usuariocomun',
                         verbose_name='Rol del usuario'
@@ -109,7 +109,7 @@ class UsuarioPersonalizado(AbstractBaseUser, PermissionsMixin):
     def get_dashboard_url(self):
         """Devuelve la URL del dashboard según el rol del usuario."""
         rutas = {
-            'adminprincipal': 'adminprincipal_dashboard',
+            'personal_administrativo': 'personal_administrativo_dashboard',
             'admin':        'admin_dashboard',
             'usuariovip':   'usuariovip_dashboard',
             'usuariocomun': 'usuariocomun_dashboard',

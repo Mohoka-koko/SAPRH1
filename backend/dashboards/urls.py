@@ -8,13 +8,13 @@ from . import views
 
 urlpatterns = [
     
-# ── Panel administrador principal ──────────────────────
-    path('adminprincipal-dashboard/',views.adminprincipal_dashboard,name='adminprincipal_dashboard'),
-    path('adminprincipal-dashboard/registros/',views.adminprincipal_registros,name='adminprincipal_registros'),
+# ── Panel personal administrativo ──────────────────────
+    path('personal-administrativo-dashboard/',views.personal_administrativo_dashboard,name='personal_administrativo_dashboard'),
+    path('personal-administrativo-dashboard/registros/',views.personal_administrativo_registros,name='personal_administrativo_registros'),
     
-    path('adminprincipal-dashboard/configuracion/',views.adminprincipal_configuracion,name='adminprincipal_configuracion'),
-    path('adminprincipal-dashboard/registros/refuerzomodificacion/',views.adminprincipal_refuerzomodificacion,name='adminprincipal_refuerzomodificacion'),
-    path('adminprincipal-dashboard/registros/imputacion/',views.imputacion,name='adminprincipal_imputacion'),
+    path('personal-administrativo-dashboard/configuracion/',views.personal_administrativo_configuracion,name='personal_administrativo_configuracion'),
+    path('personal-administrativo-dashboard/registros/refuerzomodificacion/',views.personal_administrativo_refuerzomodificacion,name='personal_administrativo_refuerzomodificacion'),
+    path('personal-administrativo-dashboard/registros/imputacion/',views.imputacion,name='personal_administrativo_imputacion'),
     
     # ── Panel admin ────────────────────────────────────────────────────────
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),

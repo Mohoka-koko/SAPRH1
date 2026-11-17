@@ -40,7 +40,7 @@ def crear_notificaciones_admins(
 ):
     """
     Crea una notificación para cada usuario activo
-    con rol admin o adminprincipal.
+    con rol admin o personal_administrativo.
     """
 
     mensaje = (
@@ -49,7 +49,7 @@ def crear_notificaciones_admins(
     )
 
     destinatarios = Usuario.objects.filter(
-        rol__in=["admin", "adminprincipal"],
+        rol__in=["admin", "personal_administrativo"],
         is_active=True
     )
 
@@ -63,9 +63,9 @@ def crear_notificaciones_admins(
         )
 
 # ==========================================
-#  VISTAS PARA ADMIN PRINCIPAL
+#  VISTAS PARA PERSONAL ADMINISTRATIVO
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def obtener_modificaciones_y_refuerzos(request):
     modificaciones = Modificacion.objects.select_related('usuario').prefetch_related(
         'transferentes__linea_origen',
@@ -109,33 +109,33 @@ def obtener_modificaciones_y_refuerzos(request):
     registros_combinados.sort(key=lambda x: x['fecha'], reverse=True)
     return JsonResponse({'success': True, 'data': registros_combinados})
 
-@rol_requerido('adminprincipal')
-def adminprincipal_dashboard(request):
-    return render(request, 'dashboards/adminprincipal/home.html', {'usuario': request.user})
+@rol_requerido('personal_administrativo')
+def personal_administrativo_dashboard(request):
+    return render(request, 'dashboards/personal_administrativo/home.html', {'usuario': request.user})
 
-@rol_requerido('adminprincipal')
-def adminprincipal_registros(request):
+@rol_requerido('personal_administrativo')
+def personal_administrativo_registros(request):
     context = {'usuario': request.user}
-    return render(request, 'dashboards/adminprincipal/registros.html', context)
+    return render(request, 'dashboards/personal_administrativo/registros.html', context)
 
-@rol_requerido('adminprincipal')
-def adminprincipal_refuerzomodificacion(request):
+@rol_requerido('personal_administrativo')
+def personal_administrativo_refuerzomodificacion(request):
     context = {'usuario': request.user}
-    return render(request, 'dashboards/adminprincipal/refuerzomodificacion.html', context)
+    return render(request, 'dashboards/personal_administrativo/refuerzomodificacion.html', context)
 
 @rol_requerido('admin')
-def adminprincipal_usuarios(request):
+def personal_administrativo_usuarios(request):
     todos = Usuario.objects.exclude(id=request.user.id).order_by('is_active', 'nombre')
     context = {
         'usuario': request.user,
         'usuarios': todos,
     }
-    return render(request, 'dashboards/adminprincipal/usuarios.html', context)
+    return render(request, 'dashboards/personal_administrativo/usuarios.html', context)
 
-@rol_requerido('adminprincipal')
-def adminprincipal_configuracion(request):
+@rol_requerido('personal_administrativo')
+def personal_administrativo_configuracion(request):
     context = {'usuario': request.user}
-    return render(request, 'dashboards/adminprincipal/configuracion.html', context)
+    return render(request, 'dashboards/personal_administrativo/configuracion.html', context)
 
 
 # ==========================================
@@ -151,27 +151,27 @@ def admin_dashboard(request):
     # Apunta al archivo correcto que estuvimos editando
     return render(request, 'dashboards/admin/home.html', context)
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def home(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/home.html', context)
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def admin_registros(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/registros.html', context)
 
-@rol_requerido('admin','adminprincipal')
+@rol_requerido('admin','personal_administrativo')
 def admin_refuerzo(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/refuerzo.html', context)
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def admin_modificacion(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/modificacion.html', context)
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def imputacion(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/imputacion.html', context)
@@ -185,19 +185,19 @@ def admin_usuarios(request):
     }
     return render(request, 'dashboards/admin/usuarios.html', context)
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def admin_configuracion(request):
     context = {'usuario': request.user}
-    if request.user.rol == 'adminprincipal':
-        return render(request, 'dashboards/adminprincipal/configuracion.html', context)
+    if request.user.rol == 'personal_administrativo':
+        return render(request, 'dashboards/personal_administrativo/configuracion.html', context)
     return render(request, 'dashboards/admin/configuracion.html', context)
 
-@rol_requerido('admin','adminprincipal')
+@rol_requerido('admin','personal_administrativo')
 def cargar_presupuesto(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/cargarpresupuesto.html', context)
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def carga_catalogos(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/crear_partida.html', context)
@@ -205,7 +205,7 @@ def carga_catalogos(request):
 # ==========================================
 #  ACCIONES COMUNES DE GESTIÓN DE USUARIOS
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def ordenpago(request):
     # Formulario en blanco: abrirlo NO crea nada (solo lectura). No se puede iniciar una OP sobre
     # una Imputación anulada; el backend lo vuelve a validar al crear y al completar el borrador.
@@ -218,7 +218,7 @@ def ordenpago(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/ordenpago.html',context)
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def ordenpagopersonal(request):
     # Formulario en blanco: abrirlo NO crea nada. El borrador se crea recién con la primera
     # edición real (api_op_personal_borrador_crear).
@@ -230,11 +230,11 @@ def ordenpagopersonal(request):
     }
     return render(request, 'dashboards/admin/ordenpagopersonal.html', context)
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def crear_usuario(request):
     # Definimos a dónde irá cada rol según tus NAMES reales de urls.py
     # El 'admin' usa name='usuarios' (línea 13 de tu urls.py)
-    # El 'adminprincipal' usa name='adminprincipal_usuarios' (¡Ojo! En tu urls.py le pusiste name='usuarios' también en la línea 6)
+    # El 'personal_administrativo' usa name='personal_administrativo_usuarios' (¡Ojo! En tu urls.py le pusiste name='usuarios' también en la línea 6)
     
     # Para solucionar el conflicto de nombres repetidos, lo ideal es usar esto:
     url_redireccion = 'usuarios' if request.user.rol == 'admin' else 'usuarios' 
@@ -244,9 +244,9 @@ def crear_usuario(request):
         nombre   = request.POST.get('nombre', '').strip()
         password = request.POST.get('password', '')
         rol      = request.POST.get('rol', '')
-        area     = request.POST.get('area', '')
+       
 
-        if not email or not nombre or not password or not rol or not area:
+        if not email or not nombre or not password or not rol:
             messages.error(request, 'Todos los campos son obligatorios.')
             return redirect(url_redireccion)
 
@@ -259,14 +259,14 @@ def crear_usuario(request):
             password=password,
             nombre=nombre,
             rol=rol,
-            area=area,
+           
         )
         messages.success(request, f'Usuario {nombre} creado correctamente.')
         return redirect(url_redireccion)
 
     return redirect(url_redireccion)
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def dar_baja_usuario(request, usuario_id):
     if request.method == 'POST':
         try:
@@ -283,7 +283,7 @@ def dar_baja_usuario(request, usuario_id):
             return JsonResponse({'error': 'No encontrado'}, status=404)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def reactivar_usuario(request, usuario_id):
     if request.method == 'POST':
         try:
@@ -326,7 +326,7 @@ def acceso_denegado(request):
 # ==========================================
 #  API — CREAR LÍNEA PRESUPUESTARIA
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_crear_linea_presupuestaria(request):
     try:
@@ -425,7 +425,7 @@ def api_crear_linea_presupuestaria(request):
 # ==========================================
 #  API — LISTAR LÍNEAS PRESUPUESTARIAS
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_listar_lineas(request):
     ejercicio = timezone.now().year
     lineas = LineaPresupuestaria.objects.filter(
@@ -456,7 +456,7 @@ def api_listar_lineas(request):
 #  Devuelve las líneas disponibles para
 #  poblar el selector del formulario
 # ==========================================
-@rol_requerido('admin','adminprincipal')
+@rol_requerido('admin','personal_administrativo')
 def api_lineas_presupuestarias(request):
     lineas = LineaPresupuestaria.objects.select_related(
         'actividad_obra', 'partida', 'fuente_financiamiento'
@@ -478,7 +478,7 @@ def api_lineas_presupuestarias(request):
 #  Alimenta la tabla "Detalle de Movimientos" del home con
 #  las unidades presupuestarias (líneas) reales de la BD.
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_home_lineas(request):
     ejercicio_raw = request.GET.get('ejercicio')
     try:
@@ -600,7 +600,7 @@ def api_home_lineas(request):
 #  modificaciones y órdenes de pago asociados a la línea,
 #  usando el historial unificado (MovimientoHistorial).
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_movimientos_linea(request, linea_id):
     linea = get_object_or_404(LineaPresupuestaria, id=linea_id)
 
@@ -766,7 +766,7 @@ def api_movimientos_linea(request, linea_id):
 # ==========================================
 #  API — CREAR REFUERZO
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_crear_refuerzo(request):
     try:
@@ -855,7 +855,7 @@ def api_crear_refuerzo(request):
 # ==========================================
 #  API — LISTAR REFUERZOS
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_listar_refuerzos(request):
     refuerzos = Refuerzo.objects.select_related('usuario').prefetch_related(
         'detalles__linea_destino',
@@ -878,7 +878,7 @@ def api_listar_refuerzos(request):
 
     return JsonResponse({'refuerzos': data})
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def refuerzo_ver(request, refuerzo_id):
     import json as _json
     refuerzo = get_object_or_404(Refuerzo, id=refuerzo_id)
@@ -1061,7 +1061,7 @@ def _reemplazar_borradores(refuerzo, filas):
 
 # Roles que pueden consultar, editar, completar y eliminar borradores de CUALQUIER usuario.
 # Se valida en el backend (además del decorador de cada vista): no depende del frontend.
-REFUERZO_ROLES_EDICION = ('admin', 'adminprincipal')
+REFUERZO_ROLES_EDICION = ('admin', 'personal_administrativo')
 
 # Ediciones consecutivas del mismo usuario dentro de esta ventana se agrupan en una fila de auditoría.
 REFUERZO_AUDITORIA_VENTANA = timedelta(minutes=30)
@@ -1229,7 +1229,7 @@ def _registrar_auditoria_refuerzo(refuerzo, operacion, usuario, detalle=None, ag
 # ==========================================
 #  PÁGINA — RETOMAR / EDITAR UN BORRADOR DE REFUERZO
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def refuerzo_editar(request, refuerzo_id):
     refuerzo = get_object_or_404(Refuerzo, id=refuerzo_id)
 
@@ -1248,7 +1248,7 @@ def refuerzo_editar(request, refuerzo_id):
 # ==========================================
 #  API — CREAR BORRADOR DE REFUERZO (primer guardado automático)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_refuerzo_borrador_crear(request):
     try:
@@ -1281,7 +1281,7 @@ def api_refuerzo_borrador_crear(request):
 # ==========================================
 #  API — ACTUALIZAR BORRADOR DE REFUERZO (guardado automático)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_refuerzo_borrador_actualizar(request, refuerzo_id):
     sin_cambios = False
@@ -1333,7 +1333,7 @@ def api_refuerzo_borrador_actualizar(request, refuerzo_id):
 # ÚNICO punto donde un Refuerzo mueve el presupuesto. Los saldos y los movimientos
 # por línea los resuelven los triggers de PostgreSQL al insertar en refuerzo_detalle
 # (trg_refuerzo_detalle_movimiento), por eso acá NO se toca saldo_actual.
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_refuerzo_completar(request, refuerzo_id):
     try:
@@ -1445,7 +1445,7 @@ def api_refuerzo_completar(request, refuerzo_id):
 # Un Refuerzo LISTO jamás se elimina por acá (borrarlo arrastraría refuerzo_detalle en cascada
 # sin devolver el saldo; la vía correcta para un LISTO es la anulación).
 # Queda una fila de auditoría con quién lo eliminó, cuándo y una copia del contenido.
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_refuerzo_borrador_eliminar(request, refuerzo_id):
     try:
@@ -1505,7 +1505,7 @@ _REFUERZO_CAMPOS_TEXTOS = {
 }
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_refuerzo_auditoria(request, refuerzo_id):
     """Solo lectura (GET): consultar el historial NO genera ningún registro."""
     eventos  = list(RefuerzoAuditoria.objects.filter(refuerzo_id=refuerzo_id)
@@ -1557,7 +1557,7 @@ from django.http import JsonResponse
 # ==========================================
 #  API — CREAR MODIFICACIÓN (UNIFICADA)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_crear_modificacion(request):
     try:
@@ -1748,7 +1748,7 @@ def api_crear_modificacion(request):
 # ==========================================
 #  API — LISTAR MODIFICACIONES
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_listar_modificaciones(request):
     modificaciones = Modificacion.objects.select_related('usuario').prefetch_related(
         'transferentes__linea_origen__programa',
@@ -1803,12 +1803,12 @@ def api_listar_modificaciones(request):
 # ==========================================
 #  VISTAS — FORMULARIO MODIFICACIÓN
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def modificacion_crear(request):
     context = {'usuario': request.user, 'modo': 'crear', 'modificacion': None}
     return render(request, 'dashboards/admin/modificacion_form.html', context)
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def modificacion_ver(request, modificacion_id):
     import json as _json
     modificacion  = get_object_or_404(Modificacion, id=modificacion_id)
@@ -2151,7 +2151,7 @@ def _datos_borrador_modificacion(modificacion):
 #  PÁGINA — RETOMAR / EDITAR UN BORRADOR DE MODIFICACIÓN
 #  Abrirla solo LEE: no modifica ningún dato (tampoco "editado por").
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def modificacion_editar(request, modificacion_id):
     modificacion = get_object_or_404(Modificacion, id=modificacion_id)
 
@@ -2170,7 +2170,7 @@ def modificacion_editar(request, modificacion_id):
 # ==========================================
 #  API — CREAR BORRADOR DE MODIFICACIÓN (primer guardado automático)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_modificacion_borrador_crear(request):
     try:
@@ -2205,7 +2205,7 @@ def api_modificacion_borrador_crear(request):
 # ==========================================
 #  API — ACTUALIZAR BORRADOR DE MODIFICACIÓN (guardado automático)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_modificacion_borrador_actualizar(request, modificacion_id):
     try:
@@ -2252,7 +2252,7 @@ def api_modificacion_borrador_actualizar(request, modificacion_id):
 # fila los resuelven los triggers de PostgreSQL al insertar en modificacion_transferente /
 # modificacion_receptora, por eso acá NO se toca saldo_actual ni se crea MovimientoHistorial
 # (igual que en api_crear_modificacion).
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_modificacion_completar(request, modificacion_id):
     try:
@@ -2408,7 +2408,7 @@ def api_modificacion_completar(request, modificacion_id):
 # Eliminación FÍSICA del borrador: no tiene transferentes/receptoras reales (los triggers de
 # saldo solo se disparan al insertar en esas tablas), así que NO modifica saldos ni genera
 # movimientos. Queda una fila en modificacion_auditoria (sin FK) con quién y cuándo lo eliminó.
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_modificacion_borrador_eliminar(request, modificacion_id):
     try:
@@ -2478,7 +2478,7 @@ _MODIFICACION_CAMPOS_TEXTOS = {
 }
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_modificacion_auditoria(request, modificacion_id):
     """Solo lectura (GET): consultar el historial NO genera ningún registro."""
     eventos      = list(ModificacionAuditoria.objects.filter(modificacion_id=modificacion_id)
@@ -2524,7 +2524,7 @@ def api_modificacion_auditoria(request, modificacion_id):
 #  API — RESOLVER LÍNEAS PARA MODIFICACIÓN
 #  Devuelve todas las líneas sin filtrar por saldo
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_resolver_lineas_modificacion(request):
     programa_id  = request.GET.get('programa_id')
     proyecto_id  = request.GET.get('proyecto_id')
@@ -2561,7 +2561,7 @@ def api_resolver_lineas_modificacion(request):
 #  API - CREAR REFUERZO
 #===============================
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def refuerzo_crear(request):
     context = {'usuario': request.user, 'modo': 'crear', 'refuerzo': 'null'}
     return render(request, 'dashboards/admin/refuerzo_form.html', context)
@@ -2570,7 +2570,7 @@ def refuerzo_crear(request):
 # ==========================================
 #  API — SALDO DE LÍNEA PRESUPUESTARIA
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_saldo_linea(request):
     linea_id = request.GET.get('linea_id')
     if not linea_id:
@@ -2584,7 +2584,7 @@ def api_saldo_linea(request):
 # ==========================================
 #  API — CREAR IMPUTACIÓN
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_crear_imputacion(request):
     try:
@@ -2751,7 +2751,7 @@ def api_crear_imputacion(request):
 #  devuelve todas las líneas disponibles
 #  con su saldo y el peso proporcional.
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_resolver_lineas(request):
     programa_id  = request.GET.get('programa_id')
     proyecto_id  = request.GET.get('proyecto_id')
@@ -2810,7 +2810,7 @@ def api_resolver_lineas(request):
 #  APIs AUXILIARES — CASCADA IMPUTACIÓN
 # ==========================================
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_programas(request):
     ejercicio = timezone.now().year
     ids = LineaPresupuestaria.objects.filter(
@@ -2830,11 +2830,11 @@ def api_programas(request):
 #     al guardar cambios reales o al confirmar. Los GET no escriben nada.
 #   · Bloqueo optimista: Imputacion.version + select_for_update().
 # ==========================================
-ROLES_ADMIN_IMPUTACION = ('admin', 'adminprincipal')
+ROLES_ADMIN_IMPUTACION = ('admin', 'personal_administrativo')
 
 
 def puede_editar_imputacion(user, imputacion):
-    """Creador original, o rol Administrador / Administrador principal.
+    """Creador original, o rol Administrador / Personal administrativo.
     El estado (REVISAR/LISTO) se valida aparte en cada vista."""
     if not user.is_authenticated:
         return False
@@ -2993,7 +2993,7 @@ def _respuesta_conflicto_imputacion(imputacion, version_cliente):
 # ==========================================
 #  API — CREAR BORRADOR DE IMPUTACIÓN
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_imputacion_borrador_crear(request):
     try:
@@ -3040,7 +3040,7 @@ def api_imputacion_borrador_crear(request):
 # ==========================================
 #  API — ACTUALIZAR BORRADOR DE IMPUTACIÓN
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_imputacion_borrador_actualizar(request, imputacion_id):
     try:
@@ -3104,7 +3104,7 @@ def api_imputacion_borrador_actualizar(request, imputacion_id):
 # ==========================================
 #  API — COMPLETAR IMPUTACIÓN (REVISAR → LISTO)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_imputacion_completar(request, imputacion_id):
     from django.db.models import Max
@@ -3232,7 +3232,7 @@ def api_imputacion_completar(request, imputacion_id):
 #  API — OBTENER BORRADOR (para retomar)
 #  Solo lectura: NO modifica auditoría ni versión.
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_imputacion_borrador_obtener(request, imputacion_id):
     try:
         imputacion = Imputacion.objects.get(id=imputacion_id)
@@ -3280,7 +3280,7 @@ def api_imputacion_borrador_obtener(request, imputacion_id):
 #  ni ImputacionDetalle, ni movimientos, ni saldos. NO genera
 #  MovimientoHistorial. Queda constancia en ImputacionAuditoria.
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_imputacion_borrador_eliminar(request, imputacion_id):
     try:
@@ -3355,7 +3355,7 @@ _IMPUTACION_AUDITORIA_TEXTOS = {
 }
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_imputacion_auditoria(request, imputacion_id):
     """Solo lectura (GET): consultar el historial NO genera ningún registro."""
     eventos    = list(ImputacionAuditoria.objects.filter(imputacion_id=imputacion_id)
@@ -3406,14 +3406,14 @@ def api_imputacion_auditoria(request, imputacion_id):
 # imputar contra ella.
 # Estas devuelven el catálogo completo, para usarse en formularios donde
 # se está creando una UP nueva (ej: Cargar Presupuesto).
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_programas_catalogo(request):
     programas = Programa.objects.all().values(
         'id', 'codigo_programa', 'nombre'
     ).order_by('codigo_programa')
     return JsonResponse({'programas': list(programas)})
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_proyectos_catalogo(request):
     programa_id = request.GET.get('programa_id')
     if not programa_id:
@@ -3424,7 +3424,7 @@ def api_proyectos_catalogo(request):
     ).values('id', 'nombre', 'codigo_proyecto').order_by('codigo_proyecto')
     return JsonResponse({'proyectos': list(proyectos)})
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_actividades_catalogo(request):
     proyecto_id = request.GET.get('proyecto_id')
     if not proyecto_id:
@@ -3435,7 +3435,7 @@ def api_actividades_catalogo(request):
     ).values('id', 'nombre', 'codigo_act_obra').order_by('codigo_act_obra')
     return JsonResponse({'actividades': list(actividades)})
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_proyectos(request):
     programa_id = request.GET.get('programa_id')
     if not programa_id:
@@ -3452,7 +3452,7 @@ def api_proyectos(request):
     ).values('id', 'nombre', 'codigo_proyecto').order_by('codigo_proyecto')
     return JsonResponse({'proyectos': list(proyectos)})
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_actividades(request):
     proyecto_id = request.GET.get('proyecto_id')
     if not proyecto_id:
@@ -3469,13 +3469,13 @@ def api_actividades(request):
     ).values('id', 'nombre', 'codigo_act_obra').order_by('codigo_act_obra')
     return JsonResponse({'actividades': list(actividades)})
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_partidas(request):
     partidas = Partida.objects.all().values('id', 'codigo', 'denominacion')
     return JsonResponse({'partidas': list(partidas)})
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_fuentes(request):
     fuentes = FuenteFinanciamiento.objects.all().values('id', 'codigo', 'nombre')
     return JsonResponse({'fuentes': list(fuentes)})
@@ -3522,7 +3522,7 @@ def _padre_label(padre, config):
     return f"{str(getattr(padre, config['padre_codigo'])).zfill(2)} - {getattr(padre, config['padre_denom'])}"
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_catalogos_listar(request):
     tipo = request.GET.get('tipo')
     config = CATALOGO_CONFIG.get(tipo)
@@ -3549,7 +3549,7 @@ def api_catalogos_listar(request):
     return JsonResponse({'items': data, 'requiere_padre': bool(config['padre_field'])})
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_catalogos_padres(request):
     tipo = request.GET.get('tipo')
     config = CATALOGO_CONFIG.get(tipo)
@@ -3561,7 +3561,7 @@ def api_catalogos_padres(request):
     return JsonResponse({'padres': padres})
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_catalogos_crear(request):
     try:
@@ -3608,7 +3608,7 @@ def api_catalogos_crear(request):
     })
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_catalogos_editar(request, item_id):
     try:
@@ -3653,7 +3653,7 @@ def api_catalogos_editar(request, item_id):
     return JsonResponse({'ok': True})
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_catalogos_eliminar(request, item_id):
     tipo = request.GET.get('tipo')
@@ -3677,7 +3677,7 @@ def api_catalogos_eliminar(request, item_id):
     return JsonResponse({'ok': True})
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_buscar_linea(request):
     """Dado programa+proyecto+actividad+partida+fuente+ejercicio devuelve el linea_id."""
     actividad_id = request.GET.get('actividad_id')
@@ -3706,7 +3706,7 @@ def api_buscar_linea(request):
 # ==========================================
 #  API — PRÓXIMO N° DE ASIENTO (preview)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_proximo_asiento(request):
     ejercicio_raw = request.GET.get('ejercicio')
     try:
@@ -3732,7 +3732,7 @@ def api_proximo_asiento(request):
 # ==========================================
 #  LISTA DE IMPUTACIONES
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def lista_imputaciones(request):
     from django.db.models import Sum
 
@@ -3792,7 +3792,7 @@ def lista_imputaciones(request):
 # ==========================================
 #  API — DETALLE DE IMPUTACIÓN (para autocompletar OP)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_detalle_imputacion(request, imputacion_id):
     try:
         imp = Imputacion.objects.prefetch_related(
@@ -3833,7 +3833,7 @@ def api_detalle_imputacion(request, imputacion_id):
 #  Devuelve las UPs de la imputación con saldo disponible
 #  (importe original menos lo ya pagado en OPs anteriores)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_ups_imputacion(request, imputacion_id):
     try:
         imputacion = Imputacion.objects.get(id=imputacion_id)
@@ -3905,7 +3905,7 @@ def api_ups_imputacion(request, imputacion_id):
 # orden_pago_borrador_*. NUNCA crea OrdenPagoUnidadPresupuestaria ni MovimientoHistorial:
 # esa es la única vía por la que una OP consume fondos de la Imputación, y solo se ejecuta
 # al completar. Abrir o consultar una OP no escribe nada (ni "Editado por" ni versión).
-OP_ROLES_EDICION         = ('admin', 'adminprincipal')
+OP_ROLES_EDICION         = ('admin', 'personal_administrativo')
 OP_AUDITORIA_VENTANA     = timedelta(minutes=30)
 OP_MAX_FILAS_BORRADOR    = 200
 OP_MAX_LINEAS_CONCEPTO   = 100
@@ -3943,7 +3943,7 @@ _OP_ETIQUETAS = {
 
 
 def puede_editar_op(user, op):
-    """Creador original, o rol Administrador / Administrador principal.
+    """Creador original, o rol Administrador / Personal administrativo.
     El estado (REVISAR/LISTO) se valida aparte en cada vista."""
     if not user or not user.is_authenticated:
         return False
@@ -4268,7 +4268,7 @@ def _op_datos(op, user):
 #  PÁGINA — RETOMAR UN BORRADOR DE OP
 # ==========================================
 # Solo lectura sobre la base: abrir un borrador nunca escribe nada (ni "Editado por").
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def ordenpago_editar(request, op_id):
     op = get_object_or_404(OrdenPago.objects.select_related('usuario', 'usuario_modificacion'), id=op_id)
 
@@ -4292,7 +4292,7 @@ def ordenpago_editar(request, op_id):
 #  PÁGINA — VER UNA OP COMPLETADA (solo lectura)
 # ==========================================
 # No escribe nada en la base: consultar una OP nunca modifica "Editado por" ni la auditoría.
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def ordenpago_ver(request, op_id):
     op = get_object_or_404(OrdenPago.objects.select_related('usuario', 'usuario_modificacion'), id=op_id)
 
@@ -4312,7 +4312,7 @@ def ordenpago_ver(request, op_id):
 # ==========================================
 #  API — CREAR BORRADOR DE OP (primer guardado automático)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_op_borrador_crear(request):
     try:
@@ -4388,7 +4388,7 @@ def api_op_borrador_crear(request):
 # ==========================================
 #  API — ACTUALIZAR BORRADOR DE OP (guardado automático)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_op_borrador_actualizar(request, op_id):
     try:
@@ -4523,7 +4523,7 @@ def _op_errores_completar(op, beneficiarios, ups):
     return e
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_op_completar(request, op_id):
     try:
@@ -4692,7 +4692,7 @@ def api_op_completar(request, op_id):
 # descuentos, devoluciones ni movimientos. Queda constancia (con una copia del contenido) en
 # orden_pago_auditoria, que no tiene FK a la OP justamente para sobrevivir a este borrado.
 # Una OP en LISTO nunca se elimina por acá (la vía correcta es la anulación).
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_op_borrador_eliminar(request, op_id):
     try:
@@ -4704,7 +4704,7 @@ def api_op_borrador_eliminar(request, op_id):
             except OrdenPago.DoesNotExist:
                 raise _RefuerzoError('Orden de Pago no encontrada', 404)
 
-            # Mismo criterio que editar: creador, Administrador o Administrador principal.
+            # Mismo criterio que editar: creador, Administrador o Personal administrativo.
             if not puede_editar_op(request.user, op):
                 raise _RefuerzoError('No tenés permiso para eliminar esta Orden de Pago', 403)
 
@@ -4779,7 +4779,7 @@ _OP_AUDITORIA_TEXTOS = {
 }
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_op_auditoria(request, op_id):
     """Solo lectura (GET): consultar el historial NO genera ningún registro."""
     eventos = list(OrdenPagoAuditoria.objects.filter(orden_pago_id=op_id)
@@ -4825,7 +4825,7 @@ def api_op_auditoria(request, op_id):
 #  Para Modo B: dado un linea_id devuelve los
 #  ImputacionDetalle con saldo disponible
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_imputaciones_por_linea(request):
     from django.db.models import Sum
 
@@ -4888,7 +4888,7 @@ def api_codigos_pago(request):
 # ==========================================
 #  VISTA — VER IMPUTACIÓN
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def imputacion_ver(request, imputacion_id):
     import json as _json
     imputacion = get_object_or_404(Imputacion, id=imputacion_id)
@@ -4925,7 +4925,7 @@ def imputacion_ver(request, imputacion_id):
 # ==========================================
 #  API — HISTORIAL DE REGISTROS (auditoría)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_historial_registros(request):
     from django.db.models import Q
     from django.urls import reverse
@@ -4965,7 +4965,7 @@ def api_historial_registros(request):
         item['url_auditoria'] = reverse('api_imputacion_auditoria', args=[imp.id])
 
         if es_borrador:
-            # Creador, Administrador y Administrador principal pueden retomar y eliminar
+            # Creador, Administrador y Personal administrativo pueden retomar y eliminar
             # (los permisos reales se vuelven a verificar en el backend de cada API).
             if puede_editar_imputacion(request.user, imp):
                 item['url_editar'] = f"{reverse('imputacion')}?borrador={imp.id}"
@@ -5053,7 +5053,7 @@ def api_historial_registros(request):
         }
 
         if es_borrador:
-            # Cualquier admin / adminprincipal puede retomar y eliminar el borrador
+            # Cualquier admin / personal_administrativo puede retomar y eliminar el borrador
             # (el endpoint vuelve a validar rol y estado)
             item['url_editar']   = reverse('ordenpagopersonal_editar', args=[op.id])
             item['url_eliminar'] = reverse('api_op_personal_borrador_eliminar', args=[op.id])
@@ -5097,7 +5097,7 @@ def api_historial_registros(request):
 
         item['url_auditoria'] = reverse('api_modificacion_auditoria', args=[mod.id])
         if es_borrador:
-            # Cualquier admin / adminprincipal puede retomar y eliminar el borrador
+            # Cualquier admin / personal_administrativo puede retomar y eliminar el borrador
             # (el endpoint vuelve a validar rol y estado)
             item['url_editar']   = reverse('modificacion_editar', args=[mod.id])
             item['url_eliminar'] = reverse('api_modificacion_borrador_eliminar', args=[mod.id])
@@ -5140,7 +5140,7 @@ def api_historial_registros(request):
 
         item['url_auditoria'] = reverse('api_refuerzo_auditoria', args=[ref.id])
         if es_borrador:
-            # Cualquier admin / adminprincipal puede retomar el borrador
+            # Cualquier admin / personal_administrativo puede retomar el borrador
             item['url_editar'] = reverse('refuerzo_editar', args=[ref.id])
             # Eliminar: solo borradores y solo roles autorizados (el endpoint lo vuelve a validar)
             if _puede_gestionar_refuerzo(request.user):
@@ -5231,7 +5231,7 @@ def api_eliminar_linea(request, linea_id):
 # imputación. Además, los CHECK de PostgreSQL impiden que un borrador tenga imputación o que
 # una OP Personal LISTO no la tenga.
 
-OPP_ROLES_EDICION       = ('admin', 'adminprincipal')
+OPP_ROLES_EDICION       = ('admin', 'personal_administrativo')
 OPP_MAX_FILAS_BORRADOR  = 200
 OPP_LOCK_ASIENTO        = 7410021   # clave del advisory lock que serializa el N° de asiento
 
@@ -5592,7 +5592,7 @@ def _inicial_usuario(usuario):
 #  PÁGINAS — RETOMAR (EDITAR) Y CONSULTAR (VER) UNA OP PERSONAL
 # ==========================================
 # Son solo lectura sobre la base: abrir una OP Personal nunca escribe nada (ni "Editado por").
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def ordenpagopersonal_editar(request, opp_id):
     opp = get_object_or_404(OrdenPagoPersonal.objects.select_related('usuario', 'imputacion'), id=opp_id)
 
@@ -5608,7 +5608,7 @@ def ordenpagopersonal_editar(request, opp_id):
     return render(request, 'dashboards/admin/ordenpagopersonal.html', context)
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def ordenpagopersonal_ver(request, opp_id):
     opp = get_object_or_404(OrdenPagoPersonal.objects.select_related('usuario', 'imputacion'), id=opp_id)
 
@@ -5642,7 +5642,7 @@ def _opp_respuesta_existente(opp):
     })
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_op_personal_borrador_crear(request):
     try:
@@ -5697,7 +5697,7 @@ def api_op_personal_borrador_crear(request):
 # ==========================================
 #  API — ACTUALIZAR BORRADOR DE OP PERSONAL (guardado automático)
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_op_personal_borrador_actualizar(request, opp_id):
     try:
@@ -5743,7 +5743,7 @@ def api_op_personal_borrador_actualizar(request, opp_id):
 # confirma lo que está guardado en la base (no lo que llegue en el cuerpo): el cliente solo
 # envía la versión que vio. Los saldos y movimientos por línea los resuelve el trigger de
 # imputacion_detalle, por eso acá NO se modifica saldo_actual.
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_op_personal_completar(request, opp_id):
     from django.db.models import Max
@@ -5941,7 +5941,7 @@ def api_op_personal_completar(request, opp_id):
         'url_ver':       reverse('ordenpagopersonal_ver', args=[opp.id]),
     })
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def seleccion_ejercicio(request):
     context = {'usuario': request.user}
     return render(request, 'dashboards/admin/seleccion_ejercicio.html', context)
@@ -5953,7 +5953,7 @@ def seleccion_ejercicio(request):
 # Eliminación FÍSICA: un borrador nunca tiene imputación (CHECK opp_revisar_sin_imputacion),
 # ni partidas reales, ni movimientos; sus beneficiarios y borradores de partida caen en
 # cascada. NO modifica saldos. Queda una fila en orden_pago_personal_auditoria (sin FK).
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_op_personal_borrador_eliminar(request, opp_id):
     try:
@@ -6026,7 +6026,7 @@ _OPP_CAMPOS_TEXTOS = {
 }
 
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_op_personal_auditoria(request, opp_id):
     """Solo lectura (GET): consultar el historial NO genera ningún registro."""
     eventos = list(OrdenPagoPersonalAuditoria.objects.filter(orden_pago_personal_id=opp_id)
@@ -6073,7 +6073,7 @@ def api_op_personal_auditoria(request, opp_id):
 #  Devuelve los ejercicios disponibles
 #  distintos al año actual
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_ejercicios_anios(request):
     anio_actual = timezone.now().year
     anios = LineaPresupuestaria.objects.filter(
@@ -6088,7 +6088,7 @@ def api_ejercicios_anios(request):
 #  Devuelve las líneas presupuestarias
 #  de un ejercicio anterior con sus movimientos
 # ==========================================
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_ejercicios_datos(request):
     from django.db.models import Sum
 
@@ -6265,7 +6265,7 @@ def historial_accesos(request):
 @rol_requerido('admin')
 def usuarios_para_contrasena(request):
     """Lista de usuarios a los que el admin puede cambiar la contraseña."""
-    usuarios = Usuario.objects.exclude(rol='adminprincipal').order_by('nombre')
+    usuarios = Usuario.objects.exclude(rol='personal_administrativo').order_by('nombre')
 
     return JsonResponse({
         'ok': True,
@@ -6318,8 +6318,8 @@ def cambiar_contrasena(request):
             'mensaje': 'El usuario seleccionado no existe.'
         }, status=404)
 
-    # Un admin no puede tocar la cuenta del Administrador Principal
-    if objetivo.rol == 'adminprincipal':
+    # Un admin no puede tocar la cuenta del Personal administrativo
+    if objetivo.rol == 'personal_administrativo':
         return JsonResponse({
             'ok': False,
             'mensaje': 'No tenés permiso para cambiar la contraseña de ese usuario.'
@@ -6350,7 +6350,7 @@ def cambiar_contrasena(request):
         'mensaje': f'Contraseña de {objetivo.nombre} cambiada correctamente.'
     })
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def cambiar_foto_perfil(request):
     if request.method != 'POST':
         return JsonResponse({
@@ -6389,7 +6389,7 @@ def cambiar_foto_perfil(request):
         'foto_url': request.user.foto_perfil.url
     })
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 def api_listar_lineas(request):
     from django.db.models import Max
 
@@ -6450,7 +6450,7 @@ def api_listar_lineas(request):
         'ejercicio_origen': ejercicio_origen,
     })
 
-@rol_requerido('admin', 'adminprincipal')
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_guardar_lineas_ejercicio(request):
     """Inserta en un solo lote (atómico e idempotente) las UP de un ejercicio nuevo."""
