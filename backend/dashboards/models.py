@@ -184,6 +184,32 @@ class LineaPresupuestaria(RegistroAuditable):
 
 
 # ─────────────────────────────────────────────
+# EJERCICIO PRESUPUESTARIO — cierre de la carga del presupuesto inicial
+# Una fila por ejercicio, creada cuando el usuario presiona
+# "Finalizar carga de presupuesto". Su fecha_finalizacion es la fecha
+# que el Home muestra como "Aprobado". No guarda montos: esos siguen
+# calculándose sumando LineaPresupuestaria.
+# ─────────────────────────────────────────────
+class EjercicioPresupuestario(models.Model):
+    ejercicio            = models.IntegerField(unique=True)
+    fecha_finalizacion   = models.DateTimeField(auto_now_add=True)
+    usuario_finalizacion = models.ForeignKey(
+        UsuarioPersonalizado,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='ejercicios_finalizados',
+    )
+
+    class Meta:
+        db_table     = 'ejercicio_presupuestario'
+        verbose_name = 'Ejercicio Presupuestario'
+
+    def __str__(self):
+        return f'Ejercicio {self.ejercicio} (finalizado {self.fecha_finalizacion:%d/%m/%Y})'
+
+
+# ─────────────────────────────────────────────
 # IMPUTACIÓN
 # ─────────────────────────────────────────────
 class Imputacion(ControlModificacion):

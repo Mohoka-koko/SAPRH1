@@ -53,6 +53,7 @@ urlpatterns = [
     path('api/linea-presupuestaria/eliminar/<int:linea_id>/', views.api_eliminar_linea, name='api_eliminar_linea'),
     path('api/lineas-presupuestarias/', views.api_lineas_presupuestarias, name='api_lineas_presupuestarias'),
     path('api/linea-presupuestaria/guardar-lote/', views.api_guardar_lineas_ejercicio, name='api_guardar_lineas_ejercicio'),
+    path('api/ejercicio/finalizar/', views.api_finalizar_carga_ejercicio, name='api_finalizar_carga_ejercicio'),
     path('api/home/lineas/', views.api_home_lineas, name='api_home_lineas'),
     path('api/home/lineas/<int:linea_id>/movimientos/', views.api_movimientos_linea, name='api_movimientos_linea'),
 

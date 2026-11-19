@@ -150,10 +150,35 @@ function cancelarFinalizacion() {
     document.getElementById("btnFinalizarCarga").focus();
 }
 
-function confirmarFinalizacion() {
-    const anioPresupuesto = new Date().getFullYear() + 1;
-    localStorage.setItem(`budget-creation-finalized-${anioPresupuesto}`, "true");
-    window.location.assign("/admin-dashboard/home/");
+let finalizando = false;
+
+async function confirmarFinalizacion() {
+    if (finalizando) return;
+    finalizando = true;
+    const btn = document.getElementById("btnConfirmarFinalizacion");
+    btn.disabled = true;
+    try {
+        // Se registra en la BD la fecha en que se finalizó la carga (la que el Home muestra como "Aprobado").
+        const resp = await fetch("/api/ejercicio/finalizar/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
+            body: JSON.stringify({ ejercicio: anioObjetivo }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            alert("Error: " + (data.error || "no se pudo finalizar la carga."));
+            return;
+        }
+        const anioPresupuesto = new Date().getFullYear() + 1;
+        localStorage.setItem(`budget-creation-finalized-${anioPresupuesto}`, "true");
+        window.location.assign("/admin-dashboard/home/");
+    } catch (err) {
+        console.error(err);
+        alert("Error de red al finalizar la carga. Intentá de nuevo.");
+    } finally {
+        finalizando = false;
+        btn.disabled = false;
+    }
 }
 
 document.getElementById("btnGuardarCambios").addEventListener("click", guardarCambiosPresupuesto);

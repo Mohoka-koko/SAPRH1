@@ -4,7 +4,7 @@
 
 // Se cargan de forma asíncrona desde la BD (ver fetchLineasPresupuestarias).
 let programsData = [];
-let resumenData = { presupuestoInicial: 0, presupuestoModificado: 0, aumentoPct: 0, fechaUltimaModificacion: null };
+let resumenData = { presupuestoInicial: 0, presupuestoModificado: 0, aumentoPct: 0, fechaUltimaModificacion: null, fechaAprobacion: null };
 
 // Se carga de forma asíncrona desde la BD (ver fetchLineasPresupuestarias).
 // Cada elemento representa una línea presupuestaria (unidad presupuestaria) real.
@@ -91,8 +91,13 @@ async function setupBudgetAlert() {
         : `CREAR PRESUPUESTO ${requiredBudgetYear}`;
 
       button.onclick = () => {
-        localStorage.setItem(storageKey, "true");
-        window.location.href = "/seleccion-ejercicio/";
+        if (hasStarted) {
+          // Ya empezó la carga: ir directo a cargar presupuesto
+          window.location.href = `/admin-dashboard/home/cargarpresupuesto/?anio=${requiredBudgetYear}`;
+        } else {
+          // Primera vez: elegir/crear el ejercicio
+          window.location.href = "/seleccion-ejercicio/";
+        }
       };
 
       // Verificamos que el CSS no lo esté ocultando igual
@@ -219,6 +224,7 @@ async function fetchLineasPresupuestarias() {
         presupuestoModificado: parseFloat(data.resumen.presupuestoModificado),
         aumentoPct: data.resumen.aumentoPct,
         fechaUltimaModificacion: data.resumen.fechaUltimaModificacion,
+        fechaAprobacion: data.resumen.fechaAprobacion,
       };
     }
   } catch (err) {
@@ -407,6 +413,7 @@ function renderResumenCards() {
   const modificadoEl = document.getElementById("presupuestoModificadoValue");
   const aumentoEl = document.getElementById("aumentoPctValue");
   const fechaModificadoEl = document.getElementById("fechaUltimaModificacionValue");
+  const fechaAprobacionEl = document.getElementById("fechaAprobacionValue");
 
   if (inicialEl) {
     inicialEl.textContent = formatCurrencyDetailed(resumenData.presupuestoInicial);
@@ -420,6 +427,9 @@ function renderResumenCards() {
   }
   if (fechaModificadoEl) {
     fechaModificadoEl.textContent = resumenData.fechaUltimaModificacion || "Sin modificaciones";
+  }
+  if (fechaAprobacionEl) {
+    fechaAprobacionEl.textContent = resumenData.fechaAprobacion || "Carga sin finalizar";
   }
 }
 

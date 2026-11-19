@@ -65,6 +65,7 @@ async function verificarYContinuar() {
 
         // Si no existe, redirigimos a la carga pasando el año por la URL
         // Ejemplo: /admin-dashboard/home/cargarpresupuesto/?anio=2027
+        localStorage.setItem(`budget-creation-started-${anioIngresado}`, "true");
         window.location.href = `/admin-dashboard/home/cargarpresupuesto/?anio=${anioIngresado}`;
 
     } catch (err) {

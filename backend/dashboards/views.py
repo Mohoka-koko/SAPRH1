@@ -25,6 +25,7 @@ from dashboards.models import (
     OrdenPagoPersonal, OrdenPagoPersonalBeneficiario, OrdenPagoPersonalPartida,
     OrdenPagoPersonalBorradorPartida,
     ModificacionAuditoria, OrdenPagoPersonalAuditoria,
+    EjercicioPresupuestario,
 )
 from django.db.models.deletion import ProtectedError
 from decimal import Decimal, InvalidOperation
@@ -553,6 +554,15 @@ def api_home_lineas(request):
         ultima_modificacion.strftime('%d/%m/%Y') if ultima_modificacion else None
     )
 
+    # Fecha en que se finalizó la carga del presupuesto inicial de este ejercicio
+    # (botón "Finalizar carga de presupuesto"). None si todavía no se finalizó.
+    finalizacion = EjercicioPresupuestario.objects.filter(
+        ejercicio=ejercicio
+    ).values_list('fecha_finalizacion', flat=True).first()
+    fecha_aprobacion = (
+        timezone.localtime(finalizacion).strftime('%d/%m/%Y') if finalizacion else None
+    )
+
     # ── Por programa: SUM(saldo_actual) filtrando por codigo_programa ─────
     # Solo se incluyen los programas que tienen al menos una línea en el
     # ejercicio (mismo criterio que ya usa api_programas).
@@ -588,6 +598,7 @@ def api_home_lineas(request):
             'presupuestoModificado': str(presupuesto_modificado),
             'aumentoPct':            aumento_pct,
             'fechaUltimaModificacion': fecha_ultima_modificacion,
+            'fechaAprobacion':       fecha_aprobacion,
         },
         'programas': programas_data,
     })
@@ -5178,24 +5189,45 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 
+@rol_requerido('admin', 'personal_administrativo')
 @require_POST
 def api_editar_monto_linea(request, linea_id):
     try:
         body = json.loads(request.body)
-        monto = float(body.get('saldo_inicial'))
-        if monto < 0:
+        monto = Decimal(str(body.get('saldo_inicial')).replace(',', '.')).quantize(Decimal('0.01'))
+        if monto < 0 or monto >= Decimal(10) ** 16:
             raise ValueError
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, InvalidOperation):
         return JsonResponse({'error': 'Monto inválido.'}, status=400)
 
-    try:
-        linea = LineaPresupuestaria.objects.get(id=linea_id)
-    except LineaPresupuestaria.DoesNotExist:
-        return JsonResponse({'error': 'Línea no encontrada.'}, status=404)
+    with transaction.atomic():
+        try:
+            linea = LineaPresupuestaria.objects.select_for_update().get(id=linea_id)
+        except LineaPresupuestaria.DoesNotExist:
+            return JsonResponse({'error': 'Línea no encontrada.'}, status=404)
 
-    linea.saldo_inicial = monto
-    linea.save()
-    return JsonResponse({'mensaje': 'Monto actualizado.'})
+        # saldo_actual = saldo_inicial +/- lo que ya se movió (imputaciones, refuerzos,
+        # modificaciones). Al cambiar el saldo inicial, saldo_actual se corre por la
+        # MISMA diferencia; así se conservan los movimientos ya aplicados y el
+        # "Presupuesto Modificado" del Home queda coherente con el nuevo inicial.
+        diferencia   = monto - linea.saldo_inicial
+        nuevo_actual = linea.saldo_actual + diferencia
+        if nuevo_actual < 0:
+            return JsonResponse(
+                {'error': 'El nuevo monto es menor a lo que esta partida ya tiene comprometido.'},
+                status=400,
+            )
+
+        linea.saldo_inicial         = monto
+        linea.saldo_actual          = nuevo_actual
+        linea.usuario_modificacion  = request.user
+        linea.save()
+
+    return JsonResponse({
+        'mensaje':       'Monto actualizado.',
+        'saldo_inicial': str(linea.saldo_inicial),
+        'saldo_actual':  str(linea.saldo_actual),
+    })
 
 
 @require_POST
@@ -6449,6 +6481,37 @@ def api_listar_lineas(request):
         'lineas': [_serializar(l, True) for l in plantillas],
         'ejercicio_origen': ejercicio_origen,
     })
+
+@rol_requerido('admin', 'personal_administrativo')
+@require_POST
+def api_finalizar_carga_ejercicio(request):
+    """Registra que se finalizó la carga del presupuesto inicial de un ejercicio.
+    Es idempotente: si ya estaba finalizado se conserva la fecha original."""
+    try:
+        body = json.loads(request.body)
+        ejercicio = int(body.get('ejercicio'))
+    except (json.JSONDecodeError, UnicodeDecodeError, TypeError, ValueError, AttributeError):
+        return JsonResponse({'error': 'Ejercicio inválido'}, status=400)
+    if not 2000 <= ejercicio <= 2100:
+        return JsonResponse({'error': 'Ejercicio fuera de rango'}, status=400)
+
+    if not LineaPresupuestaria.objects.filter(ejercicio=ejercicio).exists():
+        return JsonResponse(
+            {'error': 'No hay unidades presupuestarias guardadas para este ejercicio.'},
+            status=400,
+        )
+
+    registro, creado = EjercicioPresupuestario.objects.get_or_create(
+        ejercicio=ejercicio,
+        defaults={'usuario_finalizacion': request.user},
+    )
+    return JsonResponse({
+        'ok':        True,
+        'ejercicio': ejercicio,
+        'creado':    creado,
+        'fecha':     timezone.localtime(registro.fecha_finalizacion).strftime('%d/%m/%Y'),
+    })
+
 
 @rol_requerido('admin', 'personal_administrativo')
 @require_POST
